@@ -141,3 +141,26 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# Expo
+.expo/
+expo-env.d.ts
+web-build/
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+/ios
+/android
+
+# Metro
+.metro-health-check*
+
+# macOS
+.DS_Store
+*.pem
