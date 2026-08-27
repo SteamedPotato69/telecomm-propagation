@@ -34,6 +34,16 @@ cd telecomm-propagation
 npm install
 ```
 
+## Abrir y ejecutar en VS Code
+
+1. **File → Open Folder…** y selecciona la raíz del repo (donde está `package.json`). No abras un subdirectorio.
+2. Abre la terminal integrada: **Terminal → New Terminal** (o `` Ctrl+` ``).
+3. Corre los comandos de [Instalación](#instalación) y [Ejecución](#ejecución) desde esa terminal.
+
+Extensión opcional: **Expo Tools** (publicador Expo) para snippets y soporte de `app.json`. El soporte de TypeScript/JSX ya viene integrado en VS Code, sin configuración adicional.
+
+No hay `launch.json` configurado para debugging con breakpoints nativos de VS Code -- para eso hace falta configuración aparte, no cubierta todavía. Para probar la calculadora, `npm run web` o Expo Go es suficiente.
+
 ## Ejecución
 
 ```bash
