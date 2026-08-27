@@ -58,6 +58,24 @@ npm run ios       # simulador iOS (solo macOS) o dispositivo con Expo Go
 
 Con `npm start` o `npm run android`/`ios`, Expo muestra un código QR: escanéalo con la app Expo Go para abrir el proyecto en un dispositivo físico.
 
+## EAS (Expo Application Services)
+
+El proyecto ya está vinculado a un proyecto EAS existente (ver `app.json`):
+
+- `projectId`: `d49ee7fe-6cb5-470f-9bae-664c6e548834`
+- `owner`: `latriassona` (organización en Expo, no una cuenta personal)
+- `slug`: `telecomm` -- distinto del nombre del paquete (`telecomm-propagation`); se adoptó el slug que ya existía en ese proyecto EAS en vez de renombrarlo del lado del servidor.
+
+Esto **no es necesario para desarrollo local** (`npm run web` / Expo Go no lo requieren). Solo importa si vas a compilar nativo o publicar actualizaciones OTA:
+
+```bash
+npm install --global eas-cli
+eas login     # cuenta con acceso a la organización "latriassona"
+eas whoami    # verifica qué cuenta quedó activa
+```
+
+Si tu cuenta no tiene acceso a "latriassona", `eas build`/`eas update` van a fallar con un error de permisos -- hay que pedir que te agreguen a la organización antes.
+
 ## Verificación de tipos
 
 ```bash
