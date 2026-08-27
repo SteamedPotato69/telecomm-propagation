@@ -76,6 +76,16 @@ eas whoami    # verifica qué cuenta quedó activa
 
 Si tu cuenta no tiene acceso a "latriassona", `eas build`/`eas update` van a fallar con un error de permisos -- hay que pedir que te agreguen a la organización antes.
 
+### Generar un APK para probar en un dispositivo
+
+```bash
+eas build --platform android --profile preview
+```
+
+Corre en la nube (no requiere Android Studio ni SDK local); al terminar, la terminal muestra un enlace de descarga del `.apk`. Instálalo directamente en el teléfono (fuera de Google Play, así que Android va a pedir permitir "instalar apps de origen desconocido" la primera vez).
+
+No usar el perfil `production` para esto: genera un `.aab`, pensado para subir a Play Store, no instalable directamente.
+
 ## Verificación de tipos
 
 ```bash
