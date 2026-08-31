@@ -9,11 +9,13 @@ Calculadora de modelos de pérdida de propagación en canales móviles (espacio 
 | Espacio libre (Friis) | ✅ Implementado | Cualquier `d, f > 0` |
 | Okumura-Hata | ✅ Implementado | f: 150–1500 MHz, hb: 30–200 m, hm: 1–10 m, d: 1–20 km |
 | COST-231 Hata | ✅ Implementado | f: 1500–2000 MHz, hb: 30–200 m, hm: 1–10 m, d: 1–20 km |
-| ECC-33 | ✅ Implementado | Rango práctico reportado en literatura hasta ~3.5 GHz (no normativo) |
-| Ikegami | ⏳ Pendiente | Requiere confirmar fórmula exacta contra el material del curso |
-| Walfisch-Bertoni | ⏳ Pendiente | Requiere confirmar fórmula exacta contra el material del curso |
+| ECC-33 | ✅ Implementado | f: 0–4000 MHz, hb: 20–200 m, hr: 5–10 m, d: 0–10 km |
+| Ikegami | ⏳ Pendiente | Fórmula disponible en `docs/curso-referencia.md` §5.6, requiere extender `PropagationInputs` primero |
+| Walfisch-Bertoni | ⏳ Pendiente | Fórmula disponible en `docs/curso-referencia.md` §5.7, requiere extender `PropagationInputs` primero |
 
 Fuera de su rango válido, un modelo **no bloquea el cálculo**: muestra el resultado junto con una advertencia de que es una extrapolación. Un valor físicamente imposible (frecuencia, distancia o altura ≤ 0) sí bloquea el cálculo, porque las fórmulas dependen de `log10` y ese caso produciría un resultado sin sentido (`-Infinity`).
+
+Todas las constantes y rangos de los modelos implementados están tomados de [`docs/curso-referencia.md`](docs/curso-referencia.md) (base de conocimiento del curso, mantenida por el estudiante y actualizada semanalmente) — no de fuentes genéricas de internet. Donde una constante del curso difiere de la fuente genérica usada originalmente (Hata, ECC-33), el comentario del archivo correspondiente documenta ambos valores y por qué se usa el del curso.
 
 Ikegami y Walfisch-Bertoni aparecen en el selector marcados como "(próximamente)" y no son seleccionables: sus módulos existen (`src/models/propagation/ikegami.ts`, `walfischBertoni.ts`) pero lanzan un error explícito en vez de usar constantes sin verificar. Ver el comentario en cada archivo para el detalle.
 
@@ -130,9 +132,9 @@ No hace falta tocar `CalculatorScreen.tsx` ni los componentes de UI: leen el reg
 
 ## Trabajo futuro
 
-- Confirmar las fórmulas exactas de Ikegami y Walfisch-Bertoni contra el material del curso e implementarlas.
-- Añadir tests unitarios por modelo (valores de referencia conocidos de la literatura).
-- Considerar exportar/comparar resultados de varios modelos a la vez.
+- Implementar Ikegami y Walfisch-Bertoni (fórmulas ya confirmadas en `docs/curso-referencia.md` §5.6/§5.7; falta extender `PropagationInputs` con sus parámetros geométricos -- ancho de calle, altura de edificio, orientación, etc.).
+- Añadir tests unitarios por modelo, con valores de referencia resueltos a mano o en clase -- **no** buscados en fuentes genéricas de internet (ver `docs/curso-referencia.md` §5.2 para el ejercicio pendiente de resolver que serviría de caso de prueba para Hata/COST-231/Ikegami).
+- Selección automática de modelo según los parámetros de entrada (en vez del selector manual actual) y una vista comparativa con gráficas de pérdida vs. distancia -- es el enunciado oficial de la tarea (`docs/curso-referencia.md` §12.2), no una idea aparte.
 
 ## Licencia
 
