@@ -10,14 +10,17 @@ Calculadora de modelos de pérdida de propagación en canales móviles (espacio 
 | Okumura-Hata | ✅ Implementado | f: 150–1500 MHz, hb: 30–200 m, hm: 1–10 m, d: 1–20 km |
 | COST-231 Hata | ✅ Implementado | f: 1500–2000 MHz, hb: 30–200 m, hm: 1–10 m, d: 1–20 km |
 | ECC-33 | ✅ Implementado | f: 0–4000 MHz, hb: 20–200 m, hr: 5–10 m, d: 0–10 km |
-| Ikegami | ⏳ Pendiente | Fórmula disponible en `docs/curso-referencia.md` §5.6, requiere extender `PropagationInputs` primero |
-| Walfisch-Bertoni | ⏳ Pendiente | Fórmula disponible en `docs/curso-referencia.md` §5.7, requiere extender `PropagationInputs` primero |
+| Ikegami | ✅ Implementado | f, d > 0; requiere geometría de calle (ver abajo). Signos marcados `[OCR-verificar]` por la fuente del curso |
+| Walfisch-Bertoni | ✅ Implementado | f: 300–3000 MHz, d: 0.2–5 km; requiere geometría de edificios (ver abajo) |
 
 Fuera de su rango válido, un modelo **no bloquea el cálculo**: muestra el resultado junto con una advertencia de que es una extrapolación. Un valor físicamente imposible (frecuencia, distancia o altura ≤ 0) sí bloquea el cálculo, porque las fórmulas dependen de `log10` y ese caso produciría un resultado sin sentido (`-Infinity`).
 
 Todas las constantes y rangos de los modelos implementados están tomados de [`docs/curso-referencia.md`](docs/curso-referencia.md) (base de conocimiento del curso, mantenida por el estudiante y actualizada semanalmente) — no de fuentes genéricas de internet. Donde una constante del curso difiere de la fuente genérica usada originalmente (Hata, ECC-33), el comentario del archivo correspondiente documenta ambos valores y por qué se usa el del curso.
 
-Ikegami y Walfisch-Bertoni aparecen en el selector marcados como "(próximamente)" y no son seleccionables: sus módulos existen (`src/models/propagation/ikegami.ts`, `walfischBertoni.ts`) pero lanzan un error explícito en vez de usar constantes sin verificar. Ver el comentario en cada archivo para el detalle.
+**Ikegami y Walfisch-Bertoni** necesitan parámetros geométricos que los otros cuatro modelos no usan (ancho de calle, altura de edificio, orientación...), agregados como campos **opcionales** en `PropagationInputs` -- ver `src/models/propagation/types.ts`. La UI solo muestra esos campos cuando el modelo correspondiente está seleccionado. Dos advertencias explícitas de estos dos modelos, documentadas en el comentario de cada archivo:
+
+- **Ikegami** (`ikegami.ts`): la fuente del curso marca los signos de esta sección como `[OCR-verificar]` -- no fueron re-derivados de forma independiente.
+- **Walfisch-Bertoni** (`walfischBertoni.ts`): el parámetro `H` ("altura antena Tx sobre edificios próximos") se interpretó como altura *sobre* el nivel de los tejados, no absoluta -- una lectura de una redacción ambigua del curso, no un dato confirmado sin ambigüedad.
 
 ## Requisitos previos
 
@@ -107,8 +110,8 @@ src/
     hata.ts                      # Okumura-Hata (urbano/suburbano/rural)
     cost231Hata.ts               # COST-231 Hata
     ecc33.ts                     # ECC-33
-    ikegami.ts                   # pendiente (stub documentado)
-    walfischBertoni.ts           # pendiente (stub documentado)
+    ikegami.ts                   # Ikegami (requiere geometría de calle)
+    walfischBertoni.ts           # Walfisch-Bertoni (requiere geometría de edificios)
     index.ts                     # registro: PROPAGATION_MODELS / PROPAGATION_MODEL_LIST
   utils/
     validation.ts                # assertPositive (validación dura), rangeWarningMessage (validación blanda), parseDecimal
@@ -132,7 +135,6 @@ No hace falta tocar `CalculatorScreen.tsx` ni los componentes de UI: leen el reg
 
 ## Trabajo futuro
 
-- Implementar Ikegami y Walfisch-Bertoni (fórmulas ya confirmadas en `docs/curso-referencia.md` §5.6/§5.7; falta extender `PropagationInputs` con sus parámetros geométricos -- ancho de calle, altura de edificio, orientación, etc.).
 - Añadir tests unitarios por modelo, con valores de referencia resueltos a mano o en clase -- **no** buscados en fuentes genéricas de internet (ver `docs/curso-referencia.md` §5.2 para el ejercicio pendiente de resolver que serviría de caso de prueba para Hata/COST-231/Ikegami).
 - Selección automática de modelo según los parámetros de entrada (en vez del selector manual actual) y una vista comparativa con gráficas de pérdida vs. distancia -- es el enunciado oficial de la tarea (`docs/curso-referencia.md` §12.2), no una idea aparte.
 
