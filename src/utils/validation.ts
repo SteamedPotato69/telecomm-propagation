@@ -37,3 +37,15 @@ export function parseDecimal(text: string): number {
   }
   return Number(normalized);
 }
+
+/**
+ * Hard validation for the optional geometry fields on PropagationInputs
+ * (Ikegami / Walfisch-Bertoni): throws a clear "missing parameter"
+ * error instead of letting `undefined` flow into a log10() as NaN.
+ */
+export function requireField<T>(value: T | undefined, label: string, modelName: string): T {
+  if (value === undefined) {
+    throw new Error(`Falta el parámetro "${label}", requerido por el modelo ${modelName}.`);
+  }
+  return value;
+}
