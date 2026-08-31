@@ -2,7 +2,8 @@ import { StyleSheet, Text, TextInput, View } from 'react-native';
 
 interface NumericFieldProps {
   label: string;
-  unit: string;
+  /** Physical unit shown in parens next to the label (e.g. "MHz"). Omit for dimensionless parameters (e.g. lr). */
+  unit?: string;
   value: string;
   onChangeText: (value: string) => void;
   helperText?: string;
@@ -11,9 +12,7 @@ interface NumericFieldProps {
 export function NumericField({ label, unit, value, onChangeText, helperText }: NumericFieldProps) {
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>
-        {label} ({unit})
-      </Text>
+      <Text style={styles.label}>{unit ? `${label} (${unit})` : label}</Text>
       <TextInput
         style={styles.input}
         value={value}

@@ -29,7 +29,21 @@ export function CalculatorScreen() {
   const [environment, setEnvironment] = useState<Environment>('urban');
   const [metropolitanCenter, setMetropolitanCenter] = useState(false);
 
+  // Ikegami-only geometry (docs/curso-referencia.md §5.6). Defaults
+  // match the worked exercise in §5.2 so the fields aren't blank.
+  const [streetWidthM, setStreetWidthM] = useState('20');
+  const [diffractingBuildingHeightM, setDiffractingBuildingHeightM] = useState('12');
+  const [streetOrientationDeg, setStreetOrientationDeg] = useState('30');
+  const [facadeReflectionLr, setFacadeReflectionLr] = useState('3.2');
+
+  // Walfisch-Bertoni-only geometry (docs/curso-referencia.md §5.7).
+  const [baseStationHeightAboveRoofM, setBaseStationHeightAboveRoofM] = useState('28');
+  const [averageBuildingHeightM, setAverageBuildingHeightM] = useState('12');
+  const [buildingSeparationM, setBuildingSeparationM] = useState('50');
+
   const model = PROPAGATION_MODELS[modelId];
+  const needsIkegamiFields = modelId === 'ikegami';
+  const needsWalfischBertoniFields = modelId === 'walfisch-bertoni';
 
   const { pathLossDb, warnings, errorMessage } = useMemo(() => {
     const parsedFrequency = parseDecimal(frequencyMHz);
@@ -37,15 +51,35 @@ export function CalculatorScreen() {
     const parsedBaseStationHeight = parseDecimal(baseStationHeightM);
     const parsedMobileHeight = parseDecimal(mobileHeightM);
 
-    const hasInvalidNumber = [parsedFrequency, parsedDistance, parsedBaseStationHeight, parsedMobileHeight].some(
-      (value) => Number.isNaN(value)
-    );
+    const coreValues = [parsedFrequency, parsedDistance, parsedBaseStationHeight, parsedMobileHeight];
 
-    if (hasInvalidNumber) {
+    const parsedStreetWidth = parseDecimal(streetWidthM);
+    const parsedDiffractingBuildingHeight = parseDecimal(diffractingBuildingHeightM);
+    const parsedStreetOrientation = parseDecimal(streetOrientationDeg);
+    const parsedFacadeReflectionLr = parseDecimal(facadeReflectionLr);
+    const ikegamiValues = [
+      parsedStreetWidth,
+      parsedDiffractingBuildingHeight,
+      parsedStreetOrientation,
+      parsedFacadeReflectionLr,
+    ];
+
+    const parsedHeightAboveRoof = parseDecimal(baseStationHeightAboveRoofM);
+    const parsedAverageBuildingHeight = parseDecimal(averageBuildingHeightM);
+    const parsedBuildingSeparation = parseDecimal(buildingSeparationM);
+    const walfischBertoniValues = [parsedHeightAboveRoof, parsedAverageBuildingHeight, parsedBuildingSeparation];
+
+    const requiredValues = [
+      ...coreValues,
+      ...(needsIkegamiFields ? ikegamiValues : []),
+      ...(needsWalfischBertoniFields ? walfischBertoniValues : []),
+    ];
+
+    if (requiredValues.some((value) => Number.isNaN(value))) {
       return {
         pathLossDb: null as number | null,
         warnings: [] as PropagationWarning[],
-        errorMessage: 'Todos los campos numéricos deben tener un valor.',
+        errorMessage: 'Todos los campos numéricos visibles deben tener un valor.',
       };
     }
 
@@ -57,6 +91,15 @@ export function CalculatorScreen() {
       citySize,
       environment,
       metropolitanCenter,
+      streetWidthM: Number.isNaN(parsedStreetWidth) ? undefined : parsedStreetWidth,
+      diffractingBuildingHeightM: Number.isNaN(parsedDiffractingBuildingHeight)
+        ? undefined
+        : parsedDiffractingBuildingHeight,
+      streetOrientationDeg: Number.isNaN(parsedStreetOrientation) ? undefined : parsedStreetOrientation,
+      facadeReflectionLr: Number.isNaN(parsedFacadeReflectionLr) ? undefined : parsedFacadeReflectionLr,
+      baseStationHeightAboveRoofM: Number.isNaN(parsedHeightAboveRoof) ? undefined : parsedHeightAboveRoof,
+      averageBuildingHeightM: Number.isNaN(parsedAverageBuildingHeight) ? undefined : parsedAverageBuildingHeight,
+      buildingSeparationM: Number.isNaN(parsedBuildingSeparation) ? undefined : parsedBuildingSeparation,
     };
 
     try {
@@ -69,7 +112,25 @@ export function CalculatorScreen() {
         errorMessage: error instanceof Error ? error.message : 'Error desconocido.',
       };
     }
-  }, [model, frequencyMHz, distanceKm, baseStationHeightM, mobileHeightM, citySize, environment, metropolitanCenter]);
+  }, [
+    model,
+    frequencyMHz,
+    distanceKm,
+    baseStationHeightM,
+    mobileHeightM,
+    citySize,
+    environment,
+    metropolitanCenter,
+    needsIkegamiFields,
+    needsWalfischBertoniFields,
+    streetWidthM,
+    diffractingBuildingHeightM,
+    streetOrientationDeg,
+    facadeReflectionLr,
+    baseStationHeightAboveRoofM,
+    averageBuildingHeightM,
+    buildingSeparationM,
+  ]);
 
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -89,6 +150,59 @@ export function CalculatorScreen() {
           onChangeText={setBaseStationHeightM}
         />
         <NumericField label="Altura del móvil" unit="m" value={mobileHeightM} onChangeText={setMobileHeightM} />
+
+        {needsIkegamiFields ? (
+          <View style={styles.geometrySection}>
+            <Text style={styles.sectionLabel}>Geometría de calle (Ikegami)</Text>
+            <NumericField label="Ancho de calle (W)" unit="m" value={streetWidthM} onChangeText={setStreetWidthM} />
+            <NumericField
+              label="Altura del edificio de difracción (H)"
+              unit="m"
+              value={diffractingBuildingHeightM}
+              onChangeText={setDiffractingBuildingHeightM}
+              helperText="Debe ser mayor que la altura del móvil de arriba."
+            />
+            <NumericField
+              label="Orientación de calle (Φ)"
+              unit="°"
+              value={streetOrientationDeg}
+              onChangeText={setStreetOrientationDeg}
+              helperText="Ángulo entre el rayo incidente y la calle. No puede ser 0° ni 180°."
+            />
+            <NumericField
+              label="Reflexión de fachada (lr)"
+              value={facadeReflectionLr}
+              onChangeText={setFacadeReflectionLr}
+              helperText="Típico: 2 en VHF, 3.2 en UHF."
+            />
+          </View>
+        ) : null}
+
+        {needsWalfischBertoniFields ? (
+          <View style={styles.geometrySection}>
+            <Text style={styles.sectionLabel}>Geometría de edificios (Walfisch-Bertoni)</Text>
+            <NumericField
+              label="Altura de estación base sobre tejados (H)"
+              unit="m"
+              value={baseStationHeightAboveRoofM}
+              onChangeText={setBaseStationHeightAboveRoofM}
+              helperText="Altura de la antena SOBRE el nivel de los tejados cercanos, no su altura absoluta."
+            />
+            <NumericField
+              label="Altura media de edificios (hR)"
+              unit="m"
+              value={averageBuildingHeightM}
+              onChangeText={setAverageBuildingHeightM}
+              helperText="Debe ser mayor que la altura del móvil de arriba."
+            />
+            <NumericField
+              label="Separación entre edificios (b)"
+              unit="m"
+              value={buildingSeparationM}
+              onChangeText={setBuildingSeparationM}
+            />
+          </View>
+        ) : null}
 
         <View style={styles.row}>
           <Text style={styles.toggleLabel}>Ciudad grande (Hata / ECC-33)</Text>
@@ -133,6 +247,14 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
   toggleLabel: { fontSize: 14, color: '#1f2933', flex: 1, marginRight: 12 },
   sectionLabel: { fontSize: 13, fontWeight: '600', color: '#1f2933', marginBottom: 8 },
+  geometrySection: {
+    borderWidth: 1,
+    borderColor: '#e4e9ee',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+    backgroundColor: '#f7f9fb',
+  },
   envChip: {
     borderWidth: 1,
     borderColor: '#c7ccd1',
