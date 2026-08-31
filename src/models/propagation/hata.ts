@@ -29,7 +29,7 @@ function mobileHeightCorrectionDb(frequencyMHz: number, mobileHeightM: number, c
 /**
  * Okumura-Hata model.
  *
- * L_urban(dB) = 69.55 + 26.16*log10(f) - 13.82*log10(hb) - a(hm)
+ * L_urban(dB) = 69.55 + 26.26*log10(f) - 13.82*log10(hb) - a(hm)
  *               + (44.9 - 6.55*log10(hb))*log10(d)
  *
  * Suburban:    L = L_urban - 2*[log10(f/28)]^2 - 5.4
@@ -37,6 +37,13 @@ function mobileHeightCorrectionDb(frequencyMHz: number, mobileHeightM: number, c
  *
  * Empirical range: f 150-1500 MHz, hb (base station) 30-200 m,
  * hm (mobile) 1-10 m, d 1-20 km.
+ *
+ * The 26.26 frequency coefficient is per docs/curso-referencia.md §5.3
+ * (Universidad del Cauca course slides). Generic industry sources
+ * (bilkent.edu.tr, IAENG WCE2008, GaussianWaves -- what this file
+ * previously cited) use 26.16, a different published rounding of the
+ * same Okumura curve-fit; the course material takes precedence here
+ * since this is a course deliverable.
  */
 export function calculateHataLoss(inputs: PropagationInputs): PropagationResult {
   const { frequencyMHz, distanceKm, baseStationHeightM, mobileHeightM, citySize, environment } = inputs;
@@ -69,7 +76,7 @@ export function calculateHataLoss(inputs: PropagationInputs): PropagationResult 
   const aHm = mobileHeightCorrectionDb(frequencyMHz, mobileHeightM, citySize);
 
   const urbanLossDb =
-    69.55 + 26.16 * logF - 13.82 * logHb - aHm + (44.9 - 6.55 * logHb) * Math.log10(distanceKm);
+    69.55 + 26.26 * logF - 13.82 * logHb - aHm + (44.9 - 6.55 * logHb) * Math.log10(distanceKm);
 
   let pathLossDb = urbanLossDb;
   if (environment === 'suburban') {
