@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { PROPAGATION_MODELS } from '../models/propagation';
+import { LineChart } from '../components/LineChart';
+import type { ChartSeries } from '../components/LineChart';
+import { PROPAGATION_MODELS, generateLogSpacedDistances, sampleModelOverDistance } from '../models/propagation';
 import type { EnvironmentCategory, PropagationInputs } from '../models/propagation';
 import { formatPathLoss } from '../utils/format';
 
@@ -18,6 +20,21 @@ interface ComparisonEntry {
   distanceToIdealDb: number | null;
   errorMessage: string | null;
 }
+
+/** Distinct color per model so the same series reads consistently across both charts. */
+const MODEL_COLORS: Record<string, string> = {
+  hata: '#2563eb',
+  'cost231-hata': '#059669',
+  ecc33: '#d97706',
+  ikegami: '#dc2626',
+  'walfisch-bertoni': '#7c3aed',
+  'cost231-walfish-ikegami': '#db2777',
+};
+const IDEAL_COLOR = '#9aa5b1';
+
+const CHART_DISTANCE_MIN_KM = 0.3;
+const CHART_DISTANCE_MAX_KM = 20;
+const CHART_SAMPLE_COUNT = 40;
 
 /**
  * "Distancia a la predicción ideal": |pérdida del modelo - pérdida en
@@ -66,6 +83,37 @@ export function ComparisonScreen({ environment, inputs, onBack }: ComparisonScre
           .modelId
       : null;
 
+  const chartSeries = useMemo<ChartSeries[]>(() => {
+    const distances = generateLogSpacedDistances(CHART_DISTANCE_MIN_KM, CHART_DISTANCE_MAX_KM, CHART_SAMPLE_COUNT);
+
+    const idealSeries: ChartSeries = {
+      id: 'ideal',
+      label: 'Ideal (espacio libre)',
+      color: IDEAL_COLOR,
+      dashed: true,
+      points: sampleModelOverDistance(PROPAGATION_MODELS['free-space'], inputs, distances).map((p) => ({
+        x: p.distanceKm,
+        y: p.pathLossDb,
+      })),
+    };
+
+    const modelSeries = environment.applicableModelIds
+      .map((id) => PROPAGATION_MODELS[id])
+      .filter((candidateModel) => candidateModel.implemented && candidateModel.id !== 'free-space')
+      .map((candidateModel): ChartSeries => ({
+        id: candidateModel.id,
+        label: candidateModel.label,
+        color: MODEL_COLORS[candidateModel.id] ?? '#374151',
+        strokeWidth: candidateModel.id === winnerId ? 3 : 1.5,
+        points: sampleModelOverDistance(candidateModel, inputs, distances).map((p) => ({
+          x: p.distanceKm,
+          y: p.pathLossDb,
+        })),
+      }));
+
+    return [idealSeries, ...modelSeries];
+  }, [environment, inputs, winnerId]);
+
   return (
     <ScrollView contentContainerStyle={styles.content}>
       <Pressable onPress={onBack} style={styles.backButton}>
@@ -103,6 +151,29 @@ export function ComparisonScreen({ environment, inputs, onBack }: ComparisonScre
           </View>
         );
       })}
+
+      <View style={styles.chartsSection}>
+        <Text style={styles.chartsHeading}>Pérdida vs. distancia</Text>
+        <Text style={styles.explainer}>
+          Cada modelo evaluado en un rango de distancias fijo (0.3-20 km), con los demás parámetros iguales a los de
+          arriba. La línea gris punteada es espacio libre (la "predicción ideal"); entre más cerca esté una curva de
+          esa línea, mejor ajuste.
+        </Text>
+        <LineChart
+          title="Escala logarítmica de distancia"
+          series={chartSeries}
+          xScale="log"
+          xLabel="Distancia (km, escala log)"
+          yLabel="Pérdida (dB)"
+        />
+        <LineChart
+          title="Escala lineal de distancia"
+          series={chartSeries}
+          xScale="linear"
+          xLabel="Distancia (km)"
+          yLabel="Pérdida (dB)"
+        />
+      </View>
     </ScrollView>
   );
 }
@@ -141,4 +212,6 @@ const styles = StyleSheet.create({
   cardDistance: { fontSize: 13, color: '#52606d', marginTop: 4 },
   cardError: { fontSize: 13, color: '#9aa5b1', marginTop: 6, fontStyle: 'italic' },
   cardCitation: { fontSize: 10, color: '#9aa5b1', marginTop: 10 },
+  chartsSection: { marginTop: 8 },
+  chartsHeading: { fontSize: 16, fontWeight: '700', color: '#102a43', marginBottom: 4 },
 });
