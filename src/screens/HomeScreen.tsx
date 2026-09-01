@@ -3,11 +3,12 @@ import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 
 interface HomeScreenProps {
   onSelectEmpiricalMethods: () => void;
+  onSelectFadingSimulator: () => void;
 }
 
 const NEON_LILAC = '#c084fc';
 
-export function HomeScreen({ onSelectEmpiricalMethods }: HomeScreenProps) {
+export function HomeScreen({ onSelectEmpiricalMethods, onSelectFadingSimulator }: HomeScreenProps) {
   const glowPulse = useRef(new Animated.Value(0.4)).current;
 
   useEffect(() => {
@@ -42,10 +43,17 @@ export function HomeScreen({ onSelectEmpiricalMethods }: HomeScreenProps) {
         </View>
       </Pressable>
 
-      <View style={[styles.card, styles.cardDisabled]} accessibilityState={{ disabled: true }}>
-        <Text style={styles.cardTitleDisabled}>Simulador de desvanecimiento</Text>
-        <Text style={styles.cardSubtitleDisabled}>Próximamente</Text>
-      </View>
+      <Pressable onPress={onSelectFadingSimulator} style={styles.cardShell}>
+        <View style={[styles.glowLayerStatic, styles.noPointerEvents]} />
+        <Animated.View style={[styles.glowLayerPulse, styles.noPointerEvents, { opacity: glowPulse }]} />
+        <View style={[styles.card, styles.cardEnabled]}>
+          <Text style={styles.cardTitleEnabled}>Simulador de desvanecimiento</Text>
+          <Text style={styles.cardSubtitle}>
+            Plano vs. selectivo en frecuencia, lento vs. rápido: ingresa dispersión de retardo, velocidad y
+            parámetros de la señal y ubica el canal en las 5 zonas del curso.
+          </Text>
+        </View>
+      </Pressable>
     </View>
   );
 }
@@ -86,11 +94,4 @@ const styles = StyleSheet.create({
   noPointerEvents: { pointerEvents: 'none' },
   cardTitleEnabled: { fontSize: 18, fontWeight: '700', color: '#6b21a8' },
   cardSubtitle: { fontSize: 13, color: '#7b8794', marginTop: 8, lineHeight: 18 },
-  cardDisabled: {
-    borderColor: '#c7ccd1',
-    backgroundColor: '#f4f5f6',
-    opacity: 0.6,
-  },
-  cardTitleDisabled: { fontSize: 18, fontWeight: '700', color: '#9aa5b1' },
-  cardSubtitleDisabled: { fontSize: 13, color: '#9aa5b1', marginTop: 8 },
 });

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { CalculatorScreen } from './CalculatorScreen';
 import { ComparisonScreen } from './ComparisonScreen';
 import { EnvironmentScreen } from './EnvironmentScreen';
+import { FadingScreen } from './FadingScreen';
 import { HomeScreen } from './HomeScreen';
 import type { EnvironmentCategory, PropagationInputs } from '../models/propagation';
 
@@ -9,7 +10,8 @@ type Route =
   | { name: 'home' }
   | { name: 'environment' }
   | { name: 'calculator'; environment: EnvironmentCategory }
-  | { name: 'comparison'; environment: EnvironmentCategory; inputs: PropagationInputs };
+  | { name: 'comparison'; environment: EnvironmentCategory; inputs: PropagationInputs }
+  | { name: 'fading' };
 
 /**
  * Local-state navigation instead of a router library: the app has a
@@ -23,7 +25,12 @@ export function RootNavigator() {
 
   switch (route.name) {
     case 'home':
-      return <HomeScreen onSelectEmpiricalMethods={() => setRoute({ name: 'environment' })} />;
+      return (
+        <HomeScreen
+          onSelectEmpiricalMethods={() => setRoute({ name: 'environment' })}
+          onSelectFadingSimulator={() => setRoute({ name: 'fading' })}
+        />
+      );
 
     case 'environment':
       return (
@@ -50,6 +57,9 @@ export function RootNavigator() {
           onBack={() => setRoute({ name: 'calculator', environment: route.environment })}
         />
       );
+
+    case 'fading':
+      return <FadingScreen onBack={() => setRoute({ name: 'home' })} />;
 
     default:
       return null;
