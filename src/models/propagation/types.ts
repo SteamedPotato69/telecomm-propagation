@@ -4,7 +4,8 @@ export type PropagationModelId =
   | 'cost231-hata'
   | 'ecc33'
   | 'ikegami'
-  | 'walfisch-bertoni';
+  | 'walfisch-bertoni'
+  | 'cost231-walfish-ikegami';
 
 /** Okumura-Hata / ECC-33 classify the coverage area by city size; this drives which correction branch is used. */
 export type CitySize = 'small-medium' | 'large';
@@ -81,6 +82,16 @@ export interface PropagationResult {
   warnings: PropagationWarning[];
 }
 
+/** The optional geometry fields a model can require -- see PropagationInputs. */
+export type GeometryFieldKey =
+  | 'streetWidthM'
+  | 'diffractingBuildingHeightM'
+  | 'streetOrientationDeg'
+  | 'facadeReflectionLr'
+  | 'baseStationHeightAboveRoofM'
+  | 'averageBuildingHeightM'
+  | 'buildingSeparationM';
+
 export interface PropagationModelDefinition {
   id: PropagationModelId;
   label: string;
@@ -88,5 +99,13 @@ export interface PropagationModelDefinition {
   citation: string;
   /** false for models whose exact formula is still pending verification (see ikegami.ts / walfischBertoni.ts). */
   implemented: boolean;
+  /**
+   * Which optional geometry fields this model reads. Drives which
+   * extra NumericFields the calculator screen renders for the
+   * currently selected model -- adding a model that needs a subset of
+   * these fields means listing them here, not adding a new
+   * model-specific JSX block.
+   */
+  extraFields?: GeometryFieldKey[];
   calculate: (inputs: PropagationInputs) => PropagationResult;
 }

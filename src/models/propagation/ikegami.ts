@@ -81,5 +81,6 @@ export const ikegamiModel: PropagationModelDefinition = {
   citation:
     'Ikegami et al. (1984). Fórmula: docs/curso-referencia.md §5.6 (la fuente marca los signos de esta sección como [OCR-verificar]).',
   implemented: true,
+  extraFields: ['streetWidthM', 'diffractingBuildingHeightM', 'streetOrientationDeg', 'facadeReflectionLr'],
   calculate: calculateIkegamiLoss,
 };

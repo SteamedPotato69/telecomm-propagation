@@ -106,5 +106,6 @@ export const walfischBertoniModel: PropagationModelDefinition = {
   citation:
     'Walfisch & Bertoni (1988). Fórmula: docs/curso-referencia.md §5.7. Válido para f: 300-3000 MHz, d: 0.2-5 km.',
   implemented: true,
+  extraFields: ['baseStationHeightAboveRoofM', 'averageBuildingHeightM', 'buildingSeparationM'],
   calculate: calculateWalfischBertoniLoss,
 };
