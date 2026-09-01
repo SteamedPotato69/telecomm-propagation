@@ -75,6 +75,23 @@ npm run ios       # simulador iOS (solo macOS) o dispositivo con Expo Go
 
 Con `npm start` o `npm run android`/`ios`, Expo muestra un código QR: escanéalo con la app Expo Go para abrir el proyecto en un dispositivo físico.
 
+## Empaquetar como app de escritorio (Windows, opción simple)
+
+Un lanzador liviano para Windows: genera el build web estático y lo sirve localmente, abriendo el navegador predeterminado automáticamente. No es una app nativa empaquetada (eso -- Electron/Tauri o un `.exe` con Node embebido -- queda como posible siguiente paso); esto asume que la máquina que lo ejecuta ya tiene Node.js instalado.
+
+```bash
+npm run build:web       # genera dist/ (build estático de Expo para web)
+```
+
+Luego, para arrancarlo:
+
+- Haciendo doble clic en [`desktop/iniciar-app.bat`](desktop/iniciar-app.bat) -- genera el build si falta, levanta el servidor y abre el navegador solo.
+- O manualmente: `npm run start:desktop` (equivalente a `node desktop/serve.js`).
+
+Detalles de [`desktop/serve.js`](desktop/serve.js): servidor HTTP estático sin dependencias externas (solo módulos nativos de Node), puerto `4173` por defecto (configurable con la variable de entorno `PORT`), con protección contra path traversal y un *fallback* a `index.html` para rutas sin extensión. Abre el navegador únicamente después de que el servidor ya está escuchando, para evitar una carrera entre "abrir el navegador" y "que el servidor responda".
+
+`dist/` es un artefacto de build (ya está en `.gitignore`) -- se regenera con `npm run build:web`, no se versiona.
+
 ## EAS (Expo Application Services)
 
 El proyecto ya está vinculado a un proyecto EAS existente (ver `app.json`):
