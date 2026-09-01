@@ -9,7 +9,7 @@ Calculadora de modelos de pérdida de propagación en canales móviles (espacio 
 1. **Inicio**: dos cards. "Métodos empíricos de propagación" (habilitada) y "Simulador de desvanecimiento" (deshabilitada, funcionalidad futura, no construida todavía).
 2. **Entorno**: elige una categoría de la taxonomía de entornos (`src/models/propagation/environments.ts`) -- determina qué modelos son aplicables.
 3. **Calculadora**: el selector de modelos solo muestra los aplicables al entorno elegido; los campos de geometría (ancho de calle, altura de edificios, etc.) solo aparecen cuando el modelo seleccionado los necesita.
-4. **Comparación**: corre todos los modelos aplicables del entorno con los mismos parámetros y los compara contra la pérdida en espacio libre ("predicción ideal"); el de menor distancia se marca como mejor ajuste.
+4. **Comparación**: corre todos los modelos aplicables del entorno con los mismos parámetros y los compara contra la pérdida en espacio libre ("predicción ideal"); el de menor distancia se marca como mejor ajuste. Debajo de las tarjetas, dos gráficas (`src/components/LineChart.tsx`, sobre `react-native-svg`) de pérdida vs. distancia -- escala logarítmica y lineal, todas las curvas superpuestas, muestreadas en 0.3-20 km con los demás parámetros fijos.
 
 ## Estado de los modelos
 
@@ -126,6 +126,7 @@ src/
     ikegami.ts                   # Ikegami (requiere geometría de calle)
     walfischBertoni.ts           # Walfisch-Bertoni (requiere geometría de edificios)
     cost231WalfishIkegami.ts     # COST-231 Walfish-Ikegami (combina Ikegami + Walfisch-Bertoni)
+    sampleSeries.ts               # evalúa un modelo sobre un rango de distancias, para las gráficas
     index.ts                     # registro: PROPAGATION_MODELS / PROPAGATION_MODEL_LIST
   utils/
     validation.ts                # assertPositive, rangeWarningMessage, parseDecimal, requireField
@@ -134,6 +135,7 @@ src/
     NumericField.tsx             # campo numérico controlado (unit opcional para parámetros sin unidad)
     ModelSelector.tsx            # selector de modelo (chips)
     ResultPanel.tsx              # resultado + advertencias + errores
+    LineChart.tsx                 # gráfica de líneas sobre react-native-svg (eje lineal o log)
   screens/
     RootNavigator.tsx            # estado de navegación: home -> environment -> calculator -> comparison
     HomeScreen.tsx                # las dos cards de entrada
@@ -157,7 +159,7 @@ No hace falta tocar los componentes de UI directamente: leen el registro y la ta
 
 - Añadir tests unitarios por modelo, con valores de referencia resueltos a mano o en clase -- **no** buscados en fuentes genéricas de internet (ver `docs/curso-referencia.md` §5.2 para el ejercicio pendiente de resolver que serviría de caso de prueba).
 - Implementar 3GPP TR 38.901 (6 escenarios, LOS/NLOS, unidades en GHz/metros) -- deliberadamente fuera de esta ronda por tamaño.
-- La comparación hoy es solo numérica (tarjetas con el valor y la distancia al ideal); el enunciado oficial de la tarea (`docs/curso-referencia.md` §12.2) pide explícitamente "gráficas" -- falta una vista con `react-native-svg`/`victory-native` (ninguna está en `package.json` todavía) que grafique pérdida vs. distancia superpuesta por modelo.
+- Las gráficas de la comparación samplean un rango fijo de distancias (0.3-20 km) independiente del rango de validez documentado de cada modelo -- una curva puede extenderse visualmente más allá de donde el modelo está validado, igual que ya toleran las advertencias de rango en la calculadora. Vale la pena marcar visualmente ese tramo si se vuelve confuso en la práctica.
 - Simulador de desvanecimiento (card deshabilitada en Inicio): sin alcance definido todavía.
 
 ## Licencia
