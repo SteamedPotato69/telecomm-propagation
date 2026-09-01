@@ -29,4 +29,5 @@ export const PROPAGATION_MODEL_LIST: PropagationModelDefinition[] = [
 ];
 
 export * from './environments';
+export * from './sampleSeries';
 export * from './types';
