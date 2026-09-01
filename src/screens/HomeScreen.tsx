@@ -11,10 +11,13 @@ export function HomeScreen({ onSelectEmpiricalMethods }: HomeScreenProps) {
   const glowPulse = useRef(new Animated.Value(0.4)).current;
 
   useEffect(() => {
+    // useNativeDriver: false -- this app's only current target is web, where
+    // RCTAnimation doesn't exist; `true` here just produces a console warning
+    // and an identical JS-driven fallback anyway.
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(glowPulse, { toValue: 1, duration: 1400, useNativeDriver: true }),
-        Animated.timing(glowPulse, { toValue: 0.4, duration: 1400, useNativeDriver: true }),
+        Animated.timing(glowPulse, { toValue: 1, duration: 1400, useNativeDriver: false }),
+        Animated.timing(glowPulse, { toValue: 0.4, duration: 1400, useNativeDriver: false }),
       ])
     );
     loop.start();
@@ -29,8 +32,8 @@ export function HomeScreen({ onSelectEmpiricalMethods }: HomeScreenProps) {
       <Pressable onPress={onSelectEmpiricalMethods} style={styles.cardShell}>
         {/* Static glow: always visible, guarantees the neon look renders even if the
             animation below doesn't (e.g. reduced-motion). Pulsing layer sits on top. */}
-        <View style={styles.glowLayerStatic} pointerEvents="none" />
-        <Animated.View style={[styles.glowLayerPulse, { opacity: glowPulse }]} pointerEvents="none" />
+        <View style={[styles.glowLayerStatic, styles.noPointerEvents]} />
+        <Animated.View style={[styles.glowLayerPulse, styles.noPointerEvents, { opacity: glowPulse }]} />
         <View style={[styles.card, styles.cardEnabled]}>
           <Text style={styles.cardTitleEnabled}>Métodos empíricos de propagación</Text>
           <Text style={styles.cardSubtitle}>
@@ -77,6 +80,10 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     boxShadow: `0 0 32px 6px ${NEON_LILAC}b3`,
   },
+  // `pointerEvents` as a direct prop is deprecated in favor of the style
+  // property (RN/RNW warn on the prop form) -- these glow layers must stay
+  // click-through so the Pressable underneath still receives taps.
+  noPointerEvents: { pointerEvents: 'none' },
   cardTitleEnabled: { fontSize: 18, fontWeight: '700', color: '#6b21a8' },
   cardSubtitle: { fontSize: 13, color: '#7b8794', marginTop: 8, lineHeight: 18 },
   cardDisabled: {
