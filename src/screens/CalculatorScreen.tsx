@@ -3,14 +3,16 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Swit
 import { ModelSelector } from '../components/ModelSelector';
 import { NumericField } from '../components/NumericField';
 import { ResultPanel } from '../components/ResultPanel';
-import { PROPAGATION_MODEL_LIST, PROPAGATION_MODELS } from '../models/propagation';
+import { PROPAGATION_MODELS } from '../models/propagation';
 import type {
   CitySize,
   Environment,
+  EnvironmentCategory,
+  GeometryFieldKey,
   PropagationInputs,
   PropagationModelId,
-  PropagationWarning,
 } from '../models/propagation';
+import { GEOMETRY_FIELD_CONFIG } from './geometryFieldConfig';
 import { parseDecimal } from '../utils/validation';
 
 const ENVIRONMENT_LABELS: Record<Environment, string> = {
@@ -19,66 +21,99 @@ const ENVIRONMENT_LABELS: Record<Environment, string> = {
   'open-rural': 'Abierto/rural',
 };
 
-export function CalculatorScreen() {
-  const [modelId, setModelId] = useState<PropagationModelId>('free-space');
+const ALL_GEOMETRY_KEYS = Object.keys(GEOMETRY_FIELD_CONFIG) as GeometryFieldKey[];
+
+interface CalculatorScreenProps {
+  environment: EnvironmentCategory;
+  onBack: () => void;
+  onCompare: (inputs: PropagationInputs) => void;
+}
+
+export function CalculatorScreen({ environment, onBack, onCompare }: CalculatorScreenProps) {
+  const applicableModels = useMemo(
+    () =>
+      environment.applicableModelIds.map((id) => PROPAGATION_MODELS[id]).filter((candidate) => candidate.implemented),
+    [environment]
+  );
+
+  const [modelId, setModelId] = useState<PropagationModelId>(applicableModels[0]?.id ?? 'free-space');
   const [frequencyMHz, setFrequencyMHz] = useState('900');
   const [distanceKm, setDistanceKm] = useState('5');
   const [baseStationHeightM, setBaseStationHeightM] = useState('30');
   const [mobileHeightM, setMobileHeightM] = useState('1.5');
-  const [citySize, setCitySize] = useState<CitySize>('small-medium');
-  const [environment, setEnvironment] = useState<Environment>('urban');
-  const [metropolitanCenter, setMetropolitanCenter] = useState(false);
+  const [citySize, setCitySize] = useState<CitySize>(environment.defaultOverrides?.citySize ?? 'small-medium');
+  const [envOption, setEnvOption] = useState<Environment>(environment.defaultOverrides?.environment ?? 'urban');
+  const [metropolitanCenter, setMetropolitanCenter] = useState(environment.defaultOverrides?.metropolitanCenter ?? false);
+
+  const [geometryValues, setGeometryValues] = useState<Record<GeometryFieldKey, string>>(() => {
+    const initial = {} as Record<GeometryFieldKey, string>;
+    for (const key of ALL_GEOMETRY_KEYS) {
+      initial[key] = GEOMETRY_FIELD_CONFIG[key].defaultValue;
+    }
+    return initial;
+  });
+  const setGeometryField = (key: GeometryFieldKey, value: string) =>
+    setGeometryValues((previous) => ({ ...previous, [key]: value }));
 
   const model = PROPAGATION_MODELS[modelId];
+  const activeExtraFields = model.extraFields ?? [];
 
-  const { pathLossDb, warnings, errorMessage } = useMemo(() => {
+  const inputs = useMemo<PropagationInputs | null>(() => {
     const parsedFrequency = parseDecimal(frequencyMHz);
     const parsedDistance = parseDecimal(distanceKm);
     const parsedBaseStationHeight = parseDecimal(baseStationHeightM);
     const parsedMobileHeight = parseDecimal(mobileHeightM);
 
-    const hasInvalidNumber = [parsedFrequency, parsedDistance, parsedBaseStationHeight, parsedMobileHeight].some(
-      (value) => Number.isNaN(value)
-    );
-
-    if (hasInvalidNumber) {
-      return {
-        pathLossDb: null as number | null,
-        warnings: [] as PropagationWarning[],
-        errorMessage: 'Todos los campos numéricos deben tener un valor.',
-      };
+    if ([parsedFrequency, parsedDistance, parsedBaseStationHeight, parsedMobileHeight].some(Number.isNaN)) {
+      return null;
     }
 
-    const inputs: PropagationInputs = {
+    const geometry: Partial<Record<GeometryFieldKey, number>> = {};
+    for (const key of ALL_GEOMETRY_KEYS) {
+      const parsed = parseDecimal(geometryValues[key]);
+      geometry[key] = Number.isNaN(parsed) ? undefined : parsed;
+    }
+
+    return {
       frequencyMHz: parsedFrequency,
       distanceKm: parsedDistance,
       baseStationHeightM: parsedBaseStationHeight,
       mobileHeightM: parsedMobileHeight,
       citySize,
-      environment,
+      environment: envOption,
       metropolitanCenter,
+      ...geometry,
     };
+  }, [frequencyMHz, distanceKm, baseStationHeightM, mobileHeightM, citySize, envOption, metropolitanCenter, geometryValues]);
 
+  const { pathLossDb, warnings, errorMessage } = useMemo(() => {
+    if (!inputs) {
+      return { pathLossDb: null as number | null, warnings: [], errorMessage: 'Todos los campos numéricos deben tener un valor.' };
+    }
     try {
       const result = model.calculate(inputs);
       return { pathLossDb: result.pathLossDb, warnings: result.warnings, errorMessage: null as string | null };
     } catch (error) {
       return {
         pathLossDb: null as number | null,
-        warnings: [] as PropagationWarning[],
+        warnings: [],
         errorMessage: error instanceof Error ? error.message : 'Error desconocido.',
       };
     }
-  }, [model, frequencyMHz, distanceKm, baseStationHeightM, mobileHeightM, citySize, environment, metropolitanCenter]);
+  }, [inputs, model]);
 
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content}>
+        <Pressable onPress={onBack} style={styles.backButton}>
+          <Text style={styles.backButtonText}>‹ {environment.label}</Text>
+        </Pressable>
+
         <Text style={styles.title}>Calculadora de pérdida de propagación</Text>
         <Text style={styles.subtitle}>{model.label}</Text>
         <Text style={styles.citation}>{model.citation}</Text>
 
-        <ModelSelector models={PROPAGATION_MODEL_LIST} selectedId={modelId} onSelect={setModelId} />
+        <ModelSelector models={applicableModels} selectedId={modelId} onSelect={setModelId} />
 
         <NumericField label="Frecuencia" unit="MHz" value={frequencyMHz} onChangeText={setFrequencyMHz} />
         <NumericField label="Distancia" unit="km" value={distanceKm} onChangeText={setDistanceKm} />
@@ -90,6 +125,25 @@ export function CalculatorScreen() {
         />
         <NumericField label="Altura del móvil" unit="m" value={mobileHeightM} onChangeText={setMobileHeightM} />
 
+        {activeExtraFields.length > 0 ? (
+          <View style={styles.geometrySection}>
+            <Text style={styles.sectionLabel}>Geometría requerida por {model.shortLabel}</Text>
+            {activeExtraFields.map((key) => {
+              const config = GEOMETRY_FIELD_CONFIG[key];
+              return (
+                <NumericField
+                  key={key}
+                  label={config.label}
+                  unit={config.unit}
+                  value={geometryValues[key]}
+                  onChangeText={(value) => setGeometryField(key, value)}
+                  helperText={config.helperText}
+                />
+              );
+            })}
+          </View>
+        ) : null}
+
         <View style={styles.row}>
           <Text style={styles.toggleLabel}>Ciudad grande (Hata / ECC-33)</Text>
           <Switch
@@ -99,7 +153,7 @@ export function CalculatorScreen() {
         </View>
 
         <View style={styles.row}>
-          <Text style={styles.toggleLabel}>Centro metropolitano — Cm (solo COST-231)</Text>
+          <Text style={styles.toggleLabel}>Centro metropolitano — Cm (COST-231)</Text>
           <Switch value={metropolitanCenter} onValueChange={setMetropolitanCenter} />
         </View>
 
@@ -108,10 +162,10 @@ export function CalculatorScreen() {
           {(Object.keys(ENVIRONMENT_LABELS) as Environment[]).map((option) => (
             <Pressable
               key={option}
-              onPress={() => setEnvironment(option)}
-              style={[styles.envChip, environment === option && styles.envChipSelected]}
+              onPress={() => setEnvOption(option)}
+              style={[styles.envChip, envOption === option && styles.envChipSelected]}
             >
-              <Text style={[styles.envChipText, environment === option && styles.envChipTextSelected]}>
+              <Text style={[styles.envChipText, envOption === option && styles.envChipTextSelected]}>
                 {ENVIRONMENT_LABELS[option]}
               </Text>
             </Pressable>
@@ -119,6 +173,16 @@ export function CalculatorScreen() {
         </View>
 
         <ResultPanel pathLossDb={pathLossDb} warnings={warnings} errorMessage={errorMessage} />
+
+        {applicableModels.length > 1 ? (
+          <Pressable
+            disabled={!inputs}
+            onPress={() => inputs && onCompare(inputs)}
+            style={[styles.compareButton, !inputs && styles.compareButtonDisabled]}
+          >
+            <Text style={styles.compareButtonText}>Comparar todos los modelos de este entorno</Text>
+          </Pressable>
+        ) : null}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -127,12 +191,22 @@ export function CalculatorScreen() {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   content: { padding: 20, paddingTop: 60, paddingBottom: 40 },
+  backButton: { marginBottom: 12 },
+  backButtonText: { fontSize: 14, color: '#1f6feb', fontWeight: '600' },
   title: { fontSize: 20, fontWeight: '700', color: '#102a43' },
   subtitle: { fontSize: 16, fontWeight: '600', color: '#1f6feb', marginTop: 4 },
   citation: { fontSize: 11, color: '#7b8794', marginBottom: 16 },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
   toggleLabel: { fontSize: 14, color: '#1f2933', flex: 1, marginRight: 12 },
   sectionLabel: { fontSize: 13, fontWeight: '600', color: '#1f2933', marginBottom: 8 },
+  geometrySection: {
+    borderWidth: 1,
+    borderColor: '#e4e9ee',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+    backgroundColor: '#f7f9fb',
+  },
   envChip: {
     borderWidth: 1,
     borderColor: '#c7ccd1',
@@ -144,4 +218,13 @@ const styles = StyleSheet.create({
   envChipSelected: { backgroundColor: '#1f6feb', borderColor: '#1f6feb' },
   envChipText: { fontSize: 13, color: '#1f2933' },
   envChipTextSelected: { color: '#fff' },
+  compareButton: {
+    marginTop: 16,
+    backgroundColor: '#6b21a8',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  compareButtonDisabled: { opacity: 0.4 },
+  compareButtonText: { color: '#ffffff', fontWeight: '700', fontSize: 14 },
 });

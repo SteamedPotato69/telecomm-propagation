@@ -1,4 +1,5 @@
 import { cost231HataModel } from './cost231Hata';
+import { cost231WalfishIkegamiModel } from './cost231WalfishIkegami';
 import { ecc33Model } from './ecc33';
 import { freeSpaceModel } from './freeSpace';
 import { hataModel } from './hata';
@@ -13,6 +14,7 @@ export const PROPAGATION_MODELS: Record<PropagationModelId, PropagationModelDefi
   ecc33: ecc33Model,
   ikegami: ikegamiModel,
   'walfisch-bertoni': walfischBertoniModel,
+  'cost231-walfish-ikegami': cost231WalfishIkegamiModel,
 };
 
 /** Stable display order for the model picker: simplest model first, then increasing empirical complexity. */
@@ -23,6 +25,9 @@ export const PROPAGATION_MODEL_LIST: PropagationModelDefinition[] = [
   ecc33Model,
   ikegamiModel,
   walfischBertoniModel,
+  cost231WalfishIkegamiModel,
 ];
 
+export * from './environments';
+export * from './sampleSeries';
 export * from './types';
