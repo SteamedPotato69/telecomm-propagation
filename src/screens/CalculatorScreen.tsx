@@ -13,6 +13,7 @@ import type {
   PropagationModelId,
 } from '../models/propagation';
 import { GEOMETRY_FIELD_CONFIG } from './geometryFieldConfig';
+import { useTheme } from '../theme';
 import { parseDecimal } from '../utils/validation';
 
 const ENVIRONMENT_LABELS: Record<Environment, string> = {
@@ -30,6 +31,7 @@ interface CalculatorScreenProps {
 }
 
 export function CalculatorScreen({ environment, onBack, onCompare }: CalculatorScreenProps) {
+  const { colors } = useTheme();
   const applicableModels = useMemo(
     () =>
       environment.applicableModelIds.map((id) => PROPAGATION_MODELS[id]).filter((candidate) => candidate.implemented),
@@ -106,12 +108,12 @@ export function CalculatorScreen({ environment, onBack, onCompare }: CalculatorS
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content}>
         <Pressable onPress={onBack} style={styles.backButton}>
-          <Text style={styles.backButtonText}>‹ {environment.label}</Text>
+          <Text style={[styles.backButtonText, { color: colors.accentText }]}>‹ {environment.label}</Text>
         </Pressable>
 
-        <Text style={styles.title}>Calculadora de pérdida de propagación</Text>
-        <Text style={styles.subtitle}>{model.label}</Text>
-        <Text style={styles.citation}>{model.citation}</Text>
+        <Text style={[styles.title, { color: colors.textPrimary }]}>Calculadora de pérdida de propagación</Text>
+        <Text style={[styles.subtitle, { color: colors.accentText }]}>{model.label}</Text>
+        <Text style={[styles.citation, { color: colors.textMuted }]}>{model.citation}</Text>
 
         <ModelSelector models={applicableModels} selectedId={modelId} onSelect={setModelId} />
 
@@ -126,8 +128,10 @@ export function CalculatorScreen({ environment, onBack, onCompare }: CalculatorS
         <NumericField label="Altura del móvil" unit="m" value={mobileHeightM} onChangeText={setMobileHeightM} />
 
         {activeExtraFields.length > 0 ? (
-          <View style={styles.geometrySection}>
-            <Text style={styles.sectionLabel}>Geometría requerida por {model.shortLabel}</Text>
+          <View style={[styles.geometrySection, { borderColor: colors.borderMuted, backgroundColor: colors.surfaceMuted }]}>
+            <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>
+              Geometría requerida por {model.shortLabel}
+            </Text>
             {activeExtraFields.map((key) => {
               const config = GEOMETRY_FIELD_CONFIG[key];
               return (
@@ -145,31 +149,39 @@ export function CalculatorScreen({ environment, onBack, onCompare }: CalculatorS
         ) : null}
 
         <View style={styles.row}>
-          <Text style={styles.toggleLabel}>Ciudad grande (Hata / ECC-33)</Text>
+          <Text style={[styles.toggleLabel, { color: colors.textPrimary }]}>Ciudad grande (Hata / ECC-33)</Text>
           <Switch
             value={citySize === 'large'}
             onValueChange={(value) => setCitySize(value ? 'large' : 'small-medium')}
+            trackColor={{ true: colors.accentSolid }}
           />
         </View>
 
         <View style={styles.row}>
-          <Text style={styles.toggleLabel}>Centro metropolitano — Cm (COST-231)</Text>
-          <Switch value={metropolitanCenter} onValueChange={setMetropolitanCenter} />
+          <Text style={[styles.toggleLabel, { color: colors.textPrimary }]}>Centro metropolitano — Cm (COST-231)</Text>
+          <Switch value={metropolitanCenter} onValueChange={setMetropolitanCenter} trackColor={{ true: colors.accentSolid }} />
         </View>
 
-        <Text style={styles.sectionLabel}>Entorno (solo Hata)</Text>
+        <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>Entorno (solo Hata)</Text>
         <View style={styles.row}>
-          {(Object.keys(ENVIRONMENT_LABELS) as Environment[]).map((option) => (
-            <Pressable
-              key={option}
-              onPress={() => setEnvOption(option)}
-              style={[styles.envChip, envOption === option && styles.envChipSelected]}
-            >
-              <Text style={[styles.envChipText, envOption === option && styles.envChipTextSelected]}>
-                {ENVIRONMENT_LABELS[option]}
-              </Text>
-            </Pressable>
-          ))}
+          {(Object.keys(ENVIRONMENT_LABELS) as Environment[]).map((option) => {
+            const isSelected = envOption === option;
+            return (
+              <Pressable
+                key={option}
+                onPress={() => setEnvOption(option)}
+                style={[
+                  styles.envChip,
+                  { borderColor: colors.border },
+                  isSelected && { backgroundColor: colors.accentSolid, borderColor: colors.accentSolid },
+                ]}
+              >
+                <Text style={[styles.envChipText, { color: isSelected ? '#ffffff' : colors.textPrimary }]}>
+                  {ENVIRONMENT_LABELS[option]}
+                </Text>
+              </Pressable>
+            );
+          })}
         </View>
 
         <ResultPanel pathLossDb={pathLossDb} warnings={warnings} errorMessage={errorMessage} />
@@ -178,7 +190,7 @@ export function CalculatorScreen({ environment, onBack, onCompare }: CalculatorS
           <Pressable
             disabled={!inputs}
             onPress={() => inputs && onCompare(inputs)}
-            style={[styles.compareButton, !inputs && styles.compareButtonDisabled]}
+            style={[styles.compareButton, { backgroundColor: colors.accentSolid }, !inputs && styles.compareButtonDisabled]}
           >
             <Text style={styles.compareButtonText}>Comparar todos los modelos de este entorno</Text>
           </Pressable>
@@ -192,35 +204,29 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   content: { padding: 20, paddingTop: 60, paddingBottom: 40 },
   backButton: { marginBottom: 12 },
-  backButtonText: { fontSize: 14, color: '#1f6feb', fontWeight: '600' },
-  title: { fontSize: 20, fontWeight: '700', color: '#102a43' },
-  subtitle: { fontSize: 16, fontWeight: '600', color: '#1f6feb', marginTop: 4 },
-  citation: { fontSize: 11, color: '#7b8794', marginBottom: 16 },
+  backButtonText: { fontSize: 14, fontWeight: '600' },
+  title: { fontSize: 20, fontWeight: '700' },
+  subtitle: { fontSize: 16, fontWeight: '600', marginTop: 4 },
+  citation: { fontSize: 11, marginBottom: 16 },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
-  toggleLabel: { fontSize: 14, color: '#1f2933', flex: 1, marginRight: 12 },
-  sectionLabel: { fontSize: 13, fontWeight: '600', color: '#1f2933', marginBottom: 8 },
+  toggleLabel: { fontSize: 14, flex: 1, marginRight: 12 },
+  sectionLabel: { fontSize: 13, fontWeight: '600', marginBottom: 8 },
   geometrySection: {
     borderWidth: 1,
-    borderColor: '#e4e9ee',
     borderRadius: 12,
     padding: 12,
     marginBottom: 12,
-    backgroundColor: '#f7f9fb',
   },
   envChip: {
     borderWidth: 1,
-    borderColor: '#c7ccd1',
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 6,
     marginRight: 8,
   },
-  envChipSelected: { backgroundColor: '#1f6feb', borderColor: '#1f6feb' },
-  envChipText: { fontSize: 13, color: '#1f2933' },
-  envChipTextSelected: { color: '#fff' },
+  envChipText: { fontSize: 13 },
   compareButton: {
     marginTop: 16,
-    backgroundColor: '#6b21a8',
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
