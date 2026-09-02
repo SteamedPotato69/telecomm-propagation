@@ -3,6 +3,7 @@ import { LayoutChangeEvent, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Line, Rect, Text as SvgText } from 'react-native-svg';
 import { FADING_ZONE_LABELS } from '../models/fading';
 import type { FadingZone } from '../models/fading';
+import { useTheme } from '../theme';
 
 interface FadingZoneChartProps {
   /** BT/Bc, x-axis. */
@@ -13,6 +14,7 @@ interface FadingZoneChartProps {
   height?: number;
 }
 
+const NEON_LILAC = '#c084fc';
 const MARGIN = { top: 16, right: 16, bottom: 32, left: 40 };
 const TICKS = [0.001, 0.01, 0.1, 1, 10, 100, 1000];
 
@@ -49,6 +51,7 @@ function formatTick(value: number): string {
  * whichever quadrant the point geometrically falls in.
  */
 export function FadingZoneChart({ bandwidthRatio, symbolRatio, zone, height = 260 }: FadingZoneChartProps) {
+  const { colors } = useTheme();
   const [width, setWidth] = useState(0);
   const onLayout = (event: LayoutChangeEvent) => setWidth(event.nativeEvent.layout.width);
 
@@ -77,12 +80,12 @@ export function FadingZoneChart({ bandwidthRatio, symbolRatio, zone, height = 26
 
   const refX = px(1);
   const refY = py(1);
-  const markerColor = zone === 1 ? '#b3261e' : '#6b21a8';
+  const markerColor = zone === 1 ? colors.error : colors.accentSolid;
 
   return (
     <View style={styles.container} onLayout={onLayout}>
-      <Text style={styles.title}>Zona de desvanecimiento (§8.7)</Text>
-      <Text style={styles.axisLabelY}>Ts / Tc</Text>
+      <Text style={[styles.title, { color: colors.textPrimary }]}>Zona de desvanecimiento (§8.7)</Text>
+      <Text style={[styles.axisLabelY, { color: colors.textMuted }]}>Ts / Tc</Text>
       <Svg width={width} height={height}>
         {/*
           Quadrant tints: zone 2 (flat/flat) lilac, zone 5 (both selective)
@@ -91,56 +94,56 @@ export function FadingZoneChart({ bandwidthRatio, symbolRatio, zone, height = 26
           the chart, not the top; zone 2 (Ts < Tc) is bottom-left, zone 5
           (Ts > Tc) is top-right.
         */}
-        <Rect x={plotLeft} y={refY} width={refX - plotLeft} height={plotBottom - refY} fill="#faf5ff" />
-        <Rect x={refX} y={plotTop} width={plotRight - refX} height={refY - plotTop} fill="#fdecea" opacity={0.4} />
+        <Rect x={plotLeft} y={refY} width={refX - plotLeft} height={plotBottom - refY} fill={colors.accentSurface} />
+        <Rect x={refX} y={plotTop} width={plotRight - refX} height={refY - plotTop} fill={colors.errorSurface} opacity={0.4} />
 
         {xTicks.map((t) => (
-          <Line key={`gx-${t}`} x1={px(t)} y1={plotTop} x2={px(t)} y2={plotBottom} stroke="#f0f3f6" strokeWidth={1} />
+          <Line key={`gx-${t}`} x1={px(t)} y1={plotTop} x2={px(t)} y2={plotBottom} stroke={colors.borderMuted} strokeWidth={1} />
         ))}
         {yTicks.map((t) => (
-          <Line key={`gy-${t}`} x1={plotLeft} y1={py(t)} x2={plotRight} y2={py(t)} stroke="#f0f3f6" strokeWidth={1} />
+          <Line key={`gy-${t}`} x1={plotLeft} y1={py(t)} x2={plotRight} y2={py(t)} stroke={colors.borderMuted} strokeWidth={1} />
         ))}
 
         {/* Reference lines at ratio = 1 -- the boundary between flat and selective on each axis. */}
-        <Line x1={refX} y1={plotTop} x2={refX} y2={plotBottom} stroke="#9aa5b1" strokeWidth={1.5} strokeDasharray="4,4" />
-        <Line x1={plotLeft} y1={refY} x2={plotRight} y2={refY} stroke="#9aa5b1" strokeWidth={1.5} strokeDasharray="4,4" />
+        <Line x1={refX} y1={plotTop} x2={refX} y2={plotBottom} stroke={colors.textDisabled} strokeWidth={1.5} strokeDasharray="4,4" />
+        <Line x1={plotLeft} y1={refY} x2={plotRight} y2={refY} stroke={colors.textDisabled} strokeWidth={1.5} strokeDasharray="4,4" />
 
-        <Line x1={plotLeft} y1={plotTop} x2={plotLeft} y2={plotBottom} stroke="#9aa5b1" strokeWidth={1} />
-        <Line x1={plotLeft} y1={plotBottom} x2={plotRight} y2={plotBottom} stroke="#9aa5b1" strokeWidth={1} />
+        <Line x1={plotLeft} y1={plotTop} x2={plotLeft} y2={plotBottom} stroke={colors.textDisabled} strokeWidth={1} />
+        <Line x1={plotLeft} y1={plotBottom} x2={plotRight} y2={plotBottom} stroke={colors.textDisabled} strokeWidth={1} />
 
         {xTicks.map((t) => (
-          <SvgText key={`lx-${t}`} x={px(t)} y={plotBottom + 14} fontSize={9} fill="#7b8794" textAnchor="middle">
+          <SvgText key={`lx-${t}`} x={px(t)} y={plotBottom + 14} fontSize={9} fill={colors.textMuted} textAnchor="middle">
             {formatTick(t)}
           </SvgText>
         ))}
         {yTicks.map((t) => (
-          <SvgText key={`ly-${t}`} x={plotLeft - 6} y={py(t) + 3} fontSize={9} fill="#7b8794" textAnchor="end">
+          <SvgText key={`ly-${t}`} x={plotLeft - 6} y={py(t) + 3} fontSize={9} fill={colors.textMuted} textAnchor="end">
             {formatTick(t)}
           </SvgText>
         ))}
 
-        <SvgText x={(plotLeft + refX) / 2} y={plotBottom - 6} fontSize={10} fill="#6b21a8" textAnchor="middle">
+        <SvgText x={(plotLeft + refX) / 2} y={plotBottom - 6} fontSize={10} fill={colors.accentText} textAnchor="middle">
           Zona 2
         </SvgText>
-        <SvgText x={(plotRight + refX) / 2} y={plotBottom - 6} fontSize={10} fill="#52606d" textAnchor="middle">
+        <SvgText x={(plotRight + refX) / 2} y={plotBottom - 6} fontSize={10} fill={colors.textSecondary} textAnchor="middle">
           Zona 4
         </SvgText>
-        <SvgText x={(plotLeft + refX) / 2} y={plotTop + 14} fontSize={10} fill="#52606d" textAnchor="middle">
+        <SvgText x={(plotLeft + refX) / 2} y={plotTop + 14} fontSize={10} fill={colors.textSecondary} textAnchor="middle">
           Zona 3
         </SvgText>
-        <SvgText x={(plotRight + refX) / 2} y={plotTop + 14} fontSize={10} fill="#b3261e" textAnchor="middle">
+        <SvgText x={(plotRight + refX) / 2} y={plotTop + 14} fontSize={10} fill={colors.error} textAnchor="middle">
           Zona 5
         </SvgText>
 
-        <Circle cx={px(plottedX)} cy={py(plottedY)} r={7} fill={markerColor} stroke="#ffffff" strokeWidth={2} />
+        <Circle cx={px(plottedX)} cy={py(plottedY)} r={7} fill={markerColor} stroke={colors.surface} strokeWidth={2} />
       </Svg>
-      <Text style={styles.axisLabelX}>BT / Bc</Text>
+      <Text style={[styles.axisLabelX, { color: colors.textMuted }]}>BT / Bc</Text>
 
-      <View style={styles.summary}>
-        <Text style={[styles.zoneTitle, zone === 1 && styles.zoneTitleWarning]}>
+      <View style={[styles.summary, { backgroundColor: colors.accentSurface, borderColor: NEON_LILAC }]}>
+        <Text style={[styles.zoneTitle, { color: zone === 1 ? colors.error : colors.accentText }]}>
           Zona {zone}: {zoneInfo.title}
         </Text>
-        <Text style={styles.zoneDescription}>{zoneInfo.description}</Text>
+        <Text style={[styles.zoneDescription, { color: colors.textSecondary }]}>{zoneInfo.description}</Text>
       </View>
     </View>
   );
@@ -148,18 +151,15 @@ export function FadingZoneChart({ bandwidthRatio, symbolRatio, zone, height = 26
 
 const styles = StyleSheet.create({
   container: { marginTop: 8 },
-  title: { fontSize: 13, fontWeight: '700', color: '#1f2933', marginBottom: 2 },
-  axisLabelY: { fontSize: 10, color: '#7b8794', marginBottom: 4 },
-  axisLabelX: { fontSize: 10, color: '#7b8794', textAlign: 'center', marginTop: 2 },
+  title: { fontSize: 13, fontWeight: '700', marginBottom: 2 },
+  axisLabelY: { fontSize: 10, marginBottom: 4 },
+  axisLabelX: { fontSize: 10, textAlign: 'center', marginTop: 2 },
   summary: {
     marginTop: 12,
     padding: 12,
     borderRadius: 12,
-    backgroundColor: '#faf5ff',
     borderWidth: 1,
-    borderColor: '#c084fc',
   },
-  zoneTitle: { fontSize: 14, fontWeight: '700', color: '#6b21a8' },
-  zoneTitleWarning: { color: '#b3261e' },
-  zoneDescription: { fontSize: 12, color: '#52606d', marginTop: 4, lineHeight: 16 },
+  zoneTitle: { fontSize: 14, fontWeight: '700' },
+  zoneDescription: { fontSize: 12, marginTop: 4, lineHeight: 16 },
 });

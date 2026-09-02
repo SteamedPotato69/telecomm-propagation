@@ -1,6 +1,7 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ENVIRONMENT_CATEGORIES } from '../models/propagation';
 import type { EnvironmentCategory } from '../models/propagation';
+import { useTheme } from '../theme';
 
 interface EnvironmentScreenProps {
   onSelectEnvironment: (environment: EnvironmentCategory) => void;
@@ -8,14 +9,16 @@ interface EnvironmentScreenProps {
 }
 
 export function EnvironmentScreen({ onSelectEnvironment, onBack }: EnvironmentScreenProps) {
+  const { colors } = useTheme();
+
   return (
     <ScrollView contentContainerStyle={styles.content}>
       <Pressable onPress={onBack} style={styles.backButton}>
-        <Text style={styles.backButtonText}>‹ Inicio</Text>
+        <Text style={[styles.backButtonText, { color: colors.accentText }]}>‹ Inicio</Text>
       </Pressable>
 
-      <Text style={styles.title}>Elige un entorno</Text>
-      <Text style={styles.subtitle}>
+      <Text style={[styles.title, { color: colors.textPrimary }]}>Elige un entorno</Text>
+      <Text style={[styles.subtitle, { color: colors.textMuted }]}>
         Determina qué modelos de predicción de pérdida están disponibles para tu ejercicio.
       </Text>
 
@@ -26,19 +29,25 @@ export function EnvironmentScreen({ onSelectEnvironment, onBack }: EnvironmentSc
             key={environment.id}
             disabled={isEmpty}
             onPress={() => onSelectEnvironment(environment)}
-            style={[styles.card, isEmpty && styles.cardDisabled]}
+            style={[
+              styles.card,
+              { borderColor: colors.border, backgroundColor: colors.surface },
+              isEmpty && { backgroundColor: colors.surfaceDisabled, opacity: 0.55 },
+            ]}
           >
-            <Text style={[styles.cardTitle, isEmpty && styles.cardTitleDisabled]}>{environment.label}</Text>
-            <Text style={[styles.cardDescription, isEmpty && styles.cardTitleDisabled]}>
+            <Text style={[styles.cardTitle, { color: isEmpty ? colors.textDisabled : colors.textPrimary }]}>
+              {environment.label}
+            </Text>
+            <Text style={[styles.cardDescription, { color: isEmpty ? colors.textDisabled : colors.textSecondary }]}>
               {environment.description}
             </Text>
             {!isEmpty ? (
-              <Text style={styles.cardModelCount}>
+              <Text style={[styles.cardModelCount, { color: colors.accentText }]}>
                 {environment.applicableModelIds.length} modelo{environment.applicableModelIds.length === 1 ? '' : 's'}{' '}
                 disponible{environment.applicableModelIds.length === 1 ? '' : 's'}
               </Text>
             ) : (
-              <Text style={styles.cardModelCountDisabled}>Próximamente</Text>
+              <Text style={[styles.cardModelCount, { color: colors.textDisabled }]}>Próximamente</Text>
             )}
           </Pressable>
         );
@@ -50,21 +59,16 @@ export function EnvironmentScreen({ onSelectEnvironment, onBack }: EnvironmentSc
 const styles = StyleSheet.create({
   content: { padding: 20, paddingTop: 60, paddingBottom: 40 },
   backButton: { marginBottom: 16 },
-  backButtonText: { fontSize: 15, color: '#1f6feb', fontWeight: '600' },
-  title: { fontSize: 20, fontWeight: '700', color: '#102a43' },
-  subtitle: { fontSize: 13, color: '#7b8794', marginTop: 4, marginBottom: 20 },
+  backButtonText: { fontSize: 15, fontWeight: '600' },
+  title: { fontSize: 20, fontWeight: '700' },
+  subtitle: { fontSize: 13, marginTop: 4, marginBottom: 20 },
   card: {
     borderWidth: 1,
-    borderColor: '#c7ccd1',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
-    backgroundColor: '#ffffff',
   },
-  cardDisabled: { backgroundColor: '#f4f5f6', opacity: 0.55 },
-  cardTitle: { fontSize: 15, fontWeight: '700', color: '#102a43' },
-  cardTitleDisabled: { color: '#9aa5b1' },
-  cardDescription: { fontSize: 12, color: '#52606d', marginTop: 4, lineHeight: 16 },
-  cardModelCount: { fontSize: 11, color: '#1f6feb', fontWeight: '600', marginTop: 8 },
-  cardModelCountDisabled: { fontSize: 11, color: '#9aa5b1', fontWeight: '600', marginTop: 8 },
+  cardTitle: { fontSize: 15, fontWeight: '700' },
+  cardDescription: { fontSize: 12, marginTop: 4, lineHeight: 16 },
+  cardModelCount: { fontSize: 11, fontWeight: '600', marginTop: 8 },
 });

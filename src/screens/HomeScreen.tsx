@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useTheme } from '../theme';
+import type { ThemeMode } from '../theme';
 
 interface HomeScreenProps {
   onSelectEmpiricalMethods: () => void;
@@ -8,7 +10,14 @@ interface HomeScreenProps {
 
 const NEON_LILAC = '#c084fc';
 
+const THEME_MODE_LABELS: Record<ThemeMode, string> = {
+  system: '🖥 Automático',
+  light: '☀ Claro',
+  dark: '🌙 Oscuro',
+};
+
 export function HomeScreen({ onSelectEmpiricalMethods, onSelectFadingSimulator }: HomeScreenProps) {
+  const { colors, mode, cycleMode } = useTheme();
   const glowPulse = useRef(new Animated.Value(0.4)).current;
 
   useEffect(() => {
@@ -26,18 +35,29 @@ export function HomeScreen({ onSelectEmpiricalMethods, onSelectFadingSimulator }
   }, [glowPulse]);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>telecomm-propagation</Text>
-      <Text style={styles.subtitle}>Elige una funcionalidad</Text>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={styles.topBar}>
+        <Pressable
+          onPress={cycleMode}
+          style={[styles.themeToggle, { borderColor: colors.border, backgroundColor: colors.surfaceMuted }]}
+        >
+          <Text style={[styles.themeToggleText, { color: colors.textSecondary }]}>{THEME_MODE_LABELS[mode]}</Text>
+        </Pressable>
+      </View>
+
+      <Text style={[styles.title, { color: colors.textPrimary }]}>telecomm-propagation</Text>
+      <Text style={[styles.subtitle, { color: colors.textMuted }]}>Elige una funcionalidad</Text>
 
       <Pressable onPress={onSelectEmpiricalMethods} style={styles.cardShell}>
         {/* Static glow: always visible, guarantees the neon look renders even if the
-            animation below doesn't (e.g. reduced-motion). Pulsing layer sits on top. */}
+            animation below doesn't (e.g. reduced-motion). Pulsing layer sits on top.
+            Uses the literal NEON_LILAC constant, not a theme token: this color is
+            intentionally identical in light and dark mode. */}
         <View style={[styles.glowLayerStatic, styles.noPointerEvents]} />
         <Animated.View style={[styles.glowLayerPulse, styles.noPointerEvents, { opacity: glowPulse }]} />
-        <View style={[styles.card, styles.cardEnabled]}>
-          <Text style={styles.cardTitleEnabled}>Métodos empíricos de propagación</Text>
-          <Text style={styles.cardSubtitle}>
+        <View style={[styles.card, styles.cardEnabled, { backgroundColor: colors.accentSurface }]}>
+          <Text style={[styles.cardTitleEnabled, { color: colors.accentText }]}>Métodos empíricos de propagación</Text>
+          <Text style={[styles.cardSubtitle, { color: colors.textMuted }]}>
             Calculadora de pérdida de trayecto: elige un entorno y compara los modelos aplicables.
           </Text>
         </View>
@@ -46,9 +66,9 @@ export function HomeScreen({ onSelectEmpiricalMethods, onSelectFadingSimulator }
       <Pressable onPress={onSelectFadingSimulator} style={styles.cardShell}>
         <View style={[styles.glowLayerStatic, styles.noPointerEvents]} />
         <Animated.View style={[styles.glowLayerPulse, styles.noPointerEvents, { opacity: glowPulse }]} />
-        <View style={[styles.card, styles.cardEnabled]}>
-          <Text style={styles.cardTitleEnabled}>Simulador de desvanecimiento</Text>
-          <Text style={styles.cardSubtitle}>
+        <View style={[styles.card, styles.cardEnabled, { backgroundColor: colors.accentSurface }]}>
+          <Text style={[styles.cardTitleEnabled, { color: colors.accentText }]}>Simulador de desvanecimiento</Text>
+          <Text style={[styles.cardSubtitle, { color: colors.textMuted }]}>
             Plano vs. selectivo en frecuencia, lento vs. rápido: ingresa dispersión de retardo, velocidad y
             parámetros de la señal y ubica el canal en las 5 zonas del curso.
           </Text>
@@ -59,9 +79,17 @@ export function HomeScreen({ onSelectEmpiricalMethods, onSelectFadingSimulator }
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, paddingTop: 90, backgroundColor: '#ffffff' },
-  title: { fontSize: 22, fontWeight: '700', color: '#102a43', textAlign: 'center' },
-  subtitle: { fontSize: 14, color: '#7b8794', textAlign: 'center', marginTop: 4, marginBottom: 32 },
+  container: { flex: 1, padding: 24, paddingTop: 20 },
+  topBar: { flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 24 },
+  themeToggle: {
+    borderWidth: 1,
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  themeToggleText: { fontSize: 12, fontWeight: '600' },
+  title: { fontSize: 22, fontWeight: '700', textAlign: 'center' },
+  subtitle: { fontSize: 14, textAlign: 'center', marginTop: 4, marginBottom: 32 },
   cardShell: { position: 'relative', marginBottom: 20 },
   card: {
     borderRadius: 16,
@@ -70,7 +98,6 @@ const styles = StyleSheet.create({
   },
   cardEnabled: {
     borderColor: NEON_LILAC,
-    backgroundColor: '#faf5ff',
   },
   // `shadow*` style props render on iOS/Android but are silently dropped by
   // React Native Web (confirmed: computed boxShadow stayed "none") -- this
@@ -92,6 +119,6 @@ const styles = StyleSheet.create({
   // property (RN/RNW warn on the prop form) -- these glow layers must stay
   // click-through so the Pressable underneath still receives taps.
   noPointerEvents: { pointerEvents: 'none' },
-  cardTitleEnabled: { fontSize: 18, fontWeight: '700', color: '#6b21a8' },
-  cardSubtitle: { fontSize: 13, color: '#7b8794', marginTop: 8, lineHeight: 18 },
+  cardTitleEnabled: { fontSize: 18, fontWeight: '700' },
+  cardSubtitle: { fontSize: 13, marginTop: 8, lineHeight: 18 },
 });

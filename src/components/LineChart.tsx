@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { LayoutChangeEvent, StyleSheet, Text, View } from 'react-native';
 import Svg, { Line, Polyline, Text as SvgText } from 'react-native-svg';
+import { useTheme } from '../theme';
 
 export interface ChartSeriesPoint {
   x: number;
@@ -64,6 +65,7 @@ function logTicksInDomain(min: number, max: number): number[] {
 }
 
 export function LineChart({ title, series, xScale, xLabel, yLabel, height = 220 }: LineChartProps) {
+  const { colors } = useTheme();
   const [width, setWidth] = useState(0);
 
   const onLayout = (event: LayoutChangeEvent) => {
@@ -99,32 +101,32 @@ export function LineChart({ title, series, xScale, xLabel, yLabel, height = 220 
 
   return (
     <View style={styles.container} onLayout={onLayout}>
-      <Text style={styles.title}>{title}</Text>
-      <Text style={styles.axisLabelY}>{yLabel}</Text>
+      <Text style={[styles.title, { color: colors.textPrimary }]}>{title}</Text>
+      <Text style={[styles.axisLabelY, { color: colors.textMuted }]}>{yLabel}</Text>
       <Svg width={width} height={height}>
         {/* Gridlines + Y ticks */}
         {yTicks.map((tick) => (
-          <Line key={`gy-${tick}`} x1={plotLeft} y1={py(tick)} x2={plotRight} y2={py(tick)} stroke="#e4e9ee" strokeWidth={1} />
+          <Line key={`gy-${tick}`} x1={plotLeft} y1={py(tick)} x2={plotRight} y2={py(tick)} stroke={colors.borderMuted} strokeWidth={1} />
         ))}
         {yTicks.map((tick) => (
-          <SvgText key={`ly-${tick}`} x={plotLeft - 6} y={py(tick) + 3} fontSize={9} fill="#7b8794" textAnchor="end">
+          <SvgText key={`ly-${tick}`} x={plotLeft - 6} y={py(tick) + 3} fontSize={9} fill={colors.textMuted} textAnchor="end">
             {tick.toFixed(0)}
           </SvgText>
         ))}
 
         {/* X ticks */}
         {xTicks.map((tick) => (
-          <Line key={`gx-${tick}`} x1={px(tick)} y1={plotTop} x2={px(tick)} y2={plotBottom} stroke="#f0f3f6" strokeWidth={1} />
+          <Line key={`gx-${tick}`} x1={px(tick)} y1={plotTop} x2={px(tick)} y2={plotBottom} stroke={colors.borderMuted} strokeWidth={1} />
         ))}
         {xTicks.map((tick) => (
-          <SvgText key={`lx-${tick}`} x={px(tick)} y={plotBottom + 14} fontSize={9} fill="#7b8794" textAnchor="middle">
+          <SvgText key={`lx-${tick}`} x={px(tick)} y={plotBottom + 14} fontSize={9} fill={colors.textMuted} textAnchor="middle">
             {tick < 1 ? tick.toFixed(1) : tick.toFixed(0)}
           </SvgText>
         ))}
 
         {/* Axes */}
-        <Line x1={plotLeft} y1={plotTop} x2={plotLeft} y2={plotBottom} stroke="#9aa5b1" strokeWidth={1} />
-        <Line x1={plotLeft} y1={plotBottom} x2={plotRight} y2={plotBottom} stroke="#9aa5b1" strokeWidth={1} />
+        <Line x1={plotLeft} y1={plotTop} x2={plotLeft} y2={plotBottom} stroke={colors.textDisabled} strokeWidth={1} />
+        <Line x1={plotLeft} y1={plotBottom} x2={plotRight} y2={plotBottom} stroke={colors.textDisabled} strokeWidth={1} />
 
         {/* Series */}
         {series.map((s) =>
@@ -141,13 +143,13 @@ export function LineChart({ title, series, xScale, xLabel, yLabel, height = 220 
         )}
       </Svg>
 
-      <Text style={styles.axisLabelX}>{xLabel}</Text>
+      <Text style={[styles.axisLabelX, { color: colors.textMuted }]}>{xLabel}</Text>
 
       <View style={styles.legend}>
         {series.map((s) => (
           <View key={s.id} style={styles.legendItem}>
             <View style={[styles.legendSwatch, { backgroundColor: s.color }]} />
-            <Text style={styles.legendText}>{s.label}</Text>
+            <Text style={[styles.legendText, { color: colors.textSecondary }]}>{s.label}</Text>
           </View>
         ))}
       </View>
@@ -157,11 +159,11 @@ export function LineChart({ title, series, xScale, xLabel, yLabel, height = 220 
 
 const styles = StyleSheet.create({
   container: { marginTop: 8 },
-  title: { fontSize: 13, fontWeight: '700', color: '#1f2933', marginBottom: 2 },
-  axisLabelY: { fontSize: 10, color: '#7b8794', marginBottom: 4 },
-  axisLabelX: { fontSize: 10, color: '#7b8794', textAlign: 'center', marginTop: 2 },
+  title: { fontSize: 13, fontWeight: '700', marginBottom: 2 },
+  axisLabelY: { fontSize: 10, marginBottom: 4 },
+  axisLabelX: { fontSize: 10, textAlign: 'center', marginTop: 2 },
   legend: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 8, gap: 12 },
   legendItem: { flexDirection: 'row', alignItems: 'center', marginRight: 12, marginBottom: 4 },
   legendSwatch: { width: 10, height: 10, borderRadius: 2, marginRight: 6 },
-  legendText: { fontSize: 11, color: '#52606d' },
+  legendText: { fontSize: 11 },
 });

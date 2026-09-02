@@ -12,6 +12,12 @@ Calculadora de modelos de pérdida de propagación en canales móviles (espacio 
 4. **Comparación**: corre todos los modelos aplicables del entorno con los mismos parámetros y los compara contra la pérdida en espacio libre ("predicción ideal"); el de menor distancia se marca como mejor ajuste. Debajo de las tarjetas, dos gráficas (`src/components/LineChart.tsx`, sobre `react-native-svg`) de pérdida vs. distancia -- escala logarítmica y lineal, todas las curvas superpuestas, muestreadas en 0.3-20 km con los demás parámetros fijos.
 5. **Simulador de desvanecimiento** (`src/screens/FadingScreen.tsx`): a partir de frecuencia portadora, dispersión de retardo (D, con chips de preset Rural/Suburbano/Urbano), velocidad del móvil, ancho de banda de la señal y duración de símbolo (o tasa de símbolo, invertible a Ts), calcula el ancho de banda de coherencia (Bc), el corrimiento Doppler (fd) y el tiempo de coherencia (Tc); clasifica el canal como plano/selectivo en frecuencia y lento/rápido (selectivo en tiempo), y ubica el punto de operación en una de las 5 zonas del plano BT/Bc vs. Ts/Tc (`src/components/FadingZoneChart.tsx`, gráfica de punto sobre `react-native-svg`, no una serie de líneas -- distinta de `LineChart.tsx`).
 
+## Tema claro/oscuro
+
+El botón en la esquina superior derecha de Inicio (`🖥 Automático` / `☀ Claro` / `🌙 Oscuro`) cicla entre los tres modos. "Automático" sigue la preferencia del sistema operativo/navegador (`useColorScheme`); una elección manual se guarda con `@react-native-async-storage/async-storage` y se recuerda entre sesiones.
+
+Los tokens de color están en [`src/theme/palette.ts`](src/theme/palette.ts), consumidos vía el hook `useTheme()` de [`src/theme/ThemeContext.tsx`](src/theme/ThemeContext.tsx). El **lila neón (`#c084fc`) es idéntico en ambas paletas a propósito** -- es el color de marca de la app (el brillo de la card de Inicio, el borde del modelo ganador en Comparación) y no debe cambiar según el tema. Lo que sí cambia por tema es `accentText` (texto legible en la misma familia de morados: oscuro sobre fondo claro, claro sobre fondo oscuro) -- usar el lila puro como color de texto fallaría el contraste en modo claro.
+
 ## Estado de los modelos
 
 | Modelo | Estado | Rango válido |
@@ -183,6 +189,9 @@ src/
     ComparisonScreen.tsx          # vista "versus" entre todos los modelos del entorno
     geometryFieldConfig.ts        # label/unidad/helper/default por cada GeometryFieldKey
     FadingScreen.tsx              # simulador de desvanecimiento: formulario + resultado + gráfica de zona
+  theme/
+    palette.ts                    # tokens de color claro/oscuro; accent (lila neón) es constante en ambos
+    ThemeContext.tsx               # ThemeProvider + useTheme(); persistencia con AsyncStorage
 ```
 
 ## Cómo agregar un nuevo modelo de propagación

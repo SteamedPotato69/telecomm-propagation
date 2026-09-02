@@ -1,4 +1,5 @@
 import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { useTheme } from '../theme';
 
 interface NumericFieldProps {
   label: string;
@@ -10,32 +11,31 @@ interface NumericFieldProps {
 }
 
 export function NumericField({ label, unit, value, onChangeText, helperText }: NumericFieldProps) {
+  const { colors } = useTheme();
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>{unit ? `${label} (${unit})` : label}</Text>
+      <Text style={[styles.label, { color: colors.textPrimary }]}>{unit ? `${label} (${unit})` : label}</Text>
       <TextInput
-        style={styles.input}
+        style={[styles.input, { borderColor: colors.border, color: colors.textPrimary, backgroundColor: colors.surface }]}
         value={value}
         onChangeText={onChangeText}
         keyboardType="numeric"
-        placeholderTextColor="#8a8a8a"
+        placeholderTextColor={colors.textMuted}
       />
-      {helperText ? <Text style={styles.helperText}>{helperText}</Text> : null}
+      {helperText ? <Text style={[styles.helperText, { color: colors.textMuted }]}>{helperText}</Text> : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { marginBottom: 12 },
-  label: { fontSize: 13, fontWeight: '600', marginBottom: 4, color: '#1f2933' },
+  label: { fontSize: 13, fontWeight: '600', marginBottom: 4 },
   input: {
     borderWidth: 1,
-    borderColor: '#c7ccd1',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
     fontSize: 16,
-    color: '#1f2933',
   },
-  helperText: { fontSize: 11, color: '#7b8794', marginTop: 4 },
+  helperText: { fontSize: 11, marginTop: 4 },
 });

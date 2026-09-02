@@ -5,6 +5,7 @@ import { FadingZoneChart } from '../components/FadingZoneChart';
 import { NumericField } from '../components/NumericField';
 import { DELAY_SPREAD_PRESETS, calculateFading } from '../models/fading';
 import type { FadingResult } from '../models/fading';
+import { useTheme } from '../theme';
 import { parseDecimal } from '../utils/validation';
 
 type SymbolInputMode = 'duration' | 'rate';
@@ -14,6 +15,7 @@ interface FadingScreenProps {
 }
 
 export function FadingScreen({ onBack }: FadingScreenProps) {
+  const { colors } = useTheme();
   const [frequencyMHz, setFrequencyMHz] = useState('900');
   const [delaySpreadUs, setDelaySpreadUs] = useState('2');
   const [speedKmh, setSpeedKmh] = useState('36');
@@ -66,11 +68,11 @@ export function FadingScreen({ onBack }: FadingScreenProps) {
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content}>
         <Pressable onPress={onBack} style={styles.backButton}>
-          <Text style={styles.backButtonText}>‹ Inicio</Text>
+          <Text style={[styles.backButtonText, { color: colors.accentText }]}>‹ Inicio</Text>
         </Pressable>
 
-        <Text style={styles.title}>Simulador de desvanecimiento</Text>
-        <Text style={styles.citation}>
+        <Text style={[styles.title, { color: colors.textPrimary }]}>Simulador de desvanecimiento</Text>
+        <Text style={[styles.citation, { color: colors.textMuted }]}>
           Dispersión de retardo, ancho de banda de coherencia, Doppler y tiempo de coherencia —
           docs/curso-referencia.md §8.
         </Text>
@@ -82,27 +84,26 @@ export function FadingScreen({ onBack }: FadingScreenProps) {
           onChangeText={setFrequencyMHz}
         />
 
-        <Text style={styles.sectionLabel}>Dispersión de retardo (D)</Text>
+        <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>Dispersión de retardo (D)</Text>
         <View style={styles.chipRow}>
-          {DELAY_SPREAD_PRESETS.map((preset) => (
-            <Pressable
-              key={preset.id}
-              onPress={() => setDelaySpreadUs(String(preset.delaySpreadUs))}
-              style={[
-                styles.chip,
-                Number(delaySpreadUs) === preset.delaySpreadUs && styles.chipSelected,
-              ]}
-            >
-              <Text
+          {DELAY_SPREAD_PRESETS.map((preset) => {
+            const isSelected = Number(delaySpreadUs) === preset.delaySpreadUs;
+            return (
+              <Pressable
+                key={preset.id}
+                onPress={() => setDelaySpreadUs(String(preset.delaySpreadUs))}
                 style={[
-                  styles.chipText,
-                  Number(delaySpreadUs) === preset.delaySpreadUs && styles.chipTextSelected,
+                  styles.chip,
+                  { borderColor: colors.border },
+                  isSelected && { backgroundColor: colors.accentSolid, borderColor: colors.accentSolid },
                 ]}
               >
-                {preset.label} ({preset.delaySpreadUs} µs)
-              </Text>
-            </Pressable>
-          ))}
+                <Text style={[styles.chipText, { color: isSelected ? '#ffffff' : colors.textPrimary }]}>
+                  {preset.label} ({preset.delaySpreadUs} µs)
+                </Text>
+              </Pressable>
+            );
+          })}
         </View>
         <NumericField
           label="Dispersión de retardo (D)"
@@ -127,21 +128,29 @@ export function FadingScreen({ onBack }: FadingScreenProps) {
           onChangeText={setBandwidthKHz}
         />
 
-        <Text style={styles.sectionLabel}>Duración de símbolo</Text>
+        <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>Duración de símbolo</Text>
         <View style={styles.chipRow}>
           <Pressable
             onPress={() => setSymbolInputMode('duration')}
-            style={[styles.chip, symbolInputMode === 'duration' && styles.chipSelected]}
+            style={[
+              styles.chip,
+              { borderColor: colors.border },
+              symbolInputMode === 'duration' && { backgroundColor: colors.accentSolid, borderColor: colors.accentSolid },
+            ]}
           >
-            <Text style={[styles.chipText, symbolInputMode === 'duration' && styles.chipTextSelected]}>
+            <Text style={[styles.chipText, { color: symbolInputMode === 'duration' ? '#ffffff' : colors.textPrimary }]}>
               Ts directo
             </Text>
           </Pressable>
           <Pressable
             onPress={() => setSymbolInputMode('rate')}
-            style={[styles.chip, symbolInputMode === 'rate' && styles.chipSelected]}
+            style={[
+              styles.chip,
+              { borderColor: colors.border },
+              symbolInputMode === 'rate' && { backgroundColor: colors.accentSolid, borderColor: colors.accentSolid },
+            ]}
           >
-            <Text style={[styles.chipText, symbolInputMode === 'rate' && styles.chipTextSelected]}>
+            <Text style={[styles.chipText, { color: symbolInputMode === 'rate' ? '#ffffff' : colors.textPrimary }]}>
               Tasa de símbolo (R)
             </Text>
           </Pressable>
@@ -181,21 +190,18 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   content: { padding: 20, paddingTop: 60, paddingBottom: 40 },
   backButton: { marginBottom: 12 },
-  backButtonText: { fontSize: 14, color: '#1f6feb', fontWeight: '600' },
-  title: { fontSize: 20, fontWeight: '700', color: '#102a43' },
-  citation: { fontSize: 11, color: '#7b8794', marginTop: 4, marginBottom: 16 },
-  sectionLabel: { fontSize: 13, fontWeight: '600', color: '#1f2933', marginBottom: 8, marginTop: 4 },
+  backButtonText: { fontSize: 14, fontWeight: '600' },
+  title: { fontSize: 20, fontWeight: '700' },
+  citation: { fontSize: 11, marginTop: 4, marginBottom: 16 },
+  sectionLabel: { fontSize: 13, fontWeight: '600', marginBottom: 8, marginTop: 4 },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 8 },
   chip: {
     borderWidth: 1,
-    borderColor: '#c7ccd1',
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 6,
     marginRight: 8,
     marginBottom: 8,
   },
-  chipSelected: { backgroundColor: '#6b21a8', borderColor: '#6b21a8' },
-  chipText: { fontSize: 13, color: '#1f2933' },
-  chipTextSelected: { color: '#fff' },
+  chipText: { fontSize: 13 },
 });
