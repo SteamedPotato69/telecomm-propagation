@@ -4,6 +4,7 @@ import { LineChart } from '../components/LineChart';
 import type { ChartSeries } from '../components/LineChart';
 import { PROPAGATION_MODELS, generateLogSpacedDistances, sampleModelOverDistance } from '../models/propagation';
 import type { EnvironmentCategory, PropagationInputs } from '../models/propagation';
+import { useTheme } from '../theme';
 import { formatPathLoss } from '../utils/format';
 
 interface ComparisonScreenProps {
@@ -46,6 +47,7 @@ const CHART_SAMPLE_COUNT = 40;
  * no disponible en vez de forzar un valor.
  */
 export function ComparisonScreen({ environment, inputs, onBack }: ComparisonScreenProps) {
+  const { colors } = useTheme();
   const entries = useMemo<ComparisonEntry[]>(() => {
     const idealPathLossDb = PROPAGATION_MODELS['free-space'].calculate(inputs).pathLossDb;
 
@@ -117,12 +119,12 @@ export function ComparisonScreen({ environment, inputs, onBack }: ComparisonScre
   return (
     <ScrollView contentContainerStyle={styles.content}>
       <Pressable onPress={onBack} style={styles.backButton}>
-        <Text style={styles.backButtonText}>‹ Volver a la calculadora</Text>
+        <Text style={[styles.backButtonText, { color: colors.accentText }]}>‹ Volver a la calculadora</Text>
       </Pressable>
 
-      <Text style={styles.title}>Comparación de modelos</Text>
-      <Text style={styles.subtitle}>{environment.label}</Text>
-      <Text style={styles.explainer}>
+      <Text style={[styles.title, { color: colors.textPrimary }]}>Comparación de modelos</Text>
+      <Text style={[styles.subtitle, { color: colors.accentText }]}>{environment.label}</Text>
+      <Text style={[styles.explainer, { color: colors.textMuted }]}>
         "Distancia al ideal" = diferencia absoluta contra la pérdida en espacio libre (cota teórica inferior) con los
         mismos parámetros. Menor distancia = mejor.
       </Text>
@@ -132,29 +134,38 @@ export function ComparisonScreen({ environment, inputs, onBack }: ComparisonScre
         return (
           <View
             key={entry.modelId}
-            style={[styles.card, isWinner && styles.cardWinner, entry.errorMessage && styles.cardUnavailable]}
+            style={[
+              styles.card,
+              { borderColor: colors.borderMuted, backgroundColor: colors.surface },
+              isWinner && { borderColor: colors.accent, backgroundColor: colors.accentSurface },
+              entry.errorMessage && { backgroundColor: colors.surfaceDisabled, borderColor: colors.borderMuted },
+            ]}
           >
-            {isWinner ? <Text style={styles.winnerBadge}>MEJOR AJUSTE</Text> : null}
-            <Text style={styles.cardTitle}>{entry.label}</Text>
+            {isWinner ? (
+              <Text style={[styles.winnerBadge, { backgroundColor: colors.accent }]}>MEJOR AJUSTE</Text>
+            ) : null}
+            <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>{entry.label}</Text>
 
             {entry.errorMessage ? (
-              <Text style={styles.cardError}>{entry.errorMessage}</Text>
+              <Text style={[styles.cardError, { color: colors.textDisabled }]}>{entry.errorMessage}</Text>
             ) : (
               <>
-                <Text style={styles.cardValue}>{formatPathLoss(entry.pathLossDb!)}</Text>
-                <Text style={styles.cardDistance}>
+                <Text style={[styles.cardValue, { color: colors.textPrimary }]}>
+                  {formatPathLoss(entry.pathLossDb!)}
+                </Text>
+                <Text style={[styles.cardDistance, { color: colors.textSecondary }]}>
                   Distancia al ideal: {entry.distanceToIdealDb!.toFixed(2)} dB
                 </Text>
               </>
             )}
-            <Text style={styles.cardCitation}>{entry.citation}</Text>
+            <Text style={[styles.cardCitation, { color: colors.textDisabled }]}>{entry.citation}</Text>
           </View>
         );
       })}
 
       <View style={styles.chartsSection}>
-        <Text style={styles.chartsHeading}>Pérdida vs. distancia</Text>
-        <Text style={styles.explainer}>
+        <Text style={[styles.chartsHeading, { color: colors.textPrimary }]}>Pérdida vs. distancia</Text>
+        <Text style={[styles.explainer, { color: colors.textMuted }]}>
           Cada modelo evaluado en un rango de distancias fijo (0.3-20 km), con los demás parámetros iguales a los de
           arriba. La línea gris punteada es espacio libre (la "predicción ideal"); entre más cerca esté una curva de
           esa línea, mejor ajuste.
@@ -181,23 +192,18 @@ export function ComparisonScreen({ environment, inputs, onBack }: ComparisonScre
 const styles = StyleSheet.create({
   content: { padding: 20, paddingTop: 60, paddingBottom: 40 },
   backButton: { marginBottom: 12 },
-  backButtonText: { fontSize: 14, color: '#1f6feb', fontWeight: '600' },
-  title: { fontSize: 20, fontWeight: '700', color: '#102a43' },
-  subtitle: { fontSize: 15, fontWeight: '600', color: '#6b21a8', marginTop: 4 },
-  explainer: { fontSize: 12, color: '#7b8794', marginTop: 8, marginBottom: 20, lineHeight: 17 },
+  backButtonText: { fontSize: 14, fontWeight: '600' },
+  title: { fontSize: 20, fontWeight: '700' },
+  subtitle: { fontSize: 15, fontWeight: '600', marginTop: 4 },
+  explainer: { fontSize: 12, marginTop: 8, marginBottom: 20, lineHeight: 17 },
   card: {
     borderWidth: 2,
-    borderColor: '#e4e9ee',
     borderRadius: 16,
     padding: 18,
     marginBottom: 14,
-    backgroundColor: '#ffffff',
   },
-  cardWinner: { borderColor: '#c084fc', backgroundColor: '#faf5ff' },
-  cardUnavailable: { backgroundColor: '#f4f5f6', borderColor: '#e4e9ee' },
   winnerBadge: {
     alignSelf: 'flex-start',
-    backgroundColor: '#c084fc',
     color: '#ffffff',
     fontSize: 10,
     fontWeight: '700',
@@ -207,11 +213,11 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     marginBottom: 8,
   },
-  cardTitle: { fontSize: 16, fontWeight: '700', color: '#102a43' },
-  cardValue: { fontSize: 26, fontWeight: '700', color: '#102a43', marginTop: 6 },
-  cardDistance: { fontSize: 13, color: '#52606d', marginTop: 4 },
-  cardError: { fontSize: 13, color: '#9aa5b1', marginTop: 6, fontStyle: 'italic' },
-  cardCitation: { fontSize: 10, color: '#9aa5b1', marginTop: 10 },
+  cardTitle: { fontSize: 16, fontWeight: '700' },
+  cardValue: { fontSize: 26, fontWeight: '700', marginTop: 6 },
+  cardDistance: { fontSize: 13, marginTop: 4 },
+  cardError: { fontSize: 13, marginTop: 6, fontStyle: 'italic' },
+  cardCitation: { fontSize: 10, marginTop: 10 },
   chartsSection: { marginTop: 8 },
-  chartsHeading: { fontSize: 16, fontWeight: '700', color: '#102a43', marginBottom: 4 },
+  chartsHeading: { fontSize: 16, fontWeight: '700', marginBottom: 4 },
 });
