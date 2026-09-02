@@ -1,5 +1,6 @@
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 import type { PropagationModelDefinition, PropagationModelId } from '../models/propagation';
+import { useTheme } from '../theme';
 
 interface ModelSelectorProps {
   models: PropagationModelDefinition[];
@@ -14,6 +15,7 @@ interface ModelSelectorProps {
  * dependency for a single control.
  */
 export function ModelSelector({ models, selectedId, onSelect }: ModelSelectorProps) {
+  const { colors } = useTheme();
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
       {models.map((model) => {
@@ -24,9 +26,14 @@ export function ModelSelector({ models, selectedId, onSelect }: ModelSelectorPro
             key={model.id}
             disabled={disabled}
             onPress={() => onSelect(model.id)}
-            style={[styles.chip, isSelected && styles.chipSelected, disabled && styles.chipDisabled]}
+            style={[
+              styles.chip,
+              { borderColor: colors.border },
+              isSelected && { backgroundColor: colors.accentSolid, borderColor: colors.accentSolid },
+              disabled && styles.chipDisabled,
+            ]}
           >
-            <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>
+            <Text style={[styles.chipText, { color: isSelected ? '#ffffff' : colors.textPrimary }]}>
               {model.shortLabel}
               {disabled ? ' (próximamente)' : ''}
             </Text>
@@ -41,14 +48,11 @@ const styles = StyleSheet.create({
   row: { paddingVertical: 4, paddingRight: 8 },
   chip: {
     borderWidth: 1,
-    borderColor: '#c7ccd1',
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 8,
     marginRight: 8,
   },
-  chipSelected: { backgroundColor: '#1f6feb', borderColor: '#1f6feb' },
   chipDisabled: { opacity: 0.4 },
-  chipText: { fontSize: 14, color: '#1f2933', fontWeight: '600' },
-  chipTextSelected: { color: '#fff' },
+  chipText: { fontSize: 14, fontWeight: '600' },
 });
