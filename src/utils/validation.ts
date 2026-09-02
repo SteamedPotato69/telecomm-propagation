@@ -12,6 +12,17 @@ export function assertPositive(value: number, label: string): void {
 }
 
 /**
+ * Hard validation for values that are physically valid at exactly zero
+ * (e.g. a stationary mobile has v = 0, which is a legitimate
+ * Doppler-free case -- see the fading simulator) but never negative.
+ */
+export function assertNonNegative(value: number, label: string): void {
+  if (!Number.isFinite(value) || value < 0) {
+    throw new Error(`${label} debe ser un número mayor o igual que 0.`);
+  }
+}
+
+/**
  * Soft validation: a model's coefficients were fitted over an empirical
  * range (e.g. Hata: 150-1500 MHz). Outside it the formula still produces
  * a number, but it's an extrapolation the UI should flag, not an error.

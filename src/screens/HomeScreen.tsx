@@ -5,6 +5,7 @@ import type { ThemeMode } from '../theme';
 
 interface HomeScreenProps {
   onSelectEmpiricalMethods: () => void;
+  onSelectFadingSimulator: () => void;
 }
 
 const NEON_LILAC = '#c084fc';
@@ -15,7 +16,7 @@ const THEME_MODE_LABELS: Record<ThemeMode, string> = {
   dark: '🌙 Oscuro',
 };
 
-export function HomeScreen({ onSelectEmpiricalMethods }: HomeScreenProps) {
+export function HomeScreen({ onSelectEmpiricalMethods, onSelectFadingSimulator }: HomeScreenProps) {
   const { colors, mode, cycleMode } = useTheme();
   const glowPulse = useRef(new Animated.Value(0.4)).current;
 
@@ -62,13 +63,17 @@ export function HomeScreen({ onSelectEmpiricalMethods }: HomeScreenProps) {
         </View>
       </Pressable>
 
-      <View
-        style={[styles.card, styles.cardDisabled, { borderColor: colors.border, backgroundColor: colors.surfaceDisabled }]}
-        accessibilityState={{ disabled: true }}
-      >
-        <Text style={[styles.cardTitleDisabled, { color: colors.textDisabled }]}>Simulador de desvanecimiento</Text>
-        <Text style={[styles.cardSubtitleDisabled, { color: colors.textDisabled }]}>Próximamente</Text>
-      </View>
+      <Pressable onPress={onSelectFadingSimulator} style={styles.cardShell}>
+        <View style={[styles.glowLayerStatic, styles.noPointerEvents]} />
+        <Animated.View style={[styles.glowLayerPulse, styles.noPointerEvents, { opacity: glowPulse }]} />
+        <View style={[styles.card, styles.cardEnabled, { backgroundColor: colors.accentSurface }]}>
+          <Text style={[styles.cardTitleEnabled, { color: colors.accentText }]}>Simulador de desvanecimiento</Text>
+          <Text style={[styles.cardSubtitle, { color: colors.textMuted }]}>
+            Plano vs. selectivo en frecuencia, lento vs. rápido: ingresa dispersión de retardo, velocidad y
+            parámetros de la señal y ubica el canal en las 5 zonas del curso.
+          </Text>
+        </View>
+      </Pressable>
     </View>
   );
 }
@@ -116,9 +121,4 @@ const styles = StyleSheet.create({
   noPointerEvents: { pointerEvents: 'none' },
   cardTitleEnabled: { fontSize: 18, fontWeight: '700' },
   cardSubtitle: { fontSize: 13, marginTop: 8, lineHeight: 18 },
-  cardDisabled: {
-    opacity: 0.6,
-  },
-  cardTitleDisabled: { fontSize: 18, fontWeight: '700' },
-  cardSubtitleDisabled: { fontSize: 13, marginTop: 8 },
 });

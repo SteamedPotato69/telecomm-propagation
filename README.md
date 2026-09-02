@@ -4,12 +4,13 @@ Calculadora de modelos de pérdida de propagación en canales móviles (espacio 
 
 ## Navegación de la app
 
-`Inicio` → `Entorno` → `Calculadora` → `Comparación` (ver `src/screens/RootNavigator.tsx`):
+`Inicio` → `Entorno` → `Calculadora` → `Comparación`, y por separado `Inicio` → `Simulador de desvanecimiento` (ver `src/screens/RootNavigator.tsx`):
 
-1. **Inicio**: dos cards. "Métodos empíricos de propagación" (habilitada) y "Simulador de desvanecimiento" (deshabilitada, funcionalidad futura, no construida todavía).
+1. **Inicio**: dos cards, ambas habilitadas. "Métodos empíricos de propagación" (pérdida de trayecto) y "Simulador de desvanecimiento" (flat/selectivo y lento/rápido).
 2. **Entorno**: elige una categoría de la taxonomía de entornos (`src/models/propagation/environments.ts`) -- determina qué modelos son aplicables.
 3. **Calculadora**: el selector de modelos solo muestra los aplicables al entorno elegido; los campos de geometría (ancho de calle, altura de edificios, etc.) solo aparecen cuando el modelo seleccionado los necesita.
 4. **Comparación**: corre todos los modelos aplicables del entorno con los mismos parámetros y los compara contra la pérdida en espacio libre ("predicción ideal"); el de menor distancia se marca como mejor ajuste. Debajo de las tarjetas, dos gráficas (`src/components/LineChart.tsx`, sobre `react-native-svg`) de pérdida vs. distancia -- escala logarítmica y lineal, todas las curvas superpuestas, muestreadas en 0.3-20 km con los demás parámetros fijos.
+5. **Simulador de desvanecimiento** (`src/screens/FadingScreen.tsx`): a partir de frecuencia portadora, dispersión de retardo (D, con chips de preset Rural/Suburbano/Urbano), velocidad del móvil, ancho de banda de la señal y duración de símbolo (o tasa de símbolo, invertible a Ts), calcula el ancho de banda de coherencia (Bc), el corrimiento Doppler (fd) y el tiempo de coherencia (Tc); clasifica el canal como plano/selectivo en frecuencia y lento/rápido (selectivo en tiempo), y ubica el punto de operación en una de las 5 zonas del plano BT/Bc vs. Ts/Tc (`src/components/FadingZoneChart.tsx`, gráfica de punto sobre `react-native-svg`, no una serie de líneas -- distinta de `LineChart.tsx`).
 
 ## Tema claro/oscuro
 
@@ -39,6 +40,19 @@ Todas las constantes y rangos de los modelos implementados están tomados de [`d
 
 - **Ikegami** (`ikegami.ts`): la fuente del curso marca los signos de esta sección como `[OCR-verificar]` -- no fueron re-derivados de forma independiente.
 - **Walfisch-Bertoni** (`walfischBertoni.ts`): el parámetro `H` ("altura antena Tx sobre edificios próximos") se interpretó como altura *sobre* el nivel de los tejados, no absoluta -- una lectura de una redacción ambigua del curso, no un dato confirmado sin ambigüedad.
+
+## Simulador de desvanecimiento
+
+Segunda funcionalidad de la app (`src/screens/FadingScreen.tsx`, modelos en `src/models/fading/`), independiente de la calculadora de pérdida de trayecto de arriba. Implementa `docs/curso-referencia.md` §8 ("Canales multitrayecto -- caracterización en banda ancha"):
+
+- **Bc ≈ 1/(2π·D)** -- ancho de banda de coherencia, a partir de la dispersión de retardo D (§8.3). Presets Rural/Suburbano/Urbano tomados de la tabla del §8.6.
+- **fd = f0·(v/c)** -- corrimiento Doppler (§8.4).
+- **Tc ≈ 9/(16π·fd)** -- tiempo de coherencia (§8.4). Un móvil estático (v = 0) da Tc = +∞, mostrado como tal, no como error.
+- Clasificación **plano/selectivo en frecuencia** (`BT` vs `Bc`) y **lento/rápido** (`Ts` vs `Tc`), y ubicación en una de las **5 zonas** del §8.7 en `src/components/FadingZoneChart.tsx` (gráfica de punto en el plano `BT/Bc` vs `Ts/Tc`, escala log, no una gráfica de líneas).
+
+Verificado numéricamente contra los 3 ejemplos resueltos del curso (§8.8): D=2µs/f=900MHz/v=36km/h da Bc≈80kHz y Tc≈6ms; con BT=25kHz y Ts=50µs cae en zona 2 (plano); con BT=200kHz y Ts=3.7µs (GSM) cae en zona 4 (selectivo en frecuencia).
+
+**Zona 1 ("zona rayada"), advertencia explícita:** el curso nombra esta zona en §8.7 ("no es posible la transmisión") pero su desigualdad exacta vive en un diagrama que no sobrevivió la extracción de texto del PDF -- **`[interpretación no verificada]`**, igual que los `[OCR-verificar]` de `ikegami.ts`. La implementación (`src/models/fading/fading.ts`, función `classifyZone`) la marca como `BT·Ts < 1` (ancho de banda insuficiente para la tasa de símbolo, criterio de Nyquist) **restringido al cuadrante plano/plano** (`BT < Bc` y `Ts < Tc`). Esa restricción no es cosmética: una primera versión aplicaba `BT·Ts < 1` sin restringir y clasificaba mal el propio ejemplo GSM del curso (BT·Ts = 0.74 < 1, pero el curso dice zona 4) -- un ancho de banda ocupado menor que la tasa de símbolo es normal en modulaciones espectralmente eficientes (GMSK incluida), no evidencia de que la transmisión sea imposible.
 
 ## Requisitos previos
 
@@ -151,21 +165,30 @@ src/
     cost231WalfishIkegami.ts     # COST-231 Walfish-Ikegami (combina Ikegami + Walfisch-Bertoni)
     sampleSeries.ts               # evalúa un modelo sobre un rango de distancias, para las gráficas
     index.ts                     # registro: PROPAGATION_MODELS / PROPAGATION_MODEL_LIST
+  models/fading/
+    types.ts                     # FadingInputs/Result, FadingZone
+    fading.ts                    # calculateFading(): Bc, fd, Tc, clasificación y las 5 zonas (§8.7)
+    environments.ts              # DELAY_SPREAD_PRESETS: presets Rural/Suburbano/Urbano (§8.6)
+    zoneLabels.ts                 # título/descripción en español por cada FadingZone
+    index.ts                     # barrel
   utils/
-    validation.ts                # assertPositive, rangeWarningMessage, parseDecimal, requireField
-    format.ts                    # formatPathLoss
+    validation.ts                # assertPositive, assertNonNegative, rangeWarningMessage, parseDecimal, requireField
+    format.ts                    # formatPathLoss, formatCoherenceBandwidth, formatDopplerShift, formatCoherenceTime
   components/
     NumericField.tsx             # campo numérico controlado (unit opcional para parámetros sin unidad)
     ModelSelector.tsx            # selector de modelo (chips)
     ResultPanel.tsx              # resultado + advertencias + errores
     LineChart.tsx                 # gráfica de líneas sobre react-native-svg (eje lineal o log)
+    FadingResultPanel.tsx        # Bc/fd/Tc + clasificación plano-selectivo / lento-rápido
+    FadingZoneChart.tsx          # gráfica de punto BT/Bc vs Ts/Tc sobre react-native-svg (no LineChart)
   screens/
-    RootNavigator.tsx            # estado de navegación: home -> environment -> calculator -> comparison
+    RootNavigator.tsx            # estado de navegación: home -> environment -> calculator -> comparison -> fading
     HomeScreen.tsx                # las dos cards de entrada
     EnvironmentScreen.tsx         # selector de entorno
     CalculatorScreen.tsx          # formulario + resultado, filtrado por entorno
     ComparisonScreen.tsx          # vista "versus" entre todos los modelos del entorno
     geometryFieldConfig.ts        # label/unidad/helper/default por cada GeometryFieldKey
+    FadingScreen.tsx              # simulador de desvanecimiento: formulario + resultado + gráfica de zona
   theme/
     palette.ts                    # tokens de color claro/oscuro; accent (lila neón) es constante en ambos
     ThemeContext.tsx               # ThemeProvider + useTheme(); persistencia con AsyncStorage
@@ -186,7 +209,7 @@ No hace falta tocar los componentes de UI directamente: leen el registro y la ta
 - Añadir tests unitarios por modelo, con valores de referencia resueltos a mano o en clase -- **no** buscados en fuentes genéricas de internet (ver `docs/curso-referencia.md` §5.2 para el ejercicio pendiente de resolver que serviría de caso de prueba).
 - Implementar 3GPP TR 38.901 (6 escenarios, LOS/NLOS, unidades en GHz/metros) -- deliberadamente fuera de esta ronda por tamaño.
 - Las gráficas de la comparación samplean un rango fijo de distancias (0.3-20 km) independiente del rango de validez documentado de cada modelo -- una curva puede extenderse visualmente más allá de donde el modelo está validado, igual que ya toleran las advertencias de rango en la calculadora. Vale la pena marcar visualmente ese tramo si se vuelve confuso en la práctica.
-- Simulador de desvanecimiento (card deshabilitada en Inicio): sin alcance definido todavía.
+- Simulador de desvanecimiento: la desigualdad exacta de la "zona rayada" (zona 1, §8.7) no está en el texto extraído del curso -- ver la advertencia `[interpretación no verificada]` en `src/models/fading/fading.ts`. Si el estudiante consigue el diagrama original, vale la pena revisar el criterio implementado (`BT·Ts < 1` restringido al cuadrante plano/plano) contra la desigualdad real.
 
 ## Licencia
 
