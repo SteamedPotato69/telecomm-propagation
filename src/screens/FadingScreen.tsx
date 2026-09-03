@@ -178,6 +178,8 @@ export function FadingScreen({ onBack }: FadingScreenProps) {
           <FadingZoneChart
             bandwidthRatio={result.bandwidthRatio}
             symbolRatio={result.symbolRatio}
+            coherenceBandwidthHz={result.coherenceBandwidthHz}
+            coherenceTimeS={result.coherenceTimeS}
             zone={result.zone}
           />
         ) : null}
