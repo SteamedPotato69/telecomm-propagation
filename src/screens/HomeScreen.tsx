@@ -10,14 +10,15 @@ interface HomeScreenProps {
 
 const NEON_LILAC = '#c084fc';
 
-const THEME_MODE_LABELS: Record<ThemeMode, string> = {
-  system: '🖥 Automático',
-  light: '☀ Claro',
-  dark: '🌙 Oscuro',
-};
+// Orden pedido: Oscuro - Automático - Claro (no el orden de ciclo system->light->dark de ThemeContext).
+const THEME_MODE_OPTIONS: { mode: ThemeMode; label: string }[] = [
+  { mode: 'dark', label: '🌙 Oscuro' },
+  { mode: 'system', label: '🖥 Auto' },
+  { mode: 'light', label: '☀ Claro' },
+];
 
 export function HomeScreen({ onSelectEmpiricalMethods, onSelectFadingSimulator }: HomeScreenProps) {
-  const { colors, mode, cycleMode } = useTheme();
+  const { colors, mode, setMode } = useTheme();
   const glowPulse = useRef(new Animated.Value(0.4)).current;
 
   useEffect(() => {
@@ -36,17 +37,32 @@ export function HomeScreen({ onSelectEmpiricalMethods, onSelectFadingSimulator }
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.topBar}>
-        <Pressable
-          onPress={cycleMode}
-          style={[styles.themeToggle, { borderColor: colors.border, backgroundColor: colors.surfaceMuted }]}
-        >
-          <Text style={[styles.themeToggleText, { color: colors.textSecondary }]}>{THEME_MODE_LABELS[mode]}</Text>
-        </Pressable>
-      </View>
-
       <Text style={[styles.title, { color: colors.textPrimary }]}>telecomm-propagation</Text>
       <Text style={[styles.subtitle, { color: colors.textMuted }]}>Elige una funcionalidad</Text>
+
+      <View
+        style={[styles.themeSwitchTrack, { borderColor: colors.border, backgroundColor: colors.surfaceMuted }]}
+      >
+        {THEME_MODE_OPTIONS.map((option) => {
+          const isSelected = mode === option.mode;
+          return (
+            <Pressable
+              key={option.mode}
+              onPress={() => setMode(option.mode)}
+              style={[styles.themeSwitchSegment, isSelected && { backgroundColor: colors.accentSolid }]}
+            >
+              <Text
+                style={[
+                  styles.themeSwitchText,
+                  { color: isSelected ? '#ffffff' : colors.textSecondary },
+                ]}
+              >
+                {option.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
 
       <Pressable onPress={onSelectEmpiricalMethods} style={styles.cardShell}>
         {/* Static glow: always visible, guarantees the neon look renders even if the
@@ -80,16 +96,22 @@ export function HomeScreen({ onSelectEmpiricalMethods, onSelectFadingSimulator }
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 24, paddingTop: 20 },
-  topBar: { flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 24 },
-  themeToggle: {
+  title: { fontSize: 22, fontWeight: '700', textAlign: 'center' },
+  subtitle: { fontSize: 14, textAlign: 'center', marginTop: 4, marginBottom: 20 },
+  themeSwitchTrack: {
+    flexDirection: 'row',
+    alignSelf: 'center',
     borderWidth: 1,
     borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    padding: 3,
+    marginBottom: 32,
   },
-  themeToggleText: { fontSize: 12, fontWeight: '600' },
-  title: { fontSize: 22, fontWeight: '700', textAlign: 'center' },
-  subtitle: { fontSize: 14, textAlign: 'center', marginTop: 4, marginBottom: 32 },
+  themeSwitchSegment: {
+    borderRadius: 17,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+  },
+  themeSwitchText: { fontSize: 12, fontWeight: '600' },
   cardShell: { position: 'relative', marginBottom: 20 },
   card: {
     borderRadius: 16,
