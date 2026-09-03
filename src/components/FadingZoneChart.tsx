@@ -10,6 +10,10 @@ interface FadingZoneChartProps {
   bandwidthRatio: number;
   /** Ts/Tc, y-axis. 0 when Tc = +Infinity (stationary mobile) -- see MIN_PLOTTABLE_RATIO below. */
   symbolRatio: number;
+  /** Bc, Hz -- needed (with coherenceTimeS) to place the zone 1/2 boundary; see nyquistBoundary below. */
+  coherenceBandwidthHz: number;
+  /** Tc, seconds. +Infinity for a stationary mobile. */
+  coherenceTimeS: number;
   zone: FadingZone;
   height?: number;
 }
@@ -45,12 +49,23 @@ function formatTick(value: number): string {
  * (docs/curso-referencia.md §8.7), not a good fit for LineChart.tsx
  * (built for line series over a single numeric axis). Reference lines at
  * ratio = 1 split the plane into the 4 real quadrants (zones 2-5); zone 1
- * ("zona rayada") is a Nyquist check independent of this plane (see
- * classifyZone in models/fading/fading.ts) so it isn't a quadrant here --
- * when it applies, the marker turns red and the summary text overrides
- * whichever quadrant the point geometrically falls in.
+ * ("zona rayada") is a Nyquist check (BT*Ts < 1, see classifyZone in
+ * models/fading/fading.ts) restricted to the flat/flat quadrant. Unlike
+ * the ratio=1 lines, its boundary isn't fixed on this plane: substituting
+ * BT = x*Bc, Ts = y*Tc into BT*Ts = 1 gives x*y = 1/(Bc*Tc), a hyperbola
+ * whose position (via Bc, Tc) moves with the current inputs -- see
+ * nyquistBoundary below. In log-log space x*y = k is the line
+ * log(y) = log(k) - log(x) (slope -1), so px()/py() alone are enough to
+ * place it, no curve-drawing needed.
  */
-export function FadingZoneChart({ bandwidthRatio, symbolRatio, zone, height = 260 }: FadingZoneChartProps) {
+export function FadingZoneChart({
+  bandwidthRatio,
+  symbolRatio,
+  coherenceBandwidthHz,
+  coherenceTimeS,
+  zone,
+  height = 260,
+}: FadingZoneChartProps) {
   const { colors } = useTheme();
   const [width, setWidth] = useState(0);
   const onLayout = (event: LayoutChangeEvent) => setWidth(event.nativeEvent.layout.width);
@@ -82,6 +97,24 @@ export function FadingZoneChart({ bandwidthRatio, symbolRatio, zone, height = 26
   const refY = py(1);
   const markerColor = zone === 1 ? colors.error : colors.accentSolid;
 
+  // Nyquist boundary x*y = nyquistK, clipped to the flat/flat quadrant
+  // (x in [xMin,1], y in [yMin,1] -- see the function doc comment above).
+  // Tc = Infinity (stationary mobile) makes nyquistK = 0: the "curve"
+  // degenerates to the x-axis itself, already where the marker sits, so
+  // there's nothing distinct to draw.
+  const nyquistK = Number.isFinite(coherenceTimeS) ? 1 / (coherenceBandwidthHz * coherenceTimeS) : 0;
+  const nyquistXStart = Math.max(xMin, nyquistK);
+  const nyquistXEnd = Math.min(1, nyquistK / yMin);
+  const nyquistBoundary =
+    nyquistK > 0 && nyquistXStart <= nyquistXEnd
+      ? {
+          x1: px(nyquistXStart),
+          y1: py(nyquistK / nyquistXStart),
+          x2: px(nyquistXEnd),
+          y2: py(nyquistK / nyquistXEnd),
+        }
+      : null;
+
   return (
     <View style={styles.container} onLayout={onLayout}>
       <Text style={[styles.title, { color: colors.textPrimary }]}>Zona de desvanecimiento (§8.7)</Text>
@@ -107,6 +140,30 @@ export function FadingZoneChart({ bandwidthRatio, symbolRatio, zone, height = 26
         {/* Reference lines at ratio = 1 -- the boundary between flat and selective on each axis. */}
         <Line x1={refX} y1={plotTop} x2={refX} y2={plotBottom} stroke={colors.textDisabled} strokeWidth={1.5} strokeDasharray="4,4" />
         <Line x1={plotLeft} y1={refY} x2={plotRight} y2={refY} stroke={colors.textDisabled} strokeWidth={1.5} strokeDasharray="4,4" />
+
+        {/* Zone 1/2 boundary, BT*Ts = 1 -- only meaningful inside the flat/flat quadrant. */}
+        {nyquistBoundary ? (
+          <>
+            <Line
+              x1={nyquistBoundary.x1}
+              y1={nyquistBoundary.y1}
+              x2={nyquistBoundary.x2}
+              y2={nyquistBoundary.y2}
+              stroke={colors.error}
+              strokeWidth={1.5}
+              strokeDasharray="2,3"
+            />
+            <SvgText
+              x={(nyquistBoundary.x1 + nyquistBoundary.x2) / 2}
+              y={(nyquistBoundary.y1 + nyquistBoundary.y2) / 2 - 5}
+              fontSize={9}
+              fill={colors.error}
+              textAnchor="middle"
+            >
+              BT·Ts = 1
+            </SvgText>
+          </>
+        ) : null}
 
         <Line x1={plotLeft} y1={plotTop} x2={plotLeft} y2={plotBottom} stroke={colors.textDisabled} strokeWidth={1} />
         <Line x1={plotLeft} y1={plotBottom} x2={plotRight} y2={plotBottom} stroke={colors.textDisabled} strokeWidth={1} />
