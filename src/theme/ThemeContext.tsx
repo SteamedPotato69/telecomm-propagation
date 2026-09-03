@@ -7,15 +7,12 @@ export type ThemeMode = 'system' | 'light' | 'dark';
 export type ResolvedScheme = 'light' | 'dark';
 
 const STORAGE_KEY = 'telecomm-propagation.themeMode';
-const MODE_CYCLE: ThemeMode[] = ['system', 'light', 'dark'];
 
 interface ThemeContextValue {
   mode: ThemeMode;
   resolvedScheme: ResolvedScheme;
   colors: ColorPalette;
   setMode: (mode: ThemeMode) => void;
-  /** Advances mode through system -> light -> dark -> system, for a single toggle control. */
-  cycleMode: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
@@ -47,18 +44,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     AsyncStorage.setItem(STORAGE_KEY, next).catch(() => {});
   };
 
-  const cycleMode = () => {
-    const next = MODE_CYCLE[(MODE_CYCLE.indexOf(mode) + 1) % MODE_CYCLE.length];
-    setMode(next);
-  };
-
   const resolvedScheme: ResolvedScheme = mode === 'system' ? (systemScheme === 'dark' ? 'dark' : 'light') : mode;
   const colors = resolvedScheme === 'dark' ? darkPalette : lightPalette;
 
-  const value = useMemo(
-    () => ({ mode, resolvedScheme, colors, setMode, cycleMode }),
-    [mode, resolvedScheme, colors]
-  );
+  const value = useMemo(() => ({ mode, resolvedScheme, colors, setMode }), [mode, resolvedScheme, colors]);
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
