@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { CalculatorScreen } from './CalculatorScreen';
 import { CellularHubScreen } from './CellularHubScreen';
 import { ComparisonScreen } from './ComparisonScreen';
+import { DimensioningScreen } from './DimensioningScreen';
 import { EnvironmentScreen } from './EnvironmentScreen';
 import { FadingScreen } from './FadingScreen';
 import { GeometryScreen } from './GeometryScreen';
@@ -19,7 +20,8 @@ type Route =
   | { name: 'cellular-hub' }
   | { name: 'geometry' }
   | { name: 'traffic' }
-  | { name: 'link-budget' };
+  | { name: 'link-budget' }
+  | { name: 'dimensioning' };
 
 /**
  * Local-state navigation instead of a router library: the app has a
@@ -77,6 +79,7 @@ export function RootNavigator() {
           onSelectGeometry={() => setRoute({ name: 'geometry' })}
           onSelectTraffic={() => setRoute({ name: 'traffic' })}
           onSelectLinkBudget={() => setRoute({ name: 'link-budget' })}
+          onSelectDimensioning={() => setRoute({ name: 'dimensioning' })}
         />
       );
 
@@ -88,6 +91,9 @@ export function RootNavigator() {
 
     case 'link-budget':
       return <LinkBudgetScreen onBack={() => setRoute({ name: 'cellular-hub' })} />;
+
+    case 'dimensioning':
+      return <DimensioningScreen onBack={() => setRoute({ name: 'cellular-hub' })} />;
 
     default:
       return null;

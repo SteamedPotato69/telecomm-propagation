@@ -7,6 +7,7 @@ interface CellularHubScreenProps {
   onSelectGeometry: () => void;
   onSelectTraffic: () => void;
   onSelectLinkBudget: () => void;
+  onSelectDimensioning: () => void;
 }
 
 interface CellularFeatureItem {
@@ -45,7 +46,7 @@ const CELLULAR_FEATURES: CellularFeatureItem[] = [
     id: 'dimensioning',
     title: 'Dimensionamiento 1G/2G',
     description: 'Flujo completo capacidad vs. cobertura -- el resultado final es el factor limitante.',
-    enabled: false,
+    enabled: true,
   },
   {
     id: 'wcdma',
@@ -60,6 +61,7 @@ export function CellularHubScreen({
   onSelectGeometry,
   onSelectTraffic,
   onSelectLinkBudget,
+  onSelectDimensioning,
 }: CellularHubScreenProps) {
   const { colors } = useTheme();
 
@@ -67,6 +69,7 @@ export function CellularHubScreen({
     geometry: onSelectGeometry,
     traffic: onSelectTraffic,
     'link-budget': onSelectLinkBudget,
+    dimensioning: onSelectDimensioning,
   };
 
   return (
