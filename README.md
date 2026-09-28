@@ -67,7 +67,7 @@ Inspiradas en un segundo PDF del curso, `Planificación de redes de comunicacion
 | 3 | Puente densidad de tráfico ↔ geometría (`p = B(ρ·Sc, K)`) | 🚀 Implementada | `src/models/traffic/density.ts`. Verificada contra ρ=30.77/500=0.0615 Erlang/km² (§13.2-13.3, diap. 31-32) |
 | 4a | Link budget con inversión MAPL → R, para Hata / COST-231-Hata | 🚀 Implementada | `src/models/propagation/{hata,cost231Hata,linkBudget}.ts`. Confirmado contra el PDF original que ambos ejemplos (1G y 2G) usan Okumura-Hata, no COST-231-Hata -- la inversión de distancia es exacta (§13.3, diap. 45-46); la fórmula de MAPL a partir del presupuesto de enlace reproduce el ejemplo 2G exacto pero el 1G queda 2dB por encima sin explicación en el material, documentado como discrepancia abierta |
 | 4b | Link budget con inversión MAPL → R, para Ikegami / Walfisch-Bertoni / COST-231 Walfish-Ikegami | 🕒 [PENDIENTE] | Heredan las ambigüedades ya marcadas `[OCR-verificar]` en `ikegami.ts` / `walfischBertoni.ts`; falta confirmar que la inversión tiene forma cerrada |
-| 5 | Flujo de dimensionamiento completo 1G/2G (capacidad vs. cobertura, tomar el máximo) | ✅ Aprobada | Patrón verificado numéricamente en 2 ejercicios completos del curso (§13.3); depende solo de 1, 2 y 4a |
+| 5 | Flujo de dimensionamiento completo 1G/2G (capacidad vs. cobertura, tomar el máximo) | 🚀 Implementada | `src/models/dimensioning/`. Lado de capacidad coincide exacto con ambos ejercicios (6 y 5 celdas); lado de cobertura difiere del curso (2 vs 3, 7 vs 8) como consecuencia directa del hallazgo de MAPL de 4a, no un error nuevo -- la conclusión cualitativa (1G limitado por capacidad, 2G por cobertura) sí coincide en ambos casos |
 | 6 | Carga UMTS uplink + bucle iterativo de *cell breathing* | ✅ Aprobada | Ejercicio de 6 pasos completamente verificado numéricamente (§13.4, diap. 66-74) |
 | 7 | Carga UMTS downlink (η_DL) | 🕒 [PENDIENTE] | Variable `β` no definida en el material extraído; sin ejercicio de verificación (§13.4-13.5) |
 | 8 | Erlang C (modelo de cola) | 🕒 [PENDIENTE] | No aparece en el material del curso; aplicabilidad a canales de radio (sistema de pérdida, no de cola) sin confirmar |
@@ -292,6 +292,10 @@ src/
     erlangB.ts                   # erlangBBlocking / erlangBInverseTraffic / erlangBInverseChannels
     density.ts                   # puente densidad de tráfico <-> geometría (p = B(ρ·Sc, K))
     index.ts                     # barrel
+  models/dimensioning/             # planificación celular (§13.3) -- rama feature/cellular-planning
+    types.ts                     # DimensioningInputs/Result
+    dimensioning.ts               # calculateDimensioning(): orquesta traffic + propagation, max(capacidad, cobertura)
+    index.ts                     # barrel
   utils/
     validation.ts                # assertPositive, assertNonNegative, assertUnitInterval, rangeWarningMessage, parseDecimal, requireField
     format.ts                    # formatPathLoss, formatCoherenceBandwidth, formatDopplerShift, formatCoherenceTime
@@ -308,6 +312,7 @@ src/
     TrafficResultPanel.tsx       # resultado genérico de un solo número (Erlang B / densidad)
     LinkBudgetForm.tsx           # bloque de ~8 campos de presupuesto de enlace, compartido entre pantallas
     LinkBudgetResultPanel.tsx    # EIRP / MAPL / radio de celda máximo
+    DimensioningResultPanel.tsx  # tabla por etapas: capacidad / cobertura / resultado final
   screens/
     RootNavigator.tsx            # estado de navegación (union Route, un case por pantalla)
     HomeScreen.tsx                # cards de nivel superior, data-driven
@@ -320,6 +325,7 @@ src/
     GeometryScreen.tsx            # ídem
     TrafficScreen.tsx             # ídem (modos Bloqueo/Tráfico/Canales/Densidad)
     LinkBudgetScreen.tsx          # ídem
+    DimensioningScreen.tsx        # ídem (capacidad + cobertura, orquesta 1, 2 y 4a)
   theme/
     palette.ts                    # tokens de color claro/oscuro; accent (lila neón) es constante en ambos
     ThemeContext.tsx               # ThemeProvider + useTheme(); persistencia con AsyncStorage
