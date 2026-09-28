@@ -30,8 +30,8 @@ const CELLULAR_FEATURES: CellularFeatureItem[] = [
   },
   {
     id: 'traffic',
-    title: 'Tráfico (Erlang B)',
-    description: 'Bloqueo, tráfico soportable o canales necesarios dado un GoS objetivo.',
+    title: 'Tráfico (Erlang B) y densidad',
+    description: 'Bloqueo, tráfico soportable, canales necesarios o densidad máxima de tráfico dado un GoS objetivo.',
     enabled: true,
   },
   {

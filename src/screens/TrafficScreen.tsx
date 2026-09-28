@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { NumericField } from '../components/NumericField';
 import { TrafficResultPanel } from '../components/TrafficResultPanel';
-import { erlangBBlocking, erlangBInverseChannels, erlangBInverseTraffic } from '../models/traffic';
+import { erlangBBlocking, erlangBInverseChannels, erlangBInverseTraffic, maxDensityForGoS } from '../models/traffic';
 import { useTheme } from '../theme';
 import { parseDecimal } from '../utils/validation';
 
@@ -10,12 +10,13 @@ interface TrafficScreenProps {
   onBack: () => void;
 }
 
-type Mode = 'blocking' | 'traffic' | 'channels';
+type Mode = 'blocking' | 'traffic' | 'channels' | 'density';
 
 const MODE_OPTIONS: { mode: Mode; label: string }[] = [
   { mode: 'blocking', label: 'Bloqueo' },
   { mode: 'traffic', label: 'Tráfico' },
   { mode: 'channels', label: 'Canales' },
+  { mode: 'density', label: 'Densidad' },
 ];
 
 export function TrafficScreen({ onBack }: TrafficScreenProps) {
@@ -24,6 +25,12 @@ export function TrafficScreen({ onBack }: TrafficScreenProps) {
   const [channelsInput, setChannelsInput] = useState('42');
   const [trafficInput, setTrafficInput] = useState('30.77');
   const [gosInput, setGosInput] = useState('0.01');
+  const [cellAreaInput, setCellAreaInput] = useState('500');
+
+  const showChannels = mode === 'blocking' || mode === 'traffic' || mode === 'density';
+  const showTraffic = mode === 'blocking' || mode === 'channels';
+  const showGos = mode === 'traffic' || mode === 'channels' || mode === 'density';
+  const showCellArea = mode === 'density';
 
   const { resultLabel, resultValue, errorMessage } = useMemo<{
     resultLabel: string;
@@ -51,17 +58,32 @@ export function TrafficScreen({ onBack }: TrafficScreenProps) {
         return { resultLabel: 'Tráfico soportable (A)', resultValue: `${traffic.toFixed(3)} Erlang`, errorMessage: null };
       }
 
-      const traffic = parseDecimal(trafficInput);
+      if (mode === 'channels') {
+        const traffic = parseDecimal(trafficInput);
+        const gos = parseDecimal(gosInput);
+        if (Number.isNaN(traffic) || Number.isNaN(gos)) {
+          return { resultLabel: '', resultValue: null, errorMessage: 'Todos los campos numéricos deben tener un valor.' };
+        }
+        const channels = erlangBInverseChannels(traffic, gos);
+        return { resultLabel: 'Canales necesarios (K)', resultValue: String(channels), errorMessage: null };
+      }
+
+      const channels = parseDecimal(channelsInput);
       const gos = parseDecimal(gosInput);
-      if (Number.isNaN(traffic) || Number.isNaN(gos)) {
+      const cellAreaKm2 = parseDecimal(cellAreaInput);
+      if (Number.isNaN(channels) || Number.isNaN(gos) || Number.isNaN(cellAreaKm2)) {
         return { resultLabel: '', resultValue: null, errorMessage: 'Todos los campos numéricos deben tener un valor.' };
       }
-      const channels = erlangBInverseChannels(traffic, gos);
-      return { resultLabel: 'Canales necesarios (K)', resultValue: String(channels), errorMessage: null };
+      const density = maxDensityForGoS(channels, gos, cellAreaKm2);
+      return {
+        resultLabel: 'Densidad de tráfico máxima soportable (ρ)',
+        resultValue: `${density.toFixed(4)} Erlang/km²`,
+        errorMessage: null,
+      };
     } catch (error) {
       return { resultLabel: '', resultValue: null, errorMessage: error instanceof Error ? error.message : 'Error desconocido.' };
     }
-  }, [mode, channelsInput, trafficInput, gosInput]);
+  }, [mode, channelsInput, trafficInput, gosInput, cellAreaInput]);
 
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -72,7 +94,8 @@ export function TrafficScreen({ onBack }: TrafficScreenProps) {
 
         <Text style={[styles.title, { color: colors.textPrimary }]}>Tráfico (Erlang B)</Text>
         <Text style={[styles.citation, { color: colors.textMuted }]}>
-          Bloqueo, tráfico soportable o canales necesarios -- docs/curso-referencia.md §13.2.
+          Bloqueo, tráfico soportable, canales necesarios o densidad de tráfico -- docs/curso-referencia.md
+          §13.2-13.3.
         </Text>
 
         <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>¿Qué quieres calcular?</Text>
@@ -97,11 +120,11 @@ export function TrafficScreen({ onBack }: TrafficScreenProps) {
           })}
         </View>
 
-        {mode !== 'channels' ? (
+        {showChannels ? (
           <NumericField label="Número de canales (K)" value={channelsInput} onChangeText={setChannelsInput} />
         ) : null}
 
-        {mode !== 'traffic' ? (
+        {showTraffic ? (
           <NumericField
             label="Tráfico ofrecido (A)"
             unit="Erlang"
@@ -110,7 +133,17 @@ export function TrafficScreen({ onBack }: TrafficScreenProps) {
           />
         ) : null}
 
-        {mode !== 'blocking' ? (
+        {showCellArea ? (
+          <NumericField
+            label="Área de celda (S_c)"
+            unit="km²"
+            value={cellAreaInput}
+            onChangeText={setCellAreaInput}
+            helperText="Del módulo de geometría celular, o cualquier área de celda conocida."
+          />
+        ) : null}
+
+        {showGos ? (
           <NumericField
             label="GoS objetivo"
             value={gosInput}
