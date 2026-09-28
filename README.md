@@ -14,7 +14,7 @@ Calculadora de modelos de pérdida de propagación en canales móviles (espacio 
 
 ## Tema claro/oscuro
 
-Debajo del subtítulo de Inicio hay un switch de 3 posiciones (`🌙 Oscuro` / `🖥 Auto` / `☀ Claro`) para elegir el modo directamente, sin ciclar. "Auto" sigue la preferencia del sistema operativo/navegador (`useColorScheme`); una elección manual se guarda con `@react-native-async-storage/async-storage` y se recuerda entre sesiones.
+Debajo del subtítulo de Inicio hay un switch de 3 posiciones (`🌙 Oscuro` / `Auto` / `☀ Claro`) para elegir el modo directamente, sin ciclar. "Auto" sigue la preferencia del sistema operativo/navegador (`useColorScheme`); una elección manual se guarda con `@react-native-async-storage/async-storage` y se recuerda entre sesiones.
 
 Los tokens de color están en [`src/theme/palette.ts`](src/theme/palette.ts), consumidos vía el hook `useTheme()` de [`src/theme/ThemeContext.tsx`](src/theme/ThemeContext.tsx). El **lila neón (`#c084fc`) es idéntico en ambas paletas a propósito** -- es el color de marca de la app (el brillo de la card de Inicio, el borde del modelo ganador en Comparación) y no debe cambiar según el tema. Lo que sí cambia por tema es `accentText` (texto legible en la misma familia de morados: oscuro sobre fondo claro, claro sobre fondo oscuro) -- usar el lila puro como color de texto fallaría el contraste en modo claro.
 
@@ -53,6 +53,111 @@ Segunda funcionalidad de la app (`src/screens/FadingScreen.tsx`, modelos en `src
 Verificado numéricamente contra los 3 ejemplos resueltos del curso (§8.8): D=2µs/f=900MHz/v=36km/h da Bc≈80kHz y Tc≈6ms; con BT=25kHz y Ts=50µs cae en zona 2 (plano); con BT=200kHz y Ts=3.7µs (GSM) cae en zona 4 (selectivo en frecuencia).
 
 **Zona 1 ("zona rayada"), advertencia explícita:** el curso nombra esta zona en §8.7 ("no es posible la transmisión") pero su desigualdad exacta vive en un diagrama que no sobrevivió la extracción de texto del PDF -- **`[interpretación no verificada]`**, igual que los `[OCR-verificar]` de `ikegami.ts`. La implementación (`src/models/fading/fading.ts`, función `classifyZone`) la marca como `BT·Ts < 1` (ancho de banda insuficiente para la tasa de símbolo, criterio de Nyquist) **restringido al cuadrante plano/plano** (`BT < Bc` y `Ts < Tc`). Esa restricción no es cosmética: una primera versión aplicaba `BT·Ts < 1` sin restringir y clasificaba mal el propio ejemplo GSM del curso (BT·Ts = 0.74 < 1, pero el curso dice zona 4) -- un ancho de banda ocupado menor que la tasa de símbolo es normal en modulaciones espectralmente eficientes (GMSK incluida), no evidencia de que la transmisión sea imposible.
+
+## Próximas funcionalidades: planificación y dimensionamiento celular (propuestas)
+
+Inspiradas en un segundo PDF del curso, `Planificación de redes de comunicaciones móviles e inalámbricas.pdf` (24/04/2026, ver [`docs/curso-referencia.md`](docs/curso-referencia.md) §13) -- distinto del que ya sustenta la calculadora de propagación y el simulador de desvanecimiento de arriba. Ninguna de estas funcionalidades está implementada todavía; esta sección es el punto de partida para la siguiente ronda de desarrollo.
+
+**Convención de estado:** ✅ **Aprobada** = teoría completa y sin ambigüedad, verificada contra al menos un ejemplo numérico del curso -- lista para implementar directamente. 🕒 **[PENDIENTE]** = falta información (fórmula ambigua, sin verificación numérica, o sin confirmar en el material oficial) -- no implementar el cálculo todavía; debe aparecer en la UI como funcionalidad futura (ver nota de UI al final de esta sección), nunca como resultado numérico sin advertencia.
+
+| # | Funcionalidad | Estado | Por qué |
+|---|---|---|---|
+| 1 | Geometría celular y reutilización de frecuencias | ✅ Aprobada | Fórmulas completas (§13.1), verificadas visualmente contra las diapositivas 20-22, no solo por OCR |
+| 2 | Erlang B -- dimensionamiento por capacidad | ✅ Aprobada | Recursión sin ambigüedad, verificada contra 3 ejercicios resueltos del curso (§13.2) |
+| 3 | Puente densidad de tráfico ↔ geometría (`p = B(ρ·Sc, K)`) | ✅ Aprobada | Es Erlang B con `A = ρ·Sc`; no introduce matemática nueva (§13.2) |
+| 4a | Link budget con inversión MAPL → R, para Hata / COST-231-Hata | ✅ Aprobada | Ambos modelos son lineales en `log10(d)`; la inversión es álgebra cerrada, sin ambigüedad |
+| 4b | Link budget con inversión MAPL → R, para Ikegami / Walfisch-Bertoni / COST-231 Walfish-Ikegami | 🕒 [PENDIENTE] | Heredan las ambigüedades ya marcadas `[OCR-verificar]` en `ikegami.ts` / `walfischBertoni.ts`; falta confirmar que la inversión tiene forma cerrada |
+| 5 | Flujo de dimensionamiento completo 1G/2G (capacidad vs. cobertura, tomar el máximo) | ✅ Aprobada | Patrón verificado numéricamente en 2 ejercicios completos del curso (§13.3); depende solo de 1, 2 y 4a |
+| 6 | Carga UMTS uplink + bucle iterativo de *cell breathing* | ✅ Aprobada | Ejercicio de 6 pasos completamente verificado numéricamente (§13.4, diap. 66-74) |
+| 7 | Carga UMTS downlink (η_DL) | 🕒 [PENDIENTE] | Variable `β` no definida en el material extraído; sin ejercicio de verificación (§13.4-13.5) |
+| 8 | Erlang C (modelo de cola) | 🕒 [PENDIENTE] | No aparece en el material del curso; aplicabilidad a canales de radio (sistema de pérdida, no de cola) sin confirmar |
+| 9 | Engset / Erlang B extendido (con reintentos) | 🕒 [PENDIENTE] | Solo en el resumen de industria (`erlang.com`), no en material oficial del curso |
+
+### 1. Geometría celular y reutilización de frecuencias -- ✅ Aprobada
+
+**Qué resuelve:** dado un radio de celda R (o al revés), calcula el paso de retícula d, la distancia de reutilización D, valida el tamaño de agrupación N contra la lista de números rómbicos permitidos, el área del rombo cocanal, el número de agrupaciones Q para cubrir un área total, y el área por sector si se sectoriza.
+
+**Fórmulas:** ver [`docs/curso-referencia.md`](docs/curso-referencia.md) §13.1.
+
+**Encaje propuesto:** módulo nuevo `src/models/geometry/` (mismo patrón que `models/fading/`: `types.ts`, `geometry.ts`, `index.ts`) + pantalla `GeometryScreen.tsx`, entrada nueva en `RootNavigator.tsx` y una tercera card en `HomeScreen.tsx`.
+
+**Validación:** `assertPositive` para R; N debe pertenecer al conjunto de números rómbicos válidos (rechazar con mensaje claro si no, no solo advertir).
+
+**Verificación de referencia:** N=7 → D=√21·R (diap. 23).
+
+### 2. Erlang B -- dimensionamiento por capacidad -- ✅ Aprobada
+
+**Qué resuelve:** recursión de Erlang B (bloqueo dado K canales y tráfico A) y su inversa (`A = B⁻¹(K,GoS)`, tráfico soportable dado K canales y GoS objetivo; y `K = B⁻¹(A,GoS)` redondeando hacia arriba, canales necesarios dado tráfico y GoS).
+
+**Fórmulas:** ver [`docs/curso-referencia.md`](docs/curso-referencia.md) §13.2. Usar la forma recursiva, no la factorial (desborda numéricamente).
+
+**Encaje propuesto:** `src/models/traffic/erlangB.ts` (+ `types.ts`, `index.ts`) + pantalla `TrafficScreen.tsx` con selector de "qué despejar" (bloqueo / canales / tráfico), similar a los chips de preset del simulador de desvanecimiento.
+
+**Validación:** `assertPositive` para A y K; GoS debe estar en (0,1); K debe ser entero (redondear hacia arriba en la inversa).
+
+**Verificación de referencia:** `B⁻¹(59, 0.02) = 47 Erlang/celda` (diap. 45); `B⁻¹(70, 0.02) = 57 Erlang/celda` (diap. 46); `B⁻¹(42, 0.01) = 30.77 Erlang/celda` (diap. 31).
+
+### 3. Puente densidad de tráfico ↔ geometría -- ✅ Aprobada
+
+**Qué resuelve:** `p = B(ρ·Sc, K)` -- dada la densidad de tráfico ρ (Erlang/km², normalmente proveniente de una densidad de usuarios y tráfico/usuario) y el área de celda Sc (de la funcionalidad 1), calcula el bloqueo con K canales; o, a la inversa, la densidad máxima soportable para un GoS objetivo.
+
+**Encaje propuesto:** no necesita módulo propio -- es una combinación de las funcionalidades 1 y 2; puede vivir como una pantalla `DensityScreen.tsx` que importa `models/geometry` y `models/traffic/erlangB`, o como un modo adicional dentro de `TrafficScreen.tsx`.
+
+**Verificación de referencia:** diap. 28 (definición) y diap. 31-32 (ejemplo con ρ=30.77/500=0.0615 Erlang/km²).
+
+### 4a. Link budget con inversión MAPL → R (Hata / COST-231-Hata) -- ✅ Aprobada
+
+**Qué resuelve:** hoy `CalculatorScreen` solo calcula L(d) dado d. Esta funcionalidad recibe un link budget completo (potencia MS, ganancias de antena, body loss, pérdida de feeder, sensibilidad de BTS, margen de sombra, margen de interferencia -- la misma tabla de parámetros de diap. 45-46) y calcula el MAPL, luego invierte Hata/COST-231-Hata (lineales en log10(d)) para obtener R_max.
+
+**Encaje propuesto:** agregar una función `solveDistanceKm(inputs, targetLossDb): number` a `hata.ts` y `cost231Hata.ts` (álgebra directa: despejar `log10(d)` de la ecuación ya implementada en `calculate()`), un tipo `LinkBudgetInputs` nuevo, y una pantalla `LinkBudgetScreen.tsx` con la tabla de parámetros y el resultado R_max.
+
+**Validación:** reutilizar `assertPositive`; el MAPL resultante debe ser positivo (potencia EIRP > sensibilidad, si no, error claro de "no hay margen de enlace").
+
+**Verificación de referencia:** MAPL=141 dB → R=2.5 km (diap. 45, Okumura-Hata urbano); MAPL=133 dB → R=1.5 km (diap. 46).
+
+### 4b. Link budget con inversión MAPL → R (Ikegami / Walfisch-Bertoni / COST-231 WI) -- 🕒 [PENDIENTE]
+
+**Qué falta:** estos tres modelos ya cargan advertencias propias (`[OCR-verificar]` en Ikegami, interpretación no confirmada de `H` en Walfisch-Bertoni). Antes de invertirlos hay que confirmar (a) que la fórmula base es correcta, y (b) que es invertible en forma cerrada para R con los demás parámetros geométricos fijos (no es evidente para Walfisch-Bertoni, que mezcla `log10(d)` con `log10(1 + d²/(17H))`).
+
+**Tratamiento en la app mientras tanto:** en `LinkBudgetScreen.tsx`, el selector de modelo debe **excluir** estos tres (o mostrarlos deshabilitados con la etiqueta "Próximamente -- pendiente de confirmar invertibilidad"), igual que ya se documenta el estado de cada modelo en la tabla "Estado de los modelos" de arriba.
+
+### 5. Flujo de dimensionamiento completo 1G/2G -- ✅ Aprobada
+
+**Qué resuelve:** compone 1, 2 y 4a en el flujo exacto de los ejercicios del curso: tráfico total → celdas por capacidad (vía 2) → link budget → celdas por cobertura (vía 4a) → resultado = máximo de ambas. Es, en esencia, una calculadora que resuelve la tarea de la diap. 75 del PDF (entrega 5 de mayo) para 1G y 2G.
+
+**Encaje propuesto:** pantalla `DimensioningScreen.tsx` que orquesta los módulos anteriores y presenta el resultado igual que la tabla de diap. 32 (radio, # celdas, área, canales/celda, tráfico/celda, densidad, # abonados por etapa).
+
+**Verificación de referencia:** tabla completa de diap. 32 (4 etapas de división celular) y los dos ejercicios de diap. 44-46.
+
+### 6. Carga UMTS uplink + *cell breathing* -- ✅ Aprobada
+
+**Qué resuelve:** el equivalente de la funcionalidad 5 para 3G/UMTS, donde la capacidad y la cobertura están acopladas por la carga de celda en vez de ser independientes. Implementa Gp, ρ_i, η_UL y el bucle iterativo MAPL_efectivo → R → usuarios → η, hasta converger.
+
+**Encaje propuesto:** módulo independiente `src/models/wcdma/` (matemática distinta de Erlang B -- carga continua, no canales discretos) + pantalla `WcdmaLoadScreen.tsx` que muestra la tabla de iteraciones tal como en diap. 73 (columna por iteración: carga, MAPL_ef, R, área, usuarios, ΔR) hasta convergencia.
+
+**Validación:** η debe converger a menos de 1 (carga inestable si no); iterar con un límite máximo de iteraciones y reportar si no converge.
+
+**Verificación de referencia:** ejercicio completo de diap. 71-74 (converge en 3 iteraciones a R=1.07 km, η=54%).
+
+### 7. Carga UMTS downlink (η_DL) -- 🕒 [PENDIENTE]
+
+**Qué falta:** la variable `β` de la fórmula extraída no está definida en el material (§13.4-13.5), y no hay ningún ejercicio del curso que la ejercite numéricamente. Implementarla ahora significaría adivinar una convención de la literatura (factor de ortogonalidad) sin poder verificarla contra el curso.
+
+**Tratamiento en la app mientras tanto:** `WcdmaLoadScreen.tsx` debe mostrar únicamente el resultado de uplink, con una nota explícita "Downlink: pendiente de confirmar la definición de β contra el material del curso -- no implementado."
+
+### 8. Erlang C -- 🕒 [PENDIENTE]
+
+**Qué falta:** confirmación del profesor de si el curso lo cubre, y en qué contexto de dimensionamiento de canales de radio se aplicaría un modelo de cola (los canales de radio en este curso son todos de pérdida pura, no de espera).
+
+**Tratamiento en la app mientras tanto:** no incluir como opción en `TrafficScreen.tsx`; si se agrega más adelante, debe ir en un módulo separado (`erlangC.ts`) para no mezclar un modelo no confirmado con Erlang B (que sí lo está).
+
+### 9. Engset / Erlang B extendido -- 🕒 [PENDIENTE]
+
+**Qué falta:** igual que 8 -- no aparecen en ningún material oficial cargado hasta ahora, solo en el resumen de industria de `erlang.com`.
+
+### Nota de UI para funcionalidades [PENDIENTE]
+
+Ninguna funcionalidad marcada 🕒 [PENDIENTE] debe producir un resultado numérico en la app -- mostrarla, si se agrega a la UI antes de resolver el vacío, como una card o modelo **deshabilitado** con la etiqueta "Próximamente", siguiendo el mismo criterio que ya aplica la tabla "Estado de los modelos" de arriba a un modelo no implementado. Esto probablemente implica extender `HomeScreen.tsx` de dos cards hardcodeadas a una lista de cards data-driven con un campo `status: 'enabled' | 'coming-soon'`, en vez de agregar un tercer bloque JSX casi idéntico por cada funcionalidad nueva.
 
 ## Requisitos previos
 

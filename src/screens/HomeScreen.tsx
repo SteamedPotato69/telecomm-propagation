@@ -10,10 +10,10 @@ interface HomeScreenProps {
 
 const NEON_LILAC = '#c084fc';
 
-// Orden pedido: Oscuro - Automático - Claro (no el orden de ciclo system->light->dark de ThemeContext).
+
 const THEME_MODE_OPTIONS: { mode: ThemeMode; label: string }[] = [
   { mode: 'dark', label: '🌙 Oscuro' },
-  { mode: 'system', label: '🖥 Auto' },
+  { mode: 'system', label: 'Auto' },
   { mode: 'light', label: '☀ Claro' },
 ];
 
@@ -37,8 +37,8 @@ export function HomeScreen({ onSelectEmpiricalMethods, onSelectFadingSimulator }
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Text style={[styles.title, { color: colors.textPrimary }]}>telecomm-propagation</Text>
-      <Text style={[styles.subtitle, { color: colors.textMuted }]}>Elige una funcionalidad</Text>
+      <Text style={[styles.title, { color: colors.textPrimary }]}>PROPAPP</Text>
+      <Text style={[styles.subtitle, { color: colors.textMuted }]}>Por favor, elige una funcionalidad</Text>
 
       <View
         style={[styles.themeSwitchTrack, { borderColor: colors.border, backgroundColor: colors.surfaceMuted }]}
