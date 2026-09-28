@@ -1,7 +1,7 @@
 ---
 title: "Base de Conocimiento del Curso — Propagación en Canales Móviles (ENFA 2 MIRAMÁ)"
 proposito: "Documento vivo de contexto para asistentes de IA (Claude u otros). Resume fielmente el material oficial subido por el estudiante, para que cualquier sesión futura entienda el curso sin tener que releer los PDFs desde cero. Se irá complementando a medida que el estudiante suba nuevo material."
-ultima_actualizacion: "2026-08-18"
+ultima_actualizacion: "2026-09-27"
 ---
 
 # Cómo usar este documento (leer primero)
@@ -699,6 +699,7 @@ Estas diapositivas contienen figuras, gráficas o tablas que **no se pudieron ex
 | 2026-08-25 | **v1 — primera versión trasladada al repositorio de código** `TELECOMM-LFS` como `docs/curso-referencia.md`, según lo establecido en el `CLAUDE.md` del proyecto (fuente de verdad de fórmulas para la implementación) | Repositorio GitHub `SteamedPotato69/TELECOMM-LFS` |
 | 2026-08-28 | **Re-subida del PDF fuente** (mismo archivo, ahora 172 páginas en vez de 85 — ver sección 12). Se actualiza el ejercicio de la sección 5.2, se marca ECC-33 (5.5) como pendiente de confirmar, y se agrega la sección 12 con el enunciado oficial del proyecto de app | Carpeta del proyecto "ENFA 2 MIRAMÁ" |
 | 2026-08-29 | Se confirma que **ECC-33 sigue vigente** en el curso (no fue retirado del temario, fue un problema de exportación de esa diapositiva en el PDF de 172 páginas). Se cierra la advertencia en sección 5.5 y se actualiza 12.1 | Conversación con el estudiante |
+| 2026-09-27 | Se agrega la **sección 13** (`Planificación de redes de comunicaciones móviles e inalámbricas.pdf`, 24/04/2026, 75 diapositivas): geometría celular, Erlang B aplicado a dimensionamiento, patrón capacidad-vs-cobertura, ecuación de carga UMTS y bucle de *cell breathing*. Documento distinto de `Propagación en Canales Móviles.pdf` (secciones 1-12) — mismo curso, módulo de planificación celular | Carpeta del proyecto "ENFA 2 MIRAMÁ", análisis en sesión de Cowork |
 
 **Instrucción para actualizaciones futuras:** al subir nuevo material (otro PDF, apuntes, normativas), añadir una nueva sección numerada siguiendo el mismo formato (metadatos de la fuente, contenido resumido con fórmulas y rangos de validez, vacíos de contenido) y agregar una fila a esta tabla. No borrar ni resumir las secciones anteriores — este documento debe seguir sirviendo como historial completo del curso.
 
@@ -731,3 +732,176 @@ Este enunciado es la fuente de verdad del alcance de `TELECOMM-LFS` — no es so
 3. **"Verificar y mostrar gráficas... para comparar la predicción de pérdidas y potencias gráficamente"** — se requiere explícitamente una vista comparativa gráfica entre modelos (no solo un número de salida), y la palabra "verificar" reafirma la regla ya establecida en el `CLAUDE.md` de no dar un resultado por bueno sin contrastarlo contra un valor de referencia.
 
 **Nota para el estudiante:** el roadmap de fases que se propuso inicialmente (selección manual de modelo primero, comparación y gráficas como fases 3 y 5, más adelante) puede no reflejar bien esta prioridad — el enunciado sugiere que la selección automática de modelo y la comparación gráfica son parte del núcleo de la entrega, no un extra. Vale la pena revisar el orden de fases con esto en mente.
+---
+
+# 13. Planificación celular 1G/2G/3G — tráfico, geometría y dimensionamiento (Prof. Víctor Fabián Miramá)
+
+## 13.0 Metadatos del material fuente
+
+| Campo | Valor |
+|---|---|
+| Archivo | `Planificación de redes de comunicaciones móviles e inalámbricas.pdf` |
+| Docente | Víctor Fabián Miramá |
+| Institución | Facultad de Ingeniería Electrónica y Telecomunicaciones, Universidad del Cauca |
+| Fecha en el pie de página | 24/04/2026 |
+| Extensión | 75 diapositivas |
+| Carpeta | `1G_2G_enfa2/` dentro del proyecto "ENFA 2 MIRAMÁ" (subido 2026-09-27) |
+| Relación con las secciones 0-12 de este documento | Material **distinto** de `Propagación en Canales Móviles.pdf` (secciones 1-12) — mismo curso, módulo de **planificación y dimensionamiento celular** en vez de modelos de propagación puros |
+
+**Alcance real vs. anunciado:** la diapositiva 1 (tabla de contenido) anuncia 6 bloques hasta 4G y 5G, pero el contenido real de este PDF cubre solo hasta **3G** (termina en la diapositiva 75 con la asignación de trabajo para 1G/2G/3G). 4G y 5G no están en este archivo.
+
+## 13.1 Geometría celular y retícula de planificación (diap. 20-25)
+
+Antenas omnidireccionales producen coberturas circulares que no recubren el plano sin traslapes; la planificación usa coberturas poligonales inscritas en el círculo de cobertura de radio R:
+
+```
+S_triángulo = (3√3/4)·R²
+S_cuadrado  = 2·R²
+S_hexágono  = (3√3/2)·R²
+```
+
+Retícula hexagonal de planificación (diap. 21):
+```
+d = R·√3                       # paso de la retícula
+S_c = (3√3/2)·R² = (√3/2)·d²   # área de celda hexagonal
+```
+
+Dadas dos estaciones en P(m,n) y Q(k,l), con i=m−k, j=n−l:
+```
+D² = (i² + j² + i·j)·d²
+```
+
+Situando la celda de referencia en el origen (diap. 22):
+```
+D² = (m² + n² + m·n)·d²
+N = (D/d)² = m² + n² + m·n        # número rómbico: tamaño de agrupación válido
+S_RC = N·(√3·d²/2) = (√3·D²/2)     # área del rombo cocanal, equivale a N celdas
+```
+
+Solo son geométricamente posibles agrupaciones cuyo N sea un número rómbico. Valores dados en el material (diap. 23):
+
+| m | n | N |
+|---|---|---|
+| 0 | 2 | 4 |
+| 1 | 1 | 3 |
+| 1 | 2 | 7 |
+| 1 | 3 | 13 |
+| -1 | 2 | 3 |
+| -1 | 3 | 7 |
+| 2 | 2 | 12 |
+| 0 | 3 | 9 |
+
+Distancia de reutilización en función de R (diap. 23):
+```
+D = √(3·N)·R
+```
+Ejemplo dado: agrupación de 7 celdas → D = √21·R.
+
+Número de agrupaciones para cubrir un área total S_T (diap. 24):
+```
+Q = ceil( S_T / (3·D²/2) ) + 1        # Q es también el índice de reutilización
+```
+Si K es el número de canales por celda, la red dispone de Q·K·N canales en total.
+
+Sectorización trisectorial a 120° (diap. 25):
+```
+S_sector = (1/3)·S_c = (√3/2)·R²
+```
+
+**Verificación:** fórmulas confirmadas visualmente contra el render de las diapositivas 20-22 (no solo el texto extraído por OCR) — no hay marcas `[OCR-verificar]` en esta sección.
+
+## 13.2 Erlang B aplicado a dimensionamiento celular (diap. 28, 31, 45-46)
+
+El curso usa el modelo de pérdida pura Erlang B (bloqueo, sin cola) para dimensionar canales de tráfico por celda — cita explícitamente `erlang.com/calculator/erlb/` (diap. 28):
+
+```
+p = B(ρ·S_c, K)
+```
+donde p = probabilidad de bloqueo (GoS), ρ = densidad de tráfico (Erlang/km²), S_c = área de celda, K = canales disponibles.
+
+Notación inversa usada en los ejercicios resueltos — dado K canales y un GoS objetivo, obtener el tráfico soportable:
+```
+A_c = B⁻¹(K, GoS)
+```
+
+Forma recursiva estable (no usar la forma factorial — desborda numéricamente para K y A grandes):
+```
+B(0,A) = 1
+B(n,A) = A·B(n−1,A) / (n + A·B(n−1,A))     para n = 1..K
+```
+`B⁻¹(K,GoS)` se resuelve iterando A hasta que B(K,A) = GoS (búsqueda binaria: B es monótona creciente en A).
+
+**Verificación numérica** (tres casos, todos confirmados contra el PDF):
+- Diap. 31: 294 canales / 7 celdas = 42 canales/celda → `B⁻¹(42, 0.01) = 30.77 Erlang/celda`.
+- Diap. 45 (1G): 416 canales / 7 celdas = 59 canales/celda → `B⁻¹(59, 0.02) = 47 Erlang/celda`.
+- Diap. 46 (2G): 10 TRX × 7 IT = 70 canales/celda → `B⁻¹(70, 0.02) = 57 Erlang/celda`.
+
+## 13.3 Patrón de dimensionamiento repetido: capacidad vs. cobertura (diap. 44-46, 71-74)
+
+Los tres ejercicios resueltos completos del PDF (1G, 2G, 3G) siguen la misma estructura:
+
+1. **Por tráfico/capacidad:** tráfico total (usuarios × Erlang/usuario) → canales por celda (según ancho de banda disponible / agrupación N) → `A_c = B⁻¹(K,GoS)` (§13.2) → # celdas = tráfico total / A_c.
+2. **Por cobertura:** link budget (tabla de parámetros: EIRP, ganancias, sensibilidad, márgenes) → MAPL → modelo de propagación (Okumura-Hata o COST-231-Hata, ya implementados en `src/models/propagation/`) → radio de celda R → # celdas = área total / área de celda (área **circular** πR², distinta de la fórmula hexagonal de §13.1 — son dos etapas distintas del diseño, no un error).
+3. **Resultado final = máx(# celdas por capacidad, # celdas por cobertura)** — el factor limitante.
+
+**Verificación numérica completa:**
+
+| Caso | Tráfico total | Canales/celda | A_c (Erlang B⁻¹) | Celdas por capacidad | MAPL | R | Celdas por cobertura | Resultado final |
+|---|---|---|---|---|---|---|---|---|
+| 1G (diap. 44-45) | 250 Erl (10000 usr × 0.025) | 59 | 47 Erl | 6 | 141 dB | 2.5 km | 3 | **6 (capacidad)** |
+| 2G (diap. 46) | 250 Erl | 70 | 57 Erl | 5 | 133 dB | 1.5 km | 8 | **8 (cobertura)** |
+
+3G (diap. 66-74) sigue el mismo patrón pero con la ecuación de carga UMTS en vez de Erlang B — ver §13.4.
+
+## 13.4 Ecuación de carga UMTS y bucle iterativo de *cell breathing* (diap. 66-74)
+
+En UMTS/WCDMA no hay canales discretos: la capacidad y la cobertura están acopladas a través de la carga de celda η. A mayor carga, menor MAPL efectivo, menor radio (el radio "respira" con el tráfico).
+
+Ganancia de procesado (diap. 66):
+```
+Gp = 10·log10(W / R_b)          # W = 3.84 Mcps (chip rate UMTS), R_b = tasa del servicio
+```
+
+Contribución de carga de un usuario i al uplink (diap. 67):
+```
+ρ_i = 1 / (1 + W / (α_i · R_bi · (Eb/N0)_i))
+```
+Carga total de celda en uplink:
+```
+η_UL = Σ ρ_i · (1 + i_oc)          # i_oc: factor de interferencia de otras celdas
+```
+Número máximo de usuarios del servicio j por celda (UL):
+```
+N_j = η_UL,max / (ρ_j · (1 + i_oc))
+```
+
+**[OCR-verificar / incompleto]** Carga en downlink (diap. 67), extraída con ambigüedad:
+```
+η_DL = Σ [ α_i · (Eb/N0)_i · R_bi / W ] · (1 − β) + i_other
+```
+La variable `β` no está definida en el texto extraído (probablemente el factor de ortogonalidad del código, típico en literatura UMTS, pero no confirmado contra el PDF original) y no hay ningún ejercicio resuelto en el material que ejercite η_DL numéricamente — solo η_UL se usa en el ejercicio completo de diap. 69-74.
+
+Margen de carga y bucle iterativo (diap. 68-70, 73):
+```
+M_carga = −10·log10(1 − η)
+MAPL_efectivo = MAPL_sin_carga − M_carga
+```
+Se itera: MAPL_efectivo → modelo de propagación → R_cargado → densidad de usuarios en ese radio → η recalculado → hasta que R y η converjan.
+
+**Ejercicio completo verificado (diap. 71-74):** 50 km², 10.000 usuarios, 0.025 Erlang/usuario, GoS=2%, mix 70% voz AMR / 20% PS64k / 10% PS384k, banda 2100 MHz. Paso 1 (Gp y ρ por servicio) → Paso 2 (link budget UMTS, MAPL_carga_cero = 152.2 dB para voz) → Paso 3 (η_objetivo=50%, i_oc=0.55 → 9 usuarios activos/celda) → Paso 4 (bucle: converge en 3 iteraciones a R=1.07 km, η=54%, margen de carga 3.37 dB) → Paso 5 (17 NodeB por cobertura vs. 31 NodeB por capacidad → 31 NodeB, limitado por capacidad) → Paso 6 (árbol OVSF: 30/128 códigos consumidos; interfaz Iub: 2 E1/NodeB, 2.7 Mbps/NodeB).
+
+## 13.5 Vacíos de contenido y advertencias detectadas
+
+- **η_DL (downlink):** ver §13.4 — variable `β` no definida, sin ejercicio de verificación. No implementar sin confirmar contra el PDF original o Rappaport/Holma-Toskala.
+- **Erlang C (modelo de cola M/M/N):** este PDF **no lo menciona**. Todos los ejemplos de dimensionamiento de canal usan Erlang B (modelo de pérdida pura), consistente con que un canal de radio bloquea la llamada en vez de encolarla. Erlang C es un modelo de industria para *call centers* (ver el resumen de `erlang.com` ya cargado en el proyecto de Cowork) — su aplicabilidad a dimensionamiento de canales de radio no está confirmada por el curso.
+- **Engset y Erlang B extendido (con reintentos):** tampoco aparecen en este PDF — solo en el resumen genérico de `erlang.com`.
+- **4G y 5G:** anunciados en la tabla de contenido (diap. 1) pero no desarrollados en este archivo — pendientes de una entrega posterior del curso.
+- **Diagramas de arquitectura** (AMPS diap. 37-38, GSM diap. 41-42, UMTS diap. 54-58, árbol OVSF diap. 61-64): son mayormente gráficos, no transcritos en detalle en este documento — relevantes para preguntas de identificación de arquitectura, no para cálculo.
+- **Q (número de agrupaciones, §13.1):** la fórmula está dada (diap. 24) pero el material no incluye un ejercicio numérico que la ejercite directamente — es álgebra simple (techo de una división) y no se marca como una fuente de riesgo, a diferencia de η_DL.
+
+## 13.6 Relación con el proyecto de app (`telecomm-propagation`)
+
+Ver `README.md` sección "Próximas funcionalidades" para el mapeo de cada bloque de esta sección a una funcionalidad propuesta de la app, con estado APROBADA/PENDIENTE.
+
+---
+
