@@ -56,16 +56,16 @@ Verificado numéricamente contra los 3 ejemplos resueltos del curso (§8.8): D=2
 
 ## Próximas funcionalidades: planificación y dimensionamiento celular (propuestas)
 
-Inspiradas en un segundo PDF del curso, `Planificación de redes de comunicaciones móviles e inalámbricas.pdf` (24/04/2026, ver [`docs/curso-referencia.md`](docs/curso-referencia.md) §13) -- distinto del que ya sustenta la calculadora de propagación y el simulador de desvanecimiento de arriba. Ninguna de estas funcionalidades está implementada todavía; esta sección es el punto de partida para la siguiente ronda de desarrollo.
+Inspiradas en un segundo PDF del curso, `Planificación de redes de comunicaciones móviles e inalámbricas.pdf` (24/04/2026, ver [`docs/curso-referencia.md`](docs/curso-referencia.md) §13) -- distinto del que ya sustenta la calculadora de propagación y el simulador de desvanecimiento de arriba. En desarrollo en la rama `feature/cellular-planning`: las funcionalidades 1-4a ya están implementadas y verificadas (ver estado por fila abajo); 5 y 6 siguen pendientes.
 
-**Convención de estado:** ✅ **Aprobada** = teoría completa y sin ambigüedad, verificada contra al menos un ejemplo numérico del curso -- lista para implementar directamente. 🕒 **[PENDIENTE]** = falta información (fórmula ambigua, sin verificación numérica, o sin confirmar en el material oficial) -- no implementar el cálculo todavía; debe aparecer en la UI como funcionalidad futura (ver nota de UI al final de esta sección), nunca como resultado numérico sin advertencia.
+**Convención de estado:** ✅ **Aprobada** = teoría completa y sin ambigüedad, verificada contra al menos un ejemplo numérico del curso -- lista para implementar directamente. 🚀 **Implementada** = ya está en la app (rama `feature/cellular-planning`), verificada con tests (`vitest`, ver [Verificación de tipos](#verificación-de-tipos)) y en el navegador. 🕒 **[PENDIENTE]** = falta información (fórmula ambigua, sin verificación numérica, o sin confirmar en el material oficial) -- no implementar el cálculo todavía; debe aparecer en la UI como funcionalidad futura (ver nota de UI al final de esta sección), nunca como resultado numérico sin advertencia.
 
 | # | Funcionalidad | Estado | Por qué |
 |---|---|---|---|
-| 1 | Geometría celular y reutilización de frecuencias | ✅ Aprobada | Fórmulas completas (§13.1), verificadas visualmente contra las diapositivas 20-22, no solo por OCR |
-| 2 | Erlang B -- dimensionamiento por capacidad | ✅ Aprobada | Recursión sin ambigüedad, verificada contra 3 ejercicios resueltos del curso (§13.2) |
-| 3 | Puente densidad de tráfico ↔ geometría (`p = B(ρ·Sc, K)`) | ✅ Aprobada | Es Erlang B con `A = ρ·Sc`; no introduce matemática nueva (§13.2) |
-| 4a | Link budget con inversión MAPL → R, para Hata / COST-231-Hata | ✅ Aprobada | Ambos modelos son lineales en `log10(d)`; la inversión es álgebra cerrada, sin ambigüedad |
+| 1 | Geometría celular y reutilización de frecuencias | 🚀 Implementada | `src/models/geometry/`. Verificada contra N=7 → D=√21·R (§13.1, diap. 23) |
+| 2 | Erlang B -- dimensionamiento por capacidad | 🚀 Implementada | `src/models/traffic/erlangB.ts`. Verificada contra los 3 ejercicios del curso (§13.2) -- 2 de las 3 cifras de referencia están ~3-4% desviadas de la inversión continua exacta, documentado en los tests como redondeo del curso, no error |
+| 3 | Puente densidad de tráfico ↔ geometría (`p = B(ρ·Sc, K)`) | 🚀 Implementada | `src/models/traffic/density.ts`. Verificada contra ρ=30.77/500=0.0615 Erlang/km² (§13.2-13.3, diap. 31-32) |
+| 4a | Link budget con inversión MAPL → R, para Hata / COST-231-Hata | 🚀 Implementada | `src/models/propagation/{hata,cost231Hata,linkBudget}.ts`. Confirmado contra el PDF original que ambos ejemplos (1G y 2G) usan Okumura-Hata, no COST-231-Hata -- la inversión de distancia es exacta (§13.3, diap. 45-46); la fórmula de MAPL a partir del presupuesto de enlace reproduce el ejemplo 2G exacto pero el 1G queda 2dB por encima sin explicación en el material, documentado como discrepancia abierta |
 | 4b | Link budget con inversión MAPL → R, para Ikegami / Walfisch-Bertoni / COST-231 Walfish-Ikegami | 🕒 [PENDIENTE] | Heredan las ambigüedades ya marcadas `[OCR-verificar]` en `ikegami.ts` / `walfischBertoni.ts`; falta confirmar que la inversión tiene forma cerrada |
 | 5 | Flujo de dimensionamiento completo 1G/2G (capacidad vs. cobertura, tomar el máximo) | ✅ Aprobada | Patrón verificado numéricamente en 2 ejercicios completos del curso (§13.3); depende solo de 1, 2 y 4a |
 | 6 | Carga UMTS uplink + bucle iterativo de *cell breathing* | ✅ Aprobada | Ejercicio de 6 pasos completamente verificado numéricamente (§13.4, diap. 66-74) |
@@ -251,7 +251,13 @@ No usar el perfil `production` para esto: genera un `.aab`, pensado para subir a
 npx tsc --noEmit
 ```
 
-No hay suite de tests todavía (ver [Trabajo futuro](#trabajo-futuro)).
+## Tests
+
+```bash
+npx vitest run
+```
+
+Alcance limitado a `src/models/**` (rama `feature/cellular-planning`): esos módulos no importan nada de `react-native`/Expo, así que corren bajo Node sin necesitar mocks de RN/jsdom. Cubre las funcionalidades de planificación celular (geometría, Erlang B, link budget) -- los modelos de propagación y desvanecimiento originales todavía se verifican solo a ojo en el navegador (ver [Trabajo futuro](#trabajo-futuro)).
 
 ## Estructura del proyecto
 
@@ -268,6 +274,7 @@ src/
     ikegami.ts                   # Ikegami (requiere geometría de calle)
     walfischBertoni.ts           # Walfisch-Bertoni (requiere geometría de edificios)
     cost231WalfishIkegami.ts     # COST-231 Walfish-Ikegami (combina Ikegami + Walfisch-Bertoni)
+    linkBudget.ts                # calculateMapl(): MAPL desde un presupuesto de enlace completo (§13.3)
     sampleSeries.ts               # evalúa un modelo sobre un rango de distancias, para las gráficas
     index.ts                     # registro: PROPAGATION_MODELS / PROPAGATION_MODEL_LIST
   models/fading/
@@ -276,24 +283,43 @@ src/
     environments.ts              # DELAY_SPREAD_PRESETS: presets Rural/Suburbano/Urbano (§8.6)
     zoneLabels.ts                 # título/descripción en español por cada FadingZone
     index.ts                     # barrel
+  models/geometry/                # planificación celular (§13.1) -- rama feature/cellular-planning
+    types.ts                     # GeometryInputs/Result
+    rhombicNumbers.ts            # tabla de ejemplo + isValidRhombicNumber (N=i²+ij+j²)
+    geometry.ts                  # calculateCellularGeometry(): retícula hexagonal, reuso, Q
+    index.ts                     # barrel
+  models/traffic/                 # planificación celular (§13.2-13.3) -- rama feature/cellular-planning
+    erlangB.ts                   # erlangBBlocking / erlangBInverseTraffic / erlangBInverseChannels
+    density.ts                   # puente densidad de tráfico <-> geometría (p = B(ρ·Sc, K))
+    index.ts                     # barrel
   utils/
-    validation.ts                # assertPositive, assertNonNegative, rangeWarningMessage, parseDecimal, requireField
+    validation.ts                # assertPositive, assertNonNegative, assertUnitInterval, rangeWarningMessage, parseDecimal, requireField
     format.ts                    # formatPathLoss, formatCoherenceBandwidth, formatDopplerShift, formatCoherenceTime
   components/
     NumericField.tsx             # campo numérico controlado (unit opcional para parámetros sin unidad)
-    ModelSelector.tsx            # selector de modelo (chips)
+    ModelSelector.tsx            # selector de modelo (chips), genérico sobre {id,label,disabled}
     ResultPanel.tsx              # resultado + advertencias + errores
     LineChart.tsx                 # gráfica de líneas sobre react-native-svg (eje lineal o log)
     FadingResultPanel.tsx        # Bc/fd/Tc + clasificación plano-selectivo / lento-rápido
     FadingZoneChart.tsx          # gráfica de punto BT/Bc vs Ts/Tc sobre react-native-svg (no LineChart)
+    GlowCard.tsx                 # card con brillo neón (cards de nivel superior en Inicio)
+    ListCard.tsx                 # card de lista simple (pantallas hub: Entorno, Planificación celular)
+    GeometryResultPanel.tsx      # resultado de geometría celular
+    TrafficResultPanel.tsx       # resultado genérico de un solo número (Erlang B / densidad)
+    LinkBudgetForm.tsx           # bloque de ~8 campos de presupuesto de enlace, compartido entre pantallas
+    LinkBudgetResultPanel.tsx    # EIRP / MAPL / radio de celda máximo
   screens/
-    RootNavigator.tsx            # estado de navegación: home -> environment -> calculator -> comparison -> fading
-    HomeScreen.tsx                # las dos cards de entrada
+    RootNavigator.tsx            # estado de navegación (union Route, un case por pantalla)
+    HomeScreen.tsx                # cards de nivel superior, data-driven
     EnvironmentScreen.tsx         # selector de entorno
     CalculatorScreen.tsx          # formulario + resultado, filtrado por entorno
     ComparisonScreen.tsx          # vista "versus" entre todos los modelos del entorno
     geometryFieldConfig.ts        # label/unidad/helper/default por cada GeometryFieldKey
     FadingScreen.tsx              # simulador de desvanecimiento: formulario + resultado + gráfica de zona
+    CellularHubScreen.tsx        # hub de planificación celular -- rama feature/cellular-planning
+    GeometryScreen.tsx            # ídem
+    TrafficScreen.tsx             # ídem (modos Bloqueo/Tráfico/Canales/Densidad)
+    LinkBudgetScreen.tsx          # ídem
   theme/
     palette.ts                    # tokens de color claro/oscuro; accent (lila neón) es constante en ambos
     ThemeContext.tsx               # ThemeProvider + useTheme(); persistencia con AsyncStorage
@@ -311,7 +337,7 @@ No hace falta tocar los componentes de UI directamente: leen el registro y la ta
 
 ## Trabajo futuro
 
-- Añadir tests unitarios por modelo, con valores de referencia resueltos a mano o en clase -- **no** buscados en fuentes genéricas de internet (ver `docs/curso-referencia.md` §5.2 para el ejercicio pendiente de resolver que serviría de caso de prueba).
+- Extender la cobertura de `vitest` (introducida para los modelos de planificación celular, ver [Verificación de tipos](#verificación-de-tipos)) a los modelos de propagación y desvanecimiento originales -- hoy solo tienen un test de humo (`freeSpace.test.ts`), el resto sigue verificado únicamente a ojo en el navegador. Usar valores de referencia resueltos a mano o en clase -- **no** buscados en fuentes genéricas de internet (ver `docs/curso-referencia.md` §5.2 para el ejercicio pendiente de resolver que serviría de caso de prueba).
 - Implementar 3GPP TR 38.901 (6 escenarios, LOS/NLOS, unidades en GHz/metros) -- deliberadamente fuera de esta ronda por tamaño.
 - Las gráficas de la comparación samplean un rango fijo de distancias (0.3-20 km) independiente del rango de validez documentado de cada modelo -- una curva puede extenderse visualmente más allá de donde el modelo está validado, igual que ya toleran las advertencias de rango en la calculadora. Vale la pena marcar visualmente ese tramo si se vuelve confuso en la práctica.
 - Simulador de desvanecimiento: la desigualdad exacta de la "zona rayada" (zona 1, §8.7) no está en el texto extraído del curso -- ver la advertencia `[interpretación no verificada]` en `src/models/fading/fading.ts`. Si el estudiante consigue el diagrama original, vale la pena revisar el criterio implementado (`BT·Ts < 1` restringido al cuadrante plano/plano) contra la desigualdad real.
