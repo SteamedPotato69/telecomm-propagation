@@ -56,7 +56,7 @@ Verificado numéricamente contra los 3 ejemplos resueltos del curso (§8.8): D=2
 
 ## Próximas funcionalidades: planificación y dimensionamiento celular (propuestas)
 
-Inspiradas en un segundo PDF del curso, `Planificación de redes de comunicaciones móviles e inalámbricas.pdf` (24/04/2026, ver [`docs/curso-referencia.md`](docs/curso-referencia.md) §13) -- distinto del que ya sustenta la calculadora de propagación y el simulador de desvanecimiento de arriba. En desarrollo en la rama `feature/cellular-planning`: las funcionalidades 1-4a ya están implementadas y verificadas (ver estado por fila abajo); 5 y 6 siguen pendientes.
+Inspiradas en un segundo PDF del curso, `Planificación de redes de comunicaciones móviles e inalámbricas.pdf` (24/04/2026, ver [`docs/curso-referencia.md`](docs/curso-referencia.md) §13) -- distinto del que ya sustenta la calculadora de propagación y el simulador de desvanecimiento de arriba. En desarrollo en la rama `feature/cellular-planning`: las 6 funcionalidades aprobadas (1, 2, 3, 4a, 5, 6) ya están implementadas y verificadas (ver estado por fila abajo); 4b, 7, 8 y 9 siguen `[PENDIENTE]` por las razones ya explicadas en cada fila.
 
 **Convención de estado:** ✅ **Aprobada** = teoría completa y sin ambigüedad, verificada contra al menos un ejemplo numérico del curso -- lista para implementar directamente. 🚀 **Implementada** = ya está en la app (rama `feature/cellular-planning`), verificada con tests (`vitest`, ver [Verificación de tipos](#verificación-de-tipos)) y en el navegador. 🕒 **[PENDIENTE]** = falta información (fórmula ambigua, sin verificación numérica, o sin confirmar en el material oficial) -- no implementar el cálculo todavía; debe aparecer en la UI como funcionalidad futura (ver nota de UI al final de esta sección), nunca como resultado numérico sin advertencia.
 
@@ -68,7 +68,7 @@ Inspiradas en un segundo PDF del curso, `Planificación de redes de comunicacion
 | 4a | Link budget con inversión MAPL → R, para Hata / COST-231-Hata | 🚀 Implementada | `src/models/propagation/{hata,cost231Hata,linkBudget}.ts`. Confirmado contra el PDF original que ambos ejemplos (1G y 2G) usan Okumura-Hata, no COST-231-Hata -- la inversión de distancia es exacta (§13.3, diap. 45-46); la fórmula de MAPL a partir del presupuesto de enlace reproduce el ejemplo 2G exacto pero el 1G queda 2dB por encima sin explicación en el material, documentado como discrepancia abierta |
 | 4b | Link budget con inversión MAPL → R, para Ikegami / Walfisch-Bertoni / COST-231 Walfish-Ikegami | 🕒 [PENDIENTE] | Heredan las ambigüedades ya marcadas `[OCR-verificar]` en `ikegami.ts` / `walfischBertoni.ts`; falta confirmar que la inversión tiene forma cerrada |
 | 5 | Flujo de dimensionamiento completo 1G/2G (capacidad vs. cobertura, tomar el máximo) | 🚀 Implementada | `src/models/dimensioning/`. Lado de capacidad coincide exacto con ambos ejercicios (6 y 5 celdas); lado de cobertura difiere del curso (2 vs 3, 7 vs 8) como consecuencia directa del hallazgo de MAPL de 4a, no un error nuevo -- la conclusión cualitativa (1G limitado por capacidad, 2G por cobertura) sí coincide en ambos casos |
-| 6 | Carga UMTS uplink + bucle iterativo de *cell breathing* | ✅ Aprobada | Ejercicio de 6 pasos completamente verificado numéricamente (§13.4, diap. 66-74) |
+| 6 | Carga UMTS uplink + bucle iterativo de *cell breathing* | 🚀 Implementada | `src/models/wcdma/`. Gp/sensibilidad/MAPL exactos para los 3 servicios; ρ exacto para PS64k/PS384k, no para voz (0.0148 calculado vs. 0.0210 declarado -- no reproducible desde los datos dados); la fórmula que conecta usuarios/celda con carga de salida en la tabla de iteraciones del curso no está documentada -- se implementó con la ecuación de carga estándar (amortiguada para estabilidad numérica), que converge a un punto físicamente sensato pero no idéntico al R=1.07km/η=54% de la diapositiva |
 | 7 | Carga UMTS downlink (η_DL) | 🕒 [PENDIENTE] | Variable `β` no definida en el material extraído; sin ejercicio de verificación (§13.4-13.5) |
 | 8 | Erlang C (modelo de cola) | 🕒 [PENDIENTE] | No aparece en el material del curso; aplicabilidad a canales de radio (sistema de pérdida, no de cola) sin confirmar |
 | 9 | Engset / Erlang B extendido (con reintentos) | 🕒 [PENDIENTE] | Solo en el resumen de industria (`erlang.com`), no en material oficial del curso |
@@ -296,6 +296,11 @@ src/
     types.ts                     # DimensioningInputs/Result
     dimensioning.ts               # calculateDimensioning(): orquesta traffic + propagation, max(capacidad, cobertura)
     index.ts                     # barrel
+  models/wcdma/                    # planificación celular (§13.4) -- rama feature/cellular-planning
+    types.ts                     # ServiceMix/Load, WcdmaLoadInputs/Result, WcdmaIterationStep
+    presets.ts                   # DEFAULT_SERVICE_MIX: mix del ejercicio del curso (70% voz / 20% PS64k / 10% PS384k)
+    wcdma.ts                      # calculateServiceLoad, calculateWcdmaUplinkLoad (bucle de cell breathing amortiguado)
+    index.ts                     # barrel
   utils/
     validation.ts                # assertPositive, assertNonNegative, assertUnitInterval, rangeWarningMessage, parseDecimal, requireField
     format.ts                    # formatPathLoss, formatCoherenceBandwidth, formatDopplerShift, formatCoherenceTime
@@ -313,6 +318,7 @@ src/
     LinkBudgetForm.tsx           # bloque de ~8 campos de presupuesto de enlace, compartido entre pantallas
     LinkBudgetResultPanel.tsx    # EIRP / MAPL / radio de celda máximo
     DimensioningResultPanel.tsx  # tabla por etapas: capacidad / cobertura / resultado final
+    WcdmaResultPanel.tsx          # carga por servicio, usuarios simultáneos, traza de convergencia
   screens/
     RootNavigator.tsx            # estado de navegación (union Route, un case por pantalla)
     HomeScreen.tsx                # cards de nivel superior, data-driven
@@ -326,6 +332,7 @@ src/
     TrafficScreen.tsx             # ídem (modos Bloqueo/Tráfico/Canales/Densidad)
     LinkBudgetScreen.tsx          # ídem
     DimensioningScreen.tsx        # ídem (capacidad + cobertura, orquesta 1, 2 y 4a)
+    WcdmaLoadScreen.tsx           # ídem (carga UMTS uplink + cell breathing)
   theme/
     palette.ts                    # tokens de color claro/oscuro; accent (lila neón) es constante en ambos
     ThemeContext.tsx               # ThemeProvider + useTheme(); persistencia con AsyncStorage

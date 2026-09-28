@@ -9,6 +9,7 @@ import { GeometryScreen } from './GeometryScreen';
 import { HomeScreen } from './HomeScreen';
 import { LinkBudgetScreen } from './LinkBudgetScreen';
 import { TrafficScreen } from './TrafficScreen';
+import { WcdmaLoadScreen } from './WcdmaLoadScreen';
 import type { EnvironmentCategory, PropagationInputs } from '../models/propagation';
 
 type Route =
@@ -21,7 +22,8 @@ type Route =
   | { name: 'geometry' }
   | { name: 'traffic' }
   | { name: 'link-budget' }
-  | { name: 'dimensioning' };
+  | { name: 'dimensioning' }
+  | { name: 'wcdma' };
 
 /**
  * Local-state navigation instead of a router library: the app has a
@@ -80,6 +82,7 @@ export function RootNavigator() {
           onSelectTraffic={() => setRoute({ name: 'traffic' })}
           onSelectLinkBudget={() => setRoute({ name: 'link-budget' })}
           onSelectDimensioning={() => setRoute({ name: 'dimensioning' })}
+          onSelectWcdma={() => setRoute({ name: 'wcdma' })}
         />
       );
 
@@ -94,6 +97,9 @@ export function RootNavigator() {
 
     case 'dimensioning':
       return <DimensioningScreen onBack={() => setRoute({ name: 'cellular-hub' })} />;
+
+    case 'wcdma':
+      return <WcdmaLoadScreen onBack={() => setRoute({ name: 'cellular-hub' })} />;
 
     default:
       return null;

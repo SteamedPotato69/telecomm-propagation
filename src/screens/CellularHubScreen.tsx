@@ -8,6 +8,7 @@ interface CellularHubScreenProps {
   onSelectTraffic: () => void;
   onSelectLinkBudget: () => void;
   onSelectDimensioning: () => void;
+  onSelectWcdma: () => void;
 }
 
 interface CellularFeatureItem {
@@ -52,7 +53,7 @@ const CELLULAR_FEATURES: CellularFeatureItem[] = [
     id: 'wcdma',
     title: 'Carga UMTS uplink y cell breathing',
     description: 'Ganancia de procesado, factor de carga por usuario y el bucle iterativo de convergencia.',
-    enabled: false,
+    enabled: true,
   },
 ];
 
@@ -62,6 +63,7 @@ export function CellularHubScreen({
   onSelectTraffic,
   onSelectLinkBudget,
   onSelectDimensioning,
+  onSelectWcdma,
 }: CellularHubScreenProps) {
   const { colors } = useTheme();
 
@@ -70,6 +72,7 @@ export function CellularHubScreen({
     traffic: onSelectTraffic,
     'link-budget': onSelectLinkBudget,
     dimensioning: onSelectDimensioning,
+    wcdma: onSelectWcdma,
   };
 
   return (
