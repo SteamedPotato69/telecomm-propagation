@@ -1,4 +1,5 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
+import { ListCard } from '../components/ListCard';
 import { ENVIRONMENT_CATEGORIES } from '../models/propagation';
 import type { EnvironmentCategory } from '../models/propagation';
 import { useTheme } from '../theme';
@@ -23,33 +24,19 @@ export function EnvironmentScreen({ onSelectEnvironment, onBack }: EnvironmentSc
       </Text>
 
       {ENVIRONMENT_CATEGORIES.map((environment) => {
-        const isEmpty = environment.applicableModelIds.length === 0;
+        const count = environment.applicableModelIds.length;
+        const isEmpty = count === 0;
         return (
-          <Pressable
+          <ListCard
             key={environment.id}
+            title={environment.label}
+            description={environment.description}
+            statusText={
+              isEmpty ? 'Próximamente' : `${count} modelo${count === 1 ? '' : 's'} disponible${count === 1 ? '' : 's'}`
+            }
             disabled={isEmpty}
             onPress={() => onSelectEnvironment(environment)}
-            style={[
-              styles.card,
-              { borderColor: colors.border, backgroundColor: colors.surface },
-              isEmpty && { backgroundColor: colors.surfaceDisabled, opacity: 0.55 },
-            ]}
-          >
-            <Text style={[styles.cardTitle, { color: isEmpty ? colors.textDisabled : colors.textPrimary }]}>
-              {environment.label}
-            </Text>
-            <Text style={[styles.cardDescription, { color: isEmpty ? colors.textDisabled : colors.textSecondary }]}>
-              {environment.description}
-            </Text>
-            {!isEmpty ? (
-              <Text style={[styles.cardModelCount, { color: colors.accentText }]}>
-                {environment.applicableModelIds.length} modelo{environment.applicableModelIds.length === 1 ? '' : 's'}{' '}
-                disponible{environment.applicableModelIds.length === 1 ? '' : 's'}
-              </Text>
-            ) : (
-              <Text style={[styles.cardModelCount, { color: colors.textDisabled }]}>Próximamente</Text>
-            )}
-          </Pressable>
+          />
         );
       })}
     </ScrollView>
@@ -62,13 +49,4 @@ const styles = StyleSheet.create({
   backButtonText: { fontSize: 15, fontWeight: '600' },
   title: { fontSize: 20, fontWeight: '700' },
   subtitle: { fontSize: 13, marginTop: 4, marginBottom: 20 },
-  card: {
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-  },
-  cardTitle: { fontSize: 15, fontWeight: '700' },
-  cardDescription: { fontSize: 12, marginTop: 4, lineHeight: 16 },
-  cardModelCount: { fontSize: 11, fontWeight: '600', marginTop: 8 },
 });

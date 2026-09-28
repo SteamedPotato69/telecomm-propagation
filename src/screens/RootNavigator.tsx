@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { CalculatorScreen } from './CalculatorScreen';
+import { CellularHubScreen } from './CellularHubScreen';
 import { ComparisonScreen } from './ComparisonScreen';
 import { EnvironmentScreen } from './EnvironmentScreen';
 import { FadingScreen } from './FadingScreen';
@@ -11,7 +12,8 @@ type Route =
   | { name: 'environment' }
   | { name: 'calculator'; environment: EnvironmentCategory }
   | { name: 'comparison'; environment: EnvironmentCategory; inputs: PropagationInputs }
-  | { name: 'fading' };
+  | { name: 'fading' }
+  | { name: 'cellular-hub' };
 
 /**
  * Local-state navigation instead of a router library: the app has a
@@ -29,6 +31,7 @@ export function RootNavigator() {
         <HomeScreen
           onSelectEmpiricalMethods={() => setRoute({ name: 'environment' })}
           onSelectFadingSimulator={() => setRoute({ name: 'fading' })}
+          onSelectCellularPlanning={() => setRoute({ name: 'cellular-hub' })}
         />
       );
 
@@ -60,6 +63,9 @@ export function RootNavigator() {
 
     case 'fading':
       return <FadingScreen onBack={() => setRoute({ name: 'home' })} />;
+
+    case 'cellular-hub':
+      return <CellularHubScreen onBack={() => setRoute({ name: 'home' })} />;
 
     default:
       return null;
