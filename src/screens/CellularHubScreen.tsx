@@ -4,6 +4,7 @@ import { useTheme } from '../theme';
 
 interface CellularHubScreenProps {
   onBack: () => void;
+  onSelectGeometry: () => void;
 }
 
 interface CellularFeatureItem {
@@ -24,7 +25,7 @@ const CELLULAR_FEATURES: CellularFeatureItem[] = [
     id: 'geometry',
     title: 'Geometría celular y reutilización de frecuencias',
     description: 'Radio de celda, paso de retícula, distancia de reutilización y número de agrupaciones.',
-    enabled: false,
+    enabled: true,
   },
   {
     id: 'traffic',
@@ -52,8 +53,12 @@ const CELLULAR_FEATURES: CellularFeatureItem[] = [
   },
 ];
 
-export function CellularHubScreen({ onBack }: CellularHubScreenProps) {
+export function CellularHubScreen({ onBack, onSelectGeometry }: CellularHubScreenProps) {
   const { colors } = useTheme();
+
+  const onPressById: Record<string, (() => void) | undefined> = {
+    geometry: onSelectGeometry,
+  };
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
@@ -73,7 +78,7 @@ export function CellularHubScreen({ onBack }: CellularHubScreenProps) {
           description={feature.description}
           statusText={feature.enabled ? undefined : 'Próximamente'}
           disabled={!feature.enabled}
-          onPress={() => {}}
+          onPress={onPressById[feature.id] ?? (() => {})}
         />
       ))}
     </ScrollView>
