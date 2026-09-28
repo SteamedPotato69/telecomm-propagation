@@ -50,6 +50,18 @@ export function parseDecimal(text: string): number {
 }
 
 /**
+ * Hard validation for a probability/ratio that must be strictly between
+ * 0 and 1 (e.g. a target blocking probability GoS, or a WCDMA cell load
+ * η) -- 0 or 1 themselves are degenerate (GoS=0 needs infinite channels;
+ * η=1 makes the load-margin formula -10*log10(1-η) undefined).
+ */
+export function assertUnitInterval(value: number, label: string): void {
+  if (!Number.isFinite(value) || value <= 0 || value >= 1) {
+    throw new Error(`${label} debe ser un número estrictamente entre 0 y 1.`);
+  }
+}
+
+/**
  * Hard validation for the optional geometry fields on PropagationInputs
  * (Ikegami / Walfisch-Bertoni): throws a clear "missing parameter"
  * error instead of letting `undefined` flow into a log10() as NaN.

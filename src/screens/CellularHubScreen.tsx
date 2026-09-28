@@ -5,6 +5,7 @@ import { useTheme } from '../theme';
 interface CellularHubScreenProps {
   onBack: () => void;
   onSelectGeometry: () => void;
+  onSelectTraffic: () => void;
 }
 
 interface CellularFeatureItem {
@@ -29,9 +30,9 @@ const CELLULAR_FEATURES: CellularFeatureItem[] = [
   },
   {
     id: 'traffic',
-    title: 'Tráfico (Erlang B) y densidad',
-    description: 'Bloqueo, tráfico soportable o canales necesarios dado un GoS objetivo; puente con densidad de tráfico.',
-    enabled: false,
+    title: 'Tráfico (Erlang B)',
+    description: 'Bloqueo, tráfico soportable o canales necesarios dado un GoS objetivo.',
+    enabled: true,
   },
   {
     id: 'link-budget',
@@ -53,11 +54,12 @@ const CELLULAR_FEATURES: CellularFeatureItem[] = [
   },
 ];
 
-export function CellularHubScreen({ onBack, onSelectGeometry }: CellularHubScreenProps) {
+export function CellularHubScreen({ onBack, onSelectGeometry, onSelectTraffic }: CellularHubScreenProps) {
   const { colors } = useTheme();
 
   const onPressById: Record<string, (() => void) | undefined> = {
     geometry: onSelectGeometry,
+    traffic: onSelectTraffic,
   };
 
   return (

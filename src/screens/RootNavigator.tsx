@@ -6,6 +6,7 @@ import { EnvironmentScreen } from './EnvironmentScreen';
 import { FadingScreen } from './FadingScreen';
 import { GeometryScreen } from './GeometryScreen';
 import { HomeScreen } from './HomeScreen';
+import { TrafficScreen } from './TrafficScreen';
 import type { EnvironmentCategory, PropagationInputs } from '../models/propagation';
 
 type Route =
@@ -15,7 +16,8 @@ type Route =
   | { name: 'comparison'; environment: EnvironmentCategory; inputs: PropagationInputs }
   | { name: 'fading' }
   | { name: 'cellular-hub' }
-  | { name: 'geometry' };
+  | { name: 'geometry' }
+  | { name: 'traffic' };
 
 /**
  * Local-state navigation instead of a router library: the app has a
@@ -71,11 +73,15 @@ export function RootNavigator() {
         <CellularHubScreen
           onBack={() => setRoute({ name: 'home' })}
           onSelectGeometry={() => setRoute({ name: 'geometry' })}
+          onSelectTraffic={() => setRoute({ name: 'traffic' })}
         />
       );
 
     case 'geometry':
       return <GeometryScreen onBack={() => setRoute({ name: 'cellular-hub' })} />;
+
+    case 'traffic':
+      return <TrafficScreen onBack={() => setRoute({ name: 'cellular-hub' })} />;
 
     default:
       return null;
