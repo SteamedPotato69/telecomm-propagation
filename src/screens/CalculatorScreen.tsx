@@ -115,7 +115,11 @@ export function CalculatorScreen({ environment, onBack, onCompare }: CalculatorS
         <Text style={[styles.subtitle, { color: colors.accentText }]}>{model.label}</Text>
         <Text style={[styles.citation, { color: colors.textMuted }]}>{model.citation}</Text>
 
-        <ModelSelector models={applicableModels} selectedId={modelId} onSelect={setModelId} />
+        <ModelSelector
+          items={applicableModels.map((m) => ({ id: m.id, label: m.shortLabel, disabled: !m.implemented }))}
+          selectedId={modelId}
+          onSelect={(id) => setModelId(id as PropagationModelId)}
+        />
 
         <NumericField label="Frecuencia" unit="MHz" value={frequencyMHz} onChangeText={setFrequencyMHz} />
         <NumericField label="Distancia" unit="km" value={distanceKm} onChangeText={setDistanceKm} />

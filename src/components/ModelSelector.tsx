@@ -1,41 +1,51 @@
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
-import type { PropagationModelDefinition, PropagationModelId } from '../models/propagation';
 import { useTheme } from '../theme';
 
+interface ModelSelectorItem {
+  id: string;
+  label: string;
+  disabled: boolean;
+}
+
 interface ModelSelectorProps {
-  models: PropagationModelDefinition[];
-  selectedId: PropagationModelId;
-  onSelect: (id: PropagationModelId) => void;
+  items: ModelSelectorItem[];
+  selectedId: string;
+  onSelect: (id: string) => void;
 }
 
 /**
- * Chip row instead of a native <Picker>: with only 6 options it's more
- * discoverable at a glance (all options visible, disabled ones clearly
- * grayed out) and avoids adding @react-native-picker/picker as a native
- * dependency for a single control.
+ * Chip row instead of a native <Picker>: with only a handful of options
+ * it's more discoverable at a glance (all options visible, disabled ones
+ * clearly grayed out) and avoids adding @react-native-picker/picker as a
+ * native dependency for a single control.
+ *
+ * Generic over {id, label, disabled} rather than PropagationModelDefinition
+ * directly -- LinkBudgetScreen reuses this same chip row to pick among
+ * models filtered by solveDistanceKm presence, a different "why disabled"
+ * reason than CalculatorScreen's `implemented` flag. Callers compute their
+ * own disabled reason and map to this shape.
  */
-export function ModelSelector({ models, selectedId, onSelect }: ModelSelectorProps) {
+export function ModelSelector({ items, selectedId, onSelect }: ModelSelectorProps) {
   const { colors } = useTheme();
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
-      {models.map((model) => {
-        const isSelected = model.id === selectedId;
-        const disabled = !model.implemented;
+      {items.map((item) => {
+        const isSelected = item.id === selectedId;
         return (
           <Pressable
-            key={model.id}
-            disabled={disabled}
-            onPress={() => onSelect(model.id)}
+            key={item.id}
+            disabled={item.disabled}
+            onPress={() => onSelect(item.id)}
             style={[
               styles.chip,
               { borderColor: colors.border },
               isSelected && { backgroundColor: colors.accentSolid, borderColor: colors.accentSolid },
-              disabled && styles.chipDisabled,
+              item.disabled && styles.chipDisabled,
             ]}
           >
             <Text style={[styles.chipText, { color: isSelected ? '#ffffff' : colors.textPrimary }]}>
-              {model.shortLabel}
-              {disabled ? ' (próximamente)' : ''}
+              {item.label}
+              {item.disabled ? ' (próximamente)' : ''}
             </Text>
           </Pressable>
         );

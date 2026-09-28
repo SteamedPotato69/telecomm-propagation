@@ -6,6 +6,7 @@ interface CellularHubScreenProps {
   onBack: () => void;
   onSelectGeometry: () => void;
   onSelectTraffic: () => void;
+  onSelectLinkBudget: () => void;
 }
 
 interface CellularFeatureItem {
@@ -38,7 +39,7 @@ const CELLULAR_FEATURES: CellularFeatureItem[] = [
     id: 'link-budget',
     title: 'Link budget (Hata / COST-231-Hata)',
     description: 'MAPL a partir de un presupuesto de enlace completo, e inversión a radio de celda máximo.',
-    enabled: false,
+    enabled: true,
   },
   {
     id: 'dimensioning',
@@ -54,12 +55,18 @@ const CELLULAR_FEATURES: CellularFeatureItem[] = [
   },
 ];
 
-export function CellularHubScreen({ onBack, onSelectGeometry, onSelectTraffic }: CellularHubScreenProps) {
+export function CellularHubScreen({
+  onBack,
+  onSelectGeometry,
+  onSelectTraffic,
+  onSelectLinkBudget,
+}: CellularHubScreenProps) {
   const { colors } = useTheme();
 
   const onPressById: Record<string, (() => void) | undefined> = {
     geometry: onSelectGeometry,
     traffic: onSelectTraffic,
+    'link-budget': onSelectLinkBudget,
   };
 
   return (

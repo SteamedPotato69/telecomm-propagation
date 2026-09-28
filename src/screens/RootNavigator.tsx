@@ -6,6 +6,7 @@ import { EnvironmentScreen } from './EnvironmentScreen';
 import { FadingScreen } from './FadingScreen';
 import { GeometryScreen } from './GeometryScreen';
 import { HomeScreen } from './HomeScreen';
+import { LinkBudgetScreen } from './LinkBudgetScreen';
 import { TrafficScreen } from './TrafficScreen';
 import type { EnvironmentCategory, PropagationInputs } from '../models/propagation';
 
@@ -17,7 +18,8 @@ type Route =
   | { name: 'fading' }
   | { name: 'cellular-hub' }
   | { name: 'geometry' }
-  | { name: 'traffic' };
+  | { name: 'traffic' }
+  | { name: 'link-budget' };
 
 /**
  * Local-state navigation instead of a router library: the app has a
@@ -74,6 +76,7 @@ export function RootNavigator() {
           onBack={() => setRoute({ name: 'home' })}
           onSelectGeometry={() => setRoute({ name: 'geometry' })}
           onSelectTraffic={() => setRoute({ name: 'traffic' })}
+          onSelectLinkBudget={() => setRoute({ name: 'link-budget' })}
         />
       );
 
@@ -82,6 +85,9 @@ export function RootNavigator() {
 
     case 'traffic':
       return <TrafficScreen onBack={() => setRoute({ name: 'cellular-hub' })} />;
+
+    case 'link-budget':
+      return <LinkBudgetScreen onBack={() => setRoute({ name: 'cellular-hub' })} />;
 
     default:
       return null;

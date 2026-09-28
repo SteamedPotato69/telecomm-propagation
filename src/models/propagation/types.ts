@@ -108,4 +108,48 @@ export interface PropagationModelDefinition {
    */
   extraFields?: GeometryFieldKey[];
   calculate: (inputs: PropagationInputs) => PropagationResult;
+  /**
+   * Inverts calculate() for distance given a target path loss (a link
+   * budget's MAPL) -- only defined for models linear in log10(d), where
+   * that's closed-form algebra rather than a search. Absent, not `false`,
+   * for every other model: LinkBudgetScreen filters
+   * `PROPAGATION_MODEL_LIST` on this field's presence, so the registry
+   * itself is the single source of truth for which models are invertible
+   * instead of a hardcoded exclusion list.
+   */
+  solveDistanceKm?: (inputs: Omit<PropagationInputs, 'distanceKm'>, targetLossDb: number) => number;
+}
+
+/**
+ * Link budget for the cellular-planning link-budget/dimensioning
+ * features (docs/curso-referencia.md §13.3, diap. 45-46). The course
+ * slides show the parameter table and the resulting MAPL but not the
+ * intermediate combination formula -- see linkBudget.ts for the standard
+ * telecom formula used here and how closely it reproduces the two worked
+ * examples.
+ */
+export interface LinkBudgetInputs {
+  /** Pt: mobile transmit power, dBm. */
+  transmitPowerDbm: number;
+  /** Gt: mobile antenna gain, dBi. */
+  transmitAntennaGainDbi: number;
+  /** Loss from the body/hand blocking the mobile antenna, dB. */
+  bodyLossDb: number;
+  /** Gr: base-station antenna gain, dBi. */
+  receiveAntennaGainDbi: number;
+  /** Loss in the feeder cable between the BTS antenna and receiver, dB. */
+  feederLossDb: number;
+  /** Base-station receiver sensitivity, dBm (negative, e.g. -116). */
+  receiverSensitivityDbm: number;
+  /** Fade margin against shadowing, dB. */
+  shadowFadingMarginDb: number;
+  /** Margin reserved for co-channel/adjacent-channel interference, dB. */
+  interferenceMarginDb: number;
+}
+
+export interface LinkBudgetResult {
+  /** Effective isotropic radiated power = Pt + Gt - bodyLoss, dBm. */
+  eirpDbm: number;
+  /** Maximum allowable path loss, dB. */
+  maplDb: number;
 }
