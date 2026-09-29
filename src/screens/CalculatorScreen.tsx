@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { BackButton } from '../components/BackButton';
 import { ModelSelector } from '../components/ModelSelector';
 import { NumericField } from '../components/NumericField';
 import { ResultPanel } from '../components/ResultPanel';
@@ -107,9 +108,7 @@ export function CalculatorScreen({ environment, onBack, onCompare }: CalculatorS
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Pressable onPress={onBack} style={styles.backButton}>
-          <Text style={[styles.backButtonText, { color: colors.accentText }]}>‹ {environment.label}</Text>
-        </Pressable>
+        <BackButton onPress={onBack} />
 
         <Text style={[styles.title, { color: colors.textPrimary }]}>Calculadora de pérdida de propagación</Text>
         <Text style={[styles.subtitle, { color: colors.accentText }]}>{model.label}</Text>
@@ -207,8 +206,6 @@ export function CalculatorScreen({ environment, onBack, onCompare }: CalculatorS
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   content: { padding: 20, paddingTop: 60, paddingBottom: 40 },
-  backButton: { marginBottom: 12 },
-  backButtonText: { fontSize: 14, fontWeight: '600' },
   title: { fontSize: 20, fontWeight: '700' },
   subtitle: { fontSize: 16, fontWeight: '600', marginTop: 4 },
   citation: { fontSize: 11, marginBottom: 16 },

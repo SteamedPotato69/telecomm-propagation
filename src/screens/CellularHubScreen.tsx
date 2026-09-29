@@ -1,4 +1,5 @@
-import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
+import { ScrollView, StyleSheet, Text } from 'react-native';
+import { BackButton } from '../components/BackButton';
 import { ListCard } from '../components/ListCard';
 import { useTheme } from '../theme';
 
@@ -77,9 +78,7 @@ export function CellularHubScreen({
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      <Pressable onPress={onBack} style={styles.backButton}>
-        <Text style={[styles.backButtonText, { color: colors.accentText }]}>‹ Inicio</Text>
-      </Pressable>
+      <BackButton onPress={onBack} />
 
       <Text style={[styles.title, { color: colors.textPrimary }]}>Planificación celular</Text>
       <Text style={[styles.subtitle, { color: colors.textMuted }]}>
@@ -102,8 +101,6 @@ export function CellularHubScreen({
 
 const styles = StyleSheet.create({
   content: { padding: 20, paddingTop: 60, paddingBottom: 40 },
-  backButton: { marginBottom: 16 },
-  backButtonText: { fontSize: 15, fontWeight: '600' },
   title: { fontSize: 20, fontWeight: '700' },
   subtitle: { fontSize: 13, marginTop: 4, marginBottom: 20 },
 });

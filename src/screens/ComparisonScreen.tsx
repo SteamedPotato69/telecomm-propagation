@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { BackButton } from '../components/BackButton';
 import { LineChart } from '../components/LineChart';
 import type { ChartSeries } from '../components/LineChart';
 import { PROPAGATION_MODELS, generateLogSpacedDistances, sampleModelOverDistance } from '../models/propagation';
@@ -118,9 +119,7 @@ export function ComparisonScreen({ environment, inputs, onBack }: ComparisonScre
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      <Pressable onPress={onBack} style={styles.backButton}>
-        <Text style={[styles.backButtonText, { color: colors.accentText }]}>‹ Volver a la calculadora</Text>
-      </Pressable>
+      <BackButton onPress={onBack} />
 
       <Text style={[styles.title, { color: colors.textPrimary }]}>Comparación de modelos</Text>
       <Text style={[styles.subtitle, { color: colors.accentText }]}>{environment.label}</Text>
@@ -191,8 +190,6 @@ export function ComparisonScreen({ environment, inputs, onBack }: ComparisonScre
 
 const styles = StyleSheet.create({
   content: { padding: 20, paddingTop: 60, paddingBottom: 40 },
-  backButton: { marginBottom: 12 },
-  backButtonText: { fontSize: 14, fontWeight: '600' },
   title: { fontSize: 20, fontWeight: '700' },
   subtitle: { fontSize: 15, fontWeight: '600', marginTop: 4 },
   explainer: { fontSize: 12, marginTop: 8, marginBottom: 20, lineHeight: 17 },

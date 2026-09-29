@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { BackButton } from '../components/BackButton';
 import { NumericField } from '../components/NumericField';
 import { TrafficResultPanel } from '../components/TrafficResultPanel';
 import { erlangBBlocking, erlangBInverseChannels, erlangBInverseTraffic, maxDensityForGoS } from '../models/traffic';
@@ -88,9 +89,7 @@ export function TrafficScreen({ onBack }: TrafficScreenProps) {
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Pressable onPress={onBack} style={styles.backButton}>
-          <Text style={[styles.backButtonText, { color: colors.accentText }]}>‹ Planificación celular</Text>
-        </Pressable>
+        <BackButton onPress={onBack} />
 
         <Text style={[styles.title, { color: colors.textPrimary }]}>Tráfico (Erlang B)</Text>
         <Text style={[styles.citation, { color: colors.textMuted }]}>
@@ -161,8 +160,6 @@ export function TrafficScreen({ onBack }: TrafficScreenProps) {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   content: { padding: 20, paddingTop: 60, paddingBottom: 40 },
-  backButton: { marginBottom: 12 },
-  backButtonText: { fontSize: 14, fontWeight: '600' },
   title: { fontSize: 20, fontWeight: '700' },
   citation: { fontSize: 11, marginTop: 4, marginBottom: 16 },
   sectionLabel: { fontSize: 13, fontWeight: '600', marginBottom: 8, marginTop: 4 },

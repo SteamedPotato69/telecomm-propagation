@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { BackButton } from '../components/BackButton';
 import { DimensioningResultPanel } from '../components/DimensioningResultPanel';
 import { DEFAULT_LINK_BUDGET_VALUES, LinkBudgetForm } from '../components/LinkBudgetForm';
 import type { LinkBudgetFormValues } from '../components/LinkBudgetForm';
@@ -113,9 +114,7 @@ export function DimensioningScreen({ onBack }: DimensioningScreenProps) {
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Pressable onPress={onBack} style={styles.backButton}>
-          <Text style={[styles.backButtonText, { color: colors.accentText }]}>‹ Planificación celular</Text>
-        </Pressable>
+        <BackButton onPress={onBack} />
 
         <Text style={[styles.title, { color: colors.textPrimary }]}>Dimensionamiento 1G/2G</Text>
         <Text style={[styles.citation, { color: colors.textMuted }]}>
@@ -202,8 +201,6 @@ export function DimensioningScreen({ onBack }: DimensioningScreenProps) {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   content: { padding: 20, paddingTop: 60, paddingBottom: 40 },
-  backButton: { marginBottom: 12 },
-  backButtonText: { fontSize: 14, fontWeight: '600' },
   title: { fontSize: 20, fontWeight: '700' },
   citation: { fontSize: 11, marginTop: 4, marginBottom: 16 },
   sectionLabel: { fontSize: 13, fontWeight: '600', marginBottom: 8, marginTop: 12 },
