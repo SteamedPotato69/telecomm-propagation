@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
   themeSwitchSegment: {
     borderRadius: 17,
     paddingHorizontal: 14,
-    paddingVertical: 7,
+    paddingVertical: 10,
   },
   themeSwitchText: { fontSize: 12, fontWeight: '600' },
 });

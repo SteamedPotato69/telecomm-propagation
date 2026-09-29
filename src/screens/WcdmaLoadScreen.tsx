@@ -271,7 +271,7 @@ export function WcdmaLoadScreen({ onBack }: WcdmaLoadScreenProps) {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  content: { padding: 20, paddingTop: 60, paddingBottom: 40 },
+  content: { padding: 20, paddingTop: 20, paddingBottom: 40 },
   title: { fontSize: 20, fontWeight: '700' },
   citation: { fontSize: 11, marginTop: 4, marginBottom: 16 },
   sectionLabel: { fontSize: 13, fontWeight: '600', marginBottom: 8, marginTop: 12 },
@@ -283,7 +283,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 20,
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 10,
     marginRight: 8,
     marginBottom: 8,
   },
@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 20,
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 10,
     marginRight: 8,
     marginBottom: 8,
   },

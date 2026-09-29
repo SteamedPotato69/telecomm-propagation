@@ -43,7 +43,7 @@ export function EnvironmentScreen({ onSelectEnvironment, onBack }: EnvironmentSc
 }
 
 const styles = StyleSheet.create({
-  content: { padding: 20, paddingTop: 60, paddingBottom: 40 },
+  content: { padding: 20, paddingTop: 20, paddingBottom: 40 },
   title: { fontSize: 20, fontWeight: '700' },
   subtitle: { fontSize: 13, marginTop: 4, marginBottom: 20 },
 });

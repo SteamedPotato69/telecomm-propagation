@@ -189,7 +189,7 @@ export function ComparisonScreen({ environment, inputs, onBack }: ComparisonScre
 }
 
 const styles = StyleSheet.create({
-  content: { padding: 20, paddingTop: 60, paddingBottom: 40 },
+  content: { padding: 20, paddingTop: 20, paddingBottom: 40 },
   title: { fontSize: 20, fontWeight: '700' },
   subtitle: { fontSize: 15, fontWeight: '600', marginTop: 4 },
   explainer: { fontSize: 12, marginTop: 8, marginBottom: 20, lineHeight: 17 },

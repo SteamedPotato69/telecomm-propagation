@@ -36,6 +36,9 @@ export function ModelSelector({ items, selectedId, onSelect }: ModelSelectorProp
             key={item.id}
             disabled={item.disabled}
             onPress={() => onSelect(item.id)}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: isSelected, disabled: item.disabled }}
+            accessibilityLabel={item.disabled ? `${item.label}, próximamente` : item.label}
             style={[
               styles.chip,
               { borderColor: colors.border },
@@ -60,7 +63,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 20,
     paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingVertical: 10,
     marginRight: 8,
   },
   chipDisabled: { opacity: 0.4 },

@@ -22,6 +22,9 @@ export function ListCard({ title, description, statusText, disabled = false, onP
     <Pressable
       disabled={disabled}
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityState={{ disabled }}
+      accessibilityLabel={statusText ? `${title}, ${statusText}` : title}
       style={[
         styles.card,
         { borderColor: colors.border, backgroundColor: colors.surface },
