@@ -6,8 +6,11 @@ import type { PropagationInputs } from '../propagation';
  * from propagation/traffic/dimensioning -- continuous cell load, not
  * discrete Erlang-B channels.
  */
+/** The course's three example services; the display name is the translation `wcdma.services.<id>`. */
+export type WcdmaServiceId = 'voice' | 'ps64' | 'ps384';
+
 export interface ServiceMix {
-  label: string;
+  id: WcdmaServiceId;
   /** Fraction of active users using this service, e.g. 0.70 for 70% voice. */
   shareOfUsers: number;
   /** R: bit rate, kbps. */
@@ -26,7 +29,7 @@ export interface ServiceMix {
 }
 
 export interface ServiceLoad {
-  label: string;
+  id: WcdmaServiceId;
   /** Gp = 10*log10(W/R), dB. */
   processingGainDb: number;
   /** rho_i, linear (not dB) -- this service's uplink load contribution per active user. */
@@ -56,12 +59,12 @@ export interface WcdmaLoadInputs {
   services: ServiceMix[];
   /**
    * Which service's MAPL seeds the convergence loop and defines system
-   * coverage -- must match one of `services[].label`. The course's own
+   * coverage -- must match one of `services[].id`. The course's own
    * example uses voice as this reference (a coverage-priority design
    * choice: "el servicio de voz define la cobertura", not the
    * mathematically most-restrictive service -- see wcdma.ts).
    */
-  referenceServiceLabel: string;
+  referenceServiceId: WcdmaServiceId;
   /** i_oc: other-cell interference factor. */
   interferenceFactor: number;
   /** eta_UL,max: target uplink load, strictly between 0 and 1. */
@@ -104,7 +107,7 @@ export interface WcdmaLoadResult {
   /** Traffic-weighted average load factor across the service mix. */
   mixLoadFactor: number;
   maxSimultaneousUsersPerCell: number;
-  usersPerServicePerCell: { label: string; users: number }[];
+  usersPerServicePerCell: { id: WcdmaServiceId; users: number }[];
   /** Full iteration trace, for display and diagnostics -- not just the final result. */
   iterations: WcdmaIterationStep[];
   /**

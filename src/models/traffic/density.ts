@@ -15,7 +15,7 @@ export function blockingFromDensity(
   cellAreaKm2: number,
   channels: number
 ): number {
-  assertPositive(trafficDensityErlPerKm2, 'Densidad de tráfico (ρ)');
+  assertPositive(trafficDensityErlPerKm2, 'trafficDensity');
   assertPositive(cellAreaKm2, 'Área de celda (S_c)');
   const trafficErlangs = trafficDensityErlPerKm2 * cellAreaKm2;
   return erlangBBlocking(channels, trafficErlangs);

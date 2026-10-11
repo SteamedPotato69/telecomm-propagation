@@ -1,3 +1,4 @@
+import { LocalizedError } from '../../utils/localizedMessage';
 import { assertNonNegative } from '../../utils/validation';
 import type { LinkBudgetInputs, LinkBudgetResult } from './types';
 
@@ -37,10 +38,10 @@ export function calculateMapl(inputs: LinkBudgetInputs): LinkBudgetResult {
     interferenceMarginDb,
   } = inputs;
 
-  assertNonNegative(bodyLossDb, 'Body loss');
-  assertNonNegative(feederLossDb, 'Pérdida de feeder');
-  assertNonNegative(shadowFadingMarginDb, 'Margen de sombra');
-  assertNonNegative(interferenceMarginDb, 'Margen de interferencia');
+  assertNonNegative(bodyLossDb, 'bodyLoss');
+  assertNonNegative(feederLossDb, 'feederLoss');
+  assertNonNegative(shadowFadingMarginDb, 'shadowFadingMargin');
+  assertNonNegative(interferenceMarginDb, 'interferenceMargin');
 
   const eirpDbm = transmitPowerDbm + transmitAntennaGainDbi - bodyLossDb;
   const maplDb =
@@ -52,9 +53,7 @@ export function calculateMapl(inputs: LinkBudgetInputs): LinkBudgetResult {
     interferenceMarginDb;
 
   if (maplDb <= 0) {
-    throw new Error(
-      'El presupuesto de enlace no deja margen (MAPL <= 0 dB): revisa potencia, ganancias, sensibilidad y márgenes.'
-    );
+    throw new LocalizedError('errors.maplNonPositive');
   }
 
   return { eirpDbm, maplDb };

@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { BackButton } from '../components/BackButton';
 import { NumericField } from '../components/NumericField';
 import { TrafficResultPanel } from '../components/TrafficResultPanel';
 import { erlangBBlocking, erlangBInverseChannels, erlangBInverseTraffic, maxDensityForGoS } from '../models/traffic';
+import { translateError } from '../i18n';
 import { useTheme } from '../theme';
 import { parseDecimal } from '../utils/validation';
 
@@ -13,15 +15,11 @@ interface TrafficScreenProps {
 
 type Mode = 'blocking' | 'traffic' | 'channels' | 'density';
 
-const MODE_OPTIONS: { mode: Mode; label: string }[] = [
-  { mode: 'blocking', label: 'Bloqueo' },
-  { mode: 'traffic', label: 'Tráfico' },
-  { mode: 'channels', label: 'Canales' },
-  { mode: 'density', label: 'Densidad' },
-];
+const MODES: Mode[] = ['blocking', 'traffic', 'channels', 'density'];
 
 export function TrafficScreen({ onBack }: TrafficScreenProps) {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const [mode, setMode] = useState<Mode>('blocking');
   const [channelsInput, setChannelsInput] = useState('42');
   const [trafficInput, setTrafficInput] = useState('30.77');
@@ -43,68 +41,69 @@ export function TrafficScreen({ onBack }: TrafficScreenProps) {
         const channels = parseDecimal(channelsInput);
         const traffic = parseDecimal(trafficInput);
         if (Number.isNaN(channels) || Number.isNaN(traffic)) {
-          return { resultLabel: '', resultValue: null, errorMessage: 'Todos los campos numéricos deben tener un valor.' };
+          return { resultLabel: '', resultValue: null, errorMessage: t('common.missingValues') };
         }
         const blocking = erlangBBlocking(channels, traffic);
-        return { resultLabel: 'Probabilidad de bloqueo (GoS)', resultValue: `${(blocking * 100).toFixed(3)} %`, errorMessage: null };
+        return { resultLabel: t('traffic.results.blocking'), resultValue: `${(blocking * 100).toFixed(3)} %`, errorMessage: null };
       }
 
       if (mode === 'traffic') {
         const channels = parseDecimal(channelsInput);
         const gos = parseDecimal(gosInput);
         if (Number.isNaN(channels) || Number.isNaN(gos)) {
-          return { resultLabel: '', resultValue: null, errorMessage: 'Todos los campos numéricos deben tener un valor.' };
+          return { resultLabel: '', resultValue: null, errorMessage: t('common.missingValues') };
         }
         const traffic = erlangBInverseTraffic(channels, gos);
-        return { resultLabel: 'Tráfico soportable (A)', resultValue: `${traffic.toFixed(3)} Erlang`, errorMessage: null };
+        return { resultLabel: t('traffic.results.supportableTraffic'), resultValue: `${traffic.toFixed(3)} Erlang`, errorMessage: null };
       }
 
       if (mode === 'channels') {
         const traffic = parseDecimal(trafficInput);
         const gos = parseDecimal(gosInput);
         if (Number.isNaN(traffic) || Number.isNaN(gos)) {
-          return { resultLabel: '', resultValue: null, errorMessage: 'Todos los campos numéricos deben tener un valor.' };
+          return { resultLabel: '', resultValue: null, errorMessage: t('common.missingValues') };
         }
         const channels = erlangBInverseChannels(traffic, gos);
-        return { resultLabel: 'Canales necesarios (K)', resultValue: String(channels), errorMessage: null };
+        return { resultLabel: t('traffic.results.requiredChannels'), resultValue: String(channels), errorMessage: null };
       }
 
       const channels = parseDecimal(channelsInput);
       const gos = parseDecimal(gosInput);
       const cellAreaKm2 = parseDecimal(cellAreaInput);
       if (Number.isNaN(channels) || Number.isNaN(gos) || Number.isNaN(cellAreaKm2)) {
-        return { resultLabel: '', resultValue: null, errorMessage: 'Todos los campos numéricos deben tener un valor.' };
+        return { resultLabel: '', resultValue: null, errorMessage: t('common.missingValues') };
       }
       const density = maxDensityForGoS(channels, gos, cellAreaKm2);
       return {
-        resultLabel: 'Densidad de tráfico máxima soportable (ρ)',
+        resultLabel: t('traffic.results.maxDensity'),
         resultValue: `${density.toFixed(4)} Erlang/km²`,
         errorMessage: null,
       };
     } catch (error) {
-      return { resultLabel: '', resultValue: null, errorMessage: error instanceof Error ? error.message : 'Error desconocido.' };
+      return { resultLabel: '', resultValue: null, errorMessage: translateError(t, error) };
     }
-  }, [mode, channelsInput, trafficInput, gosInput, cellAreaInput]);
+  }, [mode, channelsInput, trafficInput, gosInput, cellAreaInput, t]);
 
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content}>
         <BackButton onPress={onBack} />
 
-        <Text style={[styles.title, { color: colors.textPrimary }]}>Tráfico (Erlang B)</Text>
+        <Text style={[styles.title, { color: colors.textPrimary }]}>{t('traffic.title')}</Text>
         <Text style={[styles.citation, { color: colors.textMuted }]}>
-          Bloqueo, tráfico soportable, canales necesarios o densidad de tráfico -- docs/curso-referencia.md
-          §13.2-13.3.
+          {t('traffic.subtitle')}
         </Text>
 
-        <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>¿Qué quieres calcular?</Text>
+        <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>{t('traffic.whatToCompute')}</Text>
         <View style={styles.chipRow}>
-          {MODE_OPTIONS.map((option) => {
-            const isSelected = mode === option.mode;
+          {MODES.map((option) => {
+            const isSelected = mode === option;
             return (
               <Pressable
-                key={option.mode}
-                onPress={() => setMode(option.mode)}
+                key={option}
+                onPress={() => setMode(option)}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: isSelected }}
                 style={[
                   styles.chip,
                   { borderColor: colors.border },
@@ -112,7 +111,7 @@ export function TrafficScreen({ onBack }: TrafficScreenProps) {
                 ]}
               >
                 <Text style={[styles.chipText, { color: isSelected ? '#ffffff' : colors.textPrimary }]}>
-                  {option.label}
+                  {t(`traffic.modes.${option}`)}
                 </Text>
               </Pressable>
             );
@@ -120,12 +119,12 @@ export function TrafficScreen({ onBack }: TrafficScreenProps) {
         </View>
 
         {showChannels ? (
-          <NumericField label="Número de canales (K)" value={channelsInput} onChangeText={setChannelsInput} />
+          <NumericField label={t('fields.channels')} value={channelsInput} onChangeText={setChannelsInput} />
         ) : null}
 
         {showTraffic ? (
           <NumericField
-            label="Tráfico ofrecido (A)"
+            label={t('fields.offeredTraffic')}
             unit="Erlang"
             value={trafficInput}
             onChangeText={setTrafficInput}
@@ -134,20 +133,20 @@ export function TrafficScreen({ onBack }: TrafficScreenProps) {
 
         {showCellArea ? (
           <NumericField
-            label="Área de celda (S_c)"
+            label={t('traffic.cellArea')}
             unit="km²"
             value={cellAreaInput}
             onChangeText={setCellAreaInput}
-            helperText="Del módulo de geometría celular, o cualquier área de celda conocida."
+            helperText={t('traffic.cellAreaHelper')}
           />
         ) : null}
 
         {showGos ? (
           <NumericField
-            label="GoS objetivo"
+            label={t('fields.targetGos')}
             value={gosInput}
             onChangeText={setGosInput}
-            helperText="Fracción entre 0 y 1 (0.02 = 2% de bloqueo objetivo)."
+            helperText={t('traffic.gosHelper')}
           />
         ) : null}
 

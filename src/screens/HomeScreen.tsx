@@ -1,82 +1,64 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { GlowCard } from '../components/GlowCard';
 import { useTheme } from '../theme';
-import type { ThemeMode } from '../theme';
 
 interface HomeScreenProps {
   onSelectEmpiricalMethods: () => void;
   onSelectFadingSimulator: () => void;
   onSelectCellularPlanning: () => void;
+  onOpenSettings: () => void;
 }
-
-const THEME_MODE_OPTIONS: { mode: ThemeMode; label: string }[] = [
-  { mode: 'dark', label: '🌙 Oscuro' },
-  { mode: 'system', label: 'Auto' },
-  { mode: 'light', label: '☀ Claro' },
-];
 
 export function HomeScreen({
   onSelectEmpiricalMethods,
   onSelectFadingSimulator,
   onSelectCellularPlanning,
+  onOpenSettings,
 }: HomeScreenProps) {
-  const { colors, mode, setMode } = useTheme();
+  const { colors } = useTheme();
+  const { t } = useTranslation();
 
   // Data-driven so a future feature is one array entry, not a new
   // hand-copied JSX block (see README's own note on this).
   const cards = [
     {
       id: 'empirical',
-      title: 'Métodos empíricos de propagación',
-      subtitle: 'Calculadora de pérdida de trayecto: elige un entorno y compara los modelos aplicables.',
+      title: t('home.cards.empirical.title'),
+      subtitle: t('home.cards.empirical.subtitle'),
       onPress: onSelectEmpiricalMethods,
     },
     {
       id: 'fading',
-      title: 'Simulador de desvanecimiento',
-      subtitle:
-        'Plano vs. selectivo en frecuencia, lento vs. rápido: ingresa dispersión de retardo, velocidad y ' +
-        'parámetros de la señal y ubica el canal en las 5 zonas del curso.',
+      title: t('home.cards.fading.title'),
+      subtitle: t('home.cards.fading.subtitle'),
       onPress: onSelectFadingSimulator,
     },
     {
       id: 'cellular',
-      title: 'Planificación celular',
-      subtitle:
-        'Geometría de reutilización de frecuencias, dimensionamiento por tráfico (Erlang B), link budget y ' +
-        'carga UMTS.',
+      title: t('home.cards.cellular.title'),
+      subtitle: t('home.cards.cellular.subtitle'),
       onPress: onSelectCellularPlanning,
     },
   ];
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Text style={[styles.title, { color: colors.textPrimary }]}>PROPAPP</Text>
-      <Text style={[styles.subtitle, { color: colors.textMuted }]}>Por favor, elige una funcionalidad</Text>
-
-      <View
-        style={[styles.themeSwitchTrack, { borderColor: colors.border, backgroundColor: colors.surfaceMuted }]}
-      >
-        {THEME_MODE_OPTIONS.map((option) => {
-          const isSelected = mode === option.mode;
-          return (
-            <Pressable
-              key={option.mode}
-              onPress={() => setMode(option.mode)}
-              style={[styles.themeSwitchSegment, isSelected && { backgroundColor: colors.accentSolid }]}
-            >
-              <Text
-                style={[
-                  styles.themeSwitchText,
-                  { color: isSelected ? '#ffffff' : colors.textSecondary },
-                ]}
-              >
-                {option.label}
-              </Text>
-            </Pressable>
-          );
-        })}
+      <View style={styles.header}>
+        <Text accessibilityRole="header" style={[styles.title, { color: colors.textPrimary }]}>
+          PROPAPP
+        </Text>
+        <Pressable
+          onPress={onOpenSettings}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={t('home.settings')}
+          style={({ pressed }) => [styles.settingsButton, pressed && { backgroundColor: colors.surfaceMuted }]}
+        >
+          <Text style={[styles.settingsIcon, { color: colors.accentText }]}>⚙</Text>
+        </Pressable>
       </View>
+      <Text style={[styles.subtitle, { color: colors.textMuted }]}>{t('home.chooseFeature')}</Text>
 
       {cards.map((card) => (
         <GlowCard key={card.id} title={card.title} subtitle={card.subtitle} onPress={card.onPress} />
@@ -87,20 +69,18 @@ export function HomeScreen({
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 24, paddingTop: 20 },
+  header: { justifyContent: 'center', minHeight: 48 },
   title: { fontSize: 22, fontWeight: '700', textAlign: 'center' },
-  subtitle: { fontSize: 14, textAlign: 'center', marginTop: 4, marginBottom: 20 },
-  themeSwitchTrack: {
-    flexDirection: 'row',
-    alignSelf: 'center',
-    borderWidth: 1,
-    borderRadius: 20,
-    padding: 3,
-    marginBottom: 32,
+  // Absolutely positioned so the title stays optically centered regardless of the button.
+  settingsButton: {
+    position: 'absolute',
+    right: -12,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  themeSwitchSegment: {
-    borderRadius: 17,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  themeSwitchText: { fontSize: 12, fontWeight: '600' },
+  settingsIcon: { fontSize: 24 },
+  subtitle: { fontSize: 14, textAlign: 'center', marginTop: 4, marginBottom: 28 },
 });

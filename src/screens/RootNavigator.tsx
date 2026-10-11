@@ -9,12 +9,14 @@ import { FadingScreen } from './FadingScreen';
 import { GeometryScreen } from './GeometryScreen';
 import { HomeScreen } from './HomeScreen';
 import { LinkBudgetScreen } from './LinkBudgetScreen';
+import { SettingsScreen } from './SettingsScreen';
 import { TrafficScreen } from './TrafficScreen';
 import { WcdmaLoadScreen } from './WcdmaLoadScreen';
 import type { EnvironmentCategory, PropagationInputs } from '../models/propagation';
 
 type Route =
   | { name: 'home' }
+  | { name: 'settings' }
   | { name: 'environment' }
   | { name: 'calculator'; environment: EnvironmentCategory }
   | { name: 'comparison'; environment: EnvironmentCategory; inputs: PropagationInputs }
@@ -37,6 +39,7 @@ function getBackRoute(route: Route): Route | null {
   switch (route.name) {
     case 'home':
       return null;
+    case 'settings':
     case 'environment':
     case 'fading':
     case 'cellular-hub':
@@ -92,8 +95,12 @@ export function RootNavigator() {
           onSelectEmpiricalMethods={() => setRoute({ name: 'environment' })}
           onSelectFadingSimulator={() => setRoute({ name: 'fading' })}
           onSelectCellularPlanning={() => setRoute({ name: 'cellular-hub' })}
+          onOpenSettings={() => setRoute({ name: 'settings' })}
         />
       );
+
+    case 'settings':
+      return <SettingsScreen onBack={() => setRoute({ name: 'home' })} />;
 
     case 'environment':
       return (

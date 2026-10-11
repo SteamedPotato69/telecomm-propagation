@@ -8,12 +8,11 @@
  */
 export interface DelaySpreadPreset {
   id: 'rural' | 'suburban' | 'urban';
-  label: string;
   delaySpreadUs: number;
 }
 
 export const DELAY_SPREAD_PRESETS: DelaySpreadPreset[] = [
-  { id: 'rural', label: 'Rural', delaySpreadUs: 0.2 },
-  { id: 'suburban', label: 'Suburbano', delaySpreadUs: 0.5 },
-  { id: 'urban', label: 'Urbano', delaySpreadUs: 3 },
+  { id: 'rural', delaySpreadUs: 0.2 },
+  { id: 'suburban', delaySpreadUs: 0.5 },
+  { id: 'urban', delaySpreadUs: 3 },
 ];

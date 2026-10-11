@@ -1,4 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import type { FadingResult } from '../models/fading';
 import { useTheme } from '../theme';
 import { formatCoherenceBandwidth, formatCoherenceTime, formatDopplerShift } from '../utils/format';
@@ -11,12 +12,13 @@ interface FadingResultPanelProps {
 /**
  * Fading-specific variant of ResultPanel.tsx: same container/typography
  * scale, but shows 3 derived quantities (Bc, fd, Tc) plus the
- * flat/selective and slow/fast classification in plain Spanish, instead
+ * flat/selective and slow/fast classification in plain language, instead
  * of a single path-loss number -- the zone name itself is shown by
  * FadingZoneChart, not duplicated here.
  */
 export function FadingResultPanel({ result, errorMessage }: FadingResultPanelProps) {
   const { colors } = useTheme();
+  const { t } = useTranslation();
 
   if (errorMessage) {
     return (
@@ -34,13 +36,13 @@ export function FadingResultPanel({ result, errorMessage }: FadingResultPanelPro
     <View style={[styles.container, { backgroundColor: colors.surfaceMuted }]}>
       <View style={styles.row}>
         <View style={styles.metric}>
-          <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>Ancho de banda de coherencia (Bc)</Text>
+          <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>{t('fading.result.bc')}</Text>
           <Text style={[styles.metricValue, { color: colors.textPrimary }]}>
             {formatCoherenceBandwidth(result.coherenceBandwidthHz)}
           </Text>
         </View>
         <View style={styles.metric}>
-          <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>Corrimiento Doppler (fd)</Text>
+          <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>{t('fading.result.fd')}</Text>
           <Text style={[styles.metricValue, { color: colors.textPrimary }]}>
             {formatDopplerShift(result.dopplerShiftHz)}
           </Text>
@@ -48,7 +50,7 @@ export function FadingResultPanel({ result, errorMessage }: FadingResultPanelPro
       </View>
       <View style={styles.row}>
         <View style={styles.metric}>
-          <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>Tiempo de coherencia (Tc)</Text>
+          <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>{t('fading.result.tc')}</Text>
           <Text style={[styles.metricValue, { color: colors.textPrimary }]}>
             {formatCoherenceTime(result.coherenceTimeS)}
           </Text>
@@ -58,18 +60,17 @@ export function FadingResultPanel({ result, errorMessage }: FadingResultPanelPro
       <View style={[styles.classificationBlock, { borderTopColor: colors.borderMuted }]}>
         <Text style={[styles.classificationText, { color: colors.textPrimary }]}>
           {result.frequencySelective
-            ? '⚠ Selectivo en frecuencia (FSF): BT > Bc.'
-            : '✓ Plano en frecuencia: BT < Bc.'}
+            ? t('fading.result.frequencySelective')
+            : t('fading.result.frequencyFlat')}
         </Text>
         <Text style={[styles.classificationText, { color: colors.textPrimary }]}>
           {result.timeSelective
-            ? '⚠ Selectivo en tiempo (TSF / fast fading): Ts > Tc.'
-            : '✓ Plano en tiempo / lento: Ts < Tc.'}
+            ? t('fading.result.timeSelective')
+            : t('fading.result.timeFlat')}
         </Text>
         {result.zone === 1 ? (
           <Text style={[styles.warningText, { color: colors.warning }]}>
-            ⚠ BT·Ts &lt; 1: el ancho de banda no alcanza para la tasa de símbolo pedida (zona rayada, ver
-            gráfica).
+            {t('fading.result.nyquistWarning')}
           </Text>
         ) : null}
       </View>

@@ -1,4 +1,5 @@
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../theme';
 
 interface ModelSelectorItem {
@@ -27,6 +28,7 @@ interface ModelSelectorProps {
  */
 export function ModelSelector({ items, selectedId, onSelect }: ModelSelectorProps) {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
       {items.map((item) => {
@@ -38,7 +40,7 @@ export function ModelSelector({ items, selectedId, onSelect }: ModelSelectorProp
             onPress={() => onSelect(item.id)}
             accessibilityRole="radio"
             accessibilityState={{ selected: isSelected, disabled: item.disabled }}
-            accessibilityLabel={item.disabled ? `${item.label}, próximamente` : item.label}
+            accessibilityLabel={item.disabled ? `${item.label}, ${t('common.soon')}` : item.label}
             style={[
               styles.chip,
               { borderColor: colors.border },
@@ -48,7 +50,7 @@ export function ModelSelector({ items, selectedId, onSelect }: ModelSelectorProp
           >
             <Text style={[styles.chipText, { color: isSelected ? '#ffffff' : colors.textPrimary }]}>
               {item.label}
-              {item.disabled ? ' (próximamente)' : ''}
+              {item.disabled ? ` (${t('common.soon')})` : ''}
             </Text>
           </Pressable>
         );

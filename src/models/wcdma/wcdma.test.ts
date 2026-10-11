@@ -71,7 +71,7 @@ function baseInputs(overrides: Partial<WcdmaLoadInputs> = {}): WcdmaLoadInputs {
   return {
     chipRateMcps: 3.84,
     services: DEFAULT_SERVICE_MIX,
-    referenceServiceLabel: 'Voz AMR',
+    referenceServiceId: 'voice',
     interferenceFactor: 0.55,
     targetUplinkLoad: 0.5,
     linkBudget: LINK_BUDGET,
@@ -157,7 +157,7 @@ describe('calculateWcdmaUplinkLoad', () => {
     expect(() => calculateWcdmaUplinkLoad(baseInputs({ dampingFactor: 1.5 }))).toThrow();
   });
 
-  it('throws for an unknown reference service label', () => {
-    expect(() => calculateWcdmaUplinkLoad(baseInputs({ referenceServiceLabel: 'No existe' }))).toThrow();
+  it('throws for an unknown reference service id', () => {
+    expect(() => calculateWcdmaUplinkLoad(baseInputs({ referenceServiceId: 'nope' as never }))).toThrow();
   });
 });

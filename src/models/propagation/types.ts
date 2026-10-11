@@ -1,3 +1,5 @@
+import type { LocalizedMessage } from '../../utils/localizedMessage';
+
 export type PropagationModelId =
   | 'free-space'
   | 'hata'
@@ -74,7 +76,8 @@ export interface PropagationInputs {
 
 export interface PropagationWarning {
   field: keyof PropagationInputs;
-  message: string;
+  /** Structured, language-neutral -- the UI translates it (see utils/localizedMessage.ts). */
+  message: LocalizedMessage;
 }
 
 export interface PropagationResult {
@@ -93,10 +96,11 @@ export type GeometryFieldKey =
   | 'buildingSeparationM';
 
 export interface PropagationModelDefinition {
+  /**
+   * Display name, short name and citation live in the translation files
+   * under `models.<id>.*` -- this module stays language-free.
+   */
   id: PropagationModelId;
-  label: string;
-  shortLabel: string;
-  citation: string;
   /** false for models whose exact formula is still pending verification (see ikegami.ts / walfischBertoni.ts). */
   implemented: boolean;
   /**

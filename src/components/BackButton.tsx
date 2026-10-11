@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, Text } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../theme';
 
 interface BackButtonProps {
@@ -14,12 +15,13 @@ interface BackButtonProps {
  */
 export function BackButton({ onPress }: BackButtonProps) {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   return (
     <Pressable
       onPress={onPress}
       hitSlop={8}
       accessibilityRole="button"
-      accessibilityLabel="Volver"
+      accessibilityLabel={t('common.back')}
       style={({ pressed }) => [styles.button, pressed && { backgroundColor: colors.surfaceMuted }]}
     >
       <Text style={[styles.arrow, { color: colors.accentText }]}>‹</Text>
