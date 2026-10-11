@@ -1,4 +1,6 @@
 import { assertPositive, rangeWarningMessage, requireField } from '../../utils/validation';
+import { LocalizedError } from '../../utils/localizedMessage';
+import type { FieldLabel } from '../../utils/localizedMessage';
 import type { PropagationInputs, PropagationModelDefinition, PropagationResult, PropagationWarning } from './types';
 
 const MODEL_NAME = 'Walfisch-Bertoni';
@@ -37,33 +39,31 @@ const MODEL_NAME = 'Walfisch-Bertoni';
 export function calculateWalfischBertoniLoss(inputs: PropagationInputs): PropagationResult {
   const { frequencyMHz, distanceKm, mobileHeightM } = inputs;
 
-  assertPositive(frequencyMHz, 'Frecuencia');
-  assertPositive(distanceKm, 'Distancia');
-  assertPositive(mobileHeightM, 'Altura del móvil');
+  assertPositive(frequencyMHz, 'frequency');
+  assertPositive(distanceKm, 'distance');
+  assertPositive(mobileHeightM, 'mobileHeight');
 
   const heightAboveRoofM = requireField(
     inputs.baseStationHeightAboveRoofM,
-    'Altura de estación base sobre tejados (H)',
+    'baseStationHeightAboveRoof',
     MODEL_NAME
   );
   const averageBuildingHeightM = requireField(
     inputs.averageBuildingHeightM,
-    'Altura media de edificios (hR)',
+    'averageBuildingHeight',
     MODEL_NAME
   );
   const buildingSeparationM = requireField(
     inputs.buildingSeparationM,
-    'Separación entre edificios (b)',
+    'buildingSeparation',
     MODEL_NAME
   );
 
-  assertPositive(heightAboveRoofM, 'Altura de estación base sobre tejados (H)');
-  assertPositive(buildingSeparationM, 'Separación entre edificios (b)');
+  assertPositive(heightAboveRoofM, 'baseStationHeightAboveRoof');
+  assertPositive(buildingSeparationM, 'buildingSeparation');
 
   if (averageBuildingHeightM <= mobileHeightM) {
-    throw new Error(
-      'La altura media de edificios (hR) debe ser mayor que la altura del móvil (hm): el término arcotangente de A queda indefinido o sin sentido físico si no lo es.'
-    );
+    throw new LocalizedError('errors.averageBuildingBelowMobile');
   }
 
   const warnings: PropagationWarning[] = [];
@@ -72,15 +72,15 @@ export function calculateWalfischBertoniLoss(inputs: PropagationInputs): Propaga
     value: number,
     min: number,
     max: number,
-    label: string,
+    label: FieldLabel,
     unit: string
   ) => {
     const message = rangeWarningMessage(value, min, max, label, unit);
     if (message) warnings.push({ field, message });
   };
 
-  pushRangeWarning('frequencyMHz', frequencyMHz, 300, 3000, 'Frecuencia', 'MHz');
-  pushRangeWarning('distanceKm', distanceKm, 0.2, 5, 'Distancia', 'km');
+  pushRangeWarning('frequencyMHz', frequencyMHz, 300, 3000, 'frequency', 'MHz');
+  pushRangeWarning('distanceKm', distanceKm, 0.2, 5, 'distance', 'km');
 
   const heightDiffM = averageBuildingHeightM - mobileHeightM;
   const a =
@@ -101,10 +101,6 @@ export function calculateWalfischBertoniLoss(inputs: PropagationInputs): Propaga
 
 export const walfischBertoniModel: PropagationModelDefinition = {
   id: 'walfisch-bertoni',
-  label: 'Walfisch-Bertoni',
-  shortLabel: 'Walfisch-B.',
-  citation:
-    'Walfisch & Bertoni (1988). Fórmula: docs/curso-referencia.md §5.7. Válido para f: 300-3000 MHz, d: 0.2-5 km.',
   implemented: true,
   extraFields: ['baseStationHeightAboveRoofM', 'averageBuildingHeightM', 'buildingSeparationM'],
   calculate: calculateWalfischBertoniLoss,

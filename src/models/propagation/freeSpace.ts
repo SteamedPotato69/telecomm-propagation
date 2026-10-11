@@ -13,8 +13,8 @@ import type { PropagationInputs, PropagationModelDefinition, PropagationResult }
 export function calculateFreeSpaceLoss(inputs: PropagationInputs): PropagationResult {
   const { frequencyMHz, distanceKm } = inputs;
 
-  assertPositive(frequencyMHz, 'Frecuencia');
-  assertPositive(distanceKm, 'Distancia');
+  assertPositive(frequencyMHz, 'frequency');
+  assertPositive(distanceKm, 'distance');
 
   const pathLossDb = 20 * Math.log10(distanceKm) + 20 * Math.log10(frequencyMHz) + 32.44;
 
@@ -23,9 +23,6 @@ export function calculateFreeSpaceLoss(inputs: PropagationInputs): PropagationRe
 
 export const freeSpaceModel: PropagationModelDefinition = {
   id: 'free-space',
-  label: 'Espacio libre (Friis)',
-  shortLabel: 'Espacio libre',
-  citation: 'Friis, H.T. (1946). Forma logarítmica estándar, d en km, f en MHz.',
   implemented: true,
   calculate: calculateFreeSpaceLoss,
 };

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { LayoutChangeEvent, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import Svg, { Circle, Line, Rect, Text as SvgText } from 'react-native-svg';
-import { FADING_ZONE_LABELS } from '../models/fading';
 import type { FadingZone } from '../models/fading';
 import { useTheme } from '../theme';
 
@@ -67,10 +67,9 @@ export function FadingZoneChart({
   height = 260,
 }: FadingZoneChartProps) {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const [width, setWidth] = useState(0);
   const onLayout = (event: LayoutChangeEvent) => setWidth(event.nativeEvent.layout.width);
-
-  const zoneInfo = FADING_ZONE_LABELS[zone];
 
   if (width === 0) {
     return <View style={styles.container} onLayout={onLayout} />;
@@ -90,8 +89,8 @@ export function FadingZoneChart({
   const px = (v: number) => logPosition(v, xMin, xMax, plotLeft, plotRight);
   const py = (v: number) => logPosition(v, yMin, yMax, plotBottom, plotTop);
 
-  const xTicks = TICKS.filter((t) => t >= xMin && t <= xMax);
-  const yTicks = TICKS.filter((t) => t >= yMin && t <= yMax);
+  const xTicks = TICKS.filter((tick) => tick >= xMin && tick <= xMax);
+  const yTicks = TICKS.filter((tick) => tick >= yMin && tick <= yMax);
 
   const refX = px(1);
   const refY = py(1);
@@ -117,7 +116,7 @@ export function FadingZoneChart({
 
   return (
     <View style={styles.container} onLayout={onLayout}>
-      <Text style={[styles.title, { color: colors.textPrimary }]}>Zona de desvanecimiento (§8.7)</Text>
+      <Text style={[styles.title, { color: colors.textPrimary }]}>{t('fading.chart.title')}</Text>
       <Text style={[styles.axisLabelY, { color: colors.textMuted }]}>Ts / Tc</Text>
       <Svg width={width} height={height}>
         {/*
@@ -130,11 +129,11 @@ export function FadingZoneChart({
         <Rect x={plotLeft} y={refY} width={refX - plotLeft} height={plotBottom - refY} fill={colors.accentSurface} />
         <Rect x={refX} y={plotTop} width={plotRight - refX} height={refY - plotTop} fill={colors.errorSurface} opacity={0.4} />
 
-        {xTicks.map((t) => (
-          <Line key={`gx-${t}`} x1={px(t)} y1={plotTop} x2={px(t)} y2={plotBottom} stroke={colors.borderMuted} strokeWidth={1} />
+        {xTicks.map((tick) => (
+          <Line key={`gx-${tick}`} x1={px(tick)} y1={plotTop} x2={px(tick)} y2={plotBottom} stroke={colors.borderMuted} strokeWidth={1} />
         ))}
-        {yTicks.map((t) => (
-          <Line key={`gy-${t}`} x1={plotLeft} y1={py(t)} x2={plotRight} y2={py(t)} stroke={colors.borderMuted} strokeWidth={1} />
+        {yTicks.map((tick) => (
+          <Line key={`gy-${tick}`} x1={plotLeft} y1={py(tick)} x2={plotRight} y2={py(tick)} stroke={colors.borderMuted} strokeWidth={1} />
         ))}
 
         {/* Reference lines at ratio = 1 -- the boundary between flat and selective on each axis. */}
@@ -168,28 +167,28 @@ export function FadingZoneChart({
         <Line x1={plotLeft} y1={plotTop} x2={plotLeft} y2={plotBottom} stroke={colors.textDisabled} strokeWidth={1} />
         <Line x1={plotLeft} y1={plotBottom} x2={plotRight} y2={plotBottom} stroke={colors.textDisabled} strokeWidth={1} />
 
-        {xTicks.map((t) => (
-          <SvgText key={`lx-${t}`} x={px(t)} y={plotBottom + 14} fontSize={9} fill={colors.textMuted} textAnchor="middle">
-            {formatTick(t)}
+        {xTicks.map((tick) => (
+          <SvgText key={`lx-${tick}`} x={px(tick)} y={plotBottom + 14} fontSize={9} fill={colors.textMuted} textAnchor="middle">
+            {formatTick(tick)}
           </SvgText>
         ))}
-        {yTicks.map((t) => (
-          <SvgText key={`ly-${t}`} x={plotLeft - 6} y={py(t) + 3} fontSize={9} fill={colors.textMuted} textAnchor="end">
-            {formatTick(t)}
+        {yTicks.map((tick) => (
+          <SvgText key={`ly-${tick}`} x={plotLeft - 6} y={py(tick) + 3} fontSize={9} fill={colors.textMuted} textAnchor="end">
+            {formatTick(tick)}
           </SvgText>
         ))}
 
         <SvgText x={(plotLeft + refX) / 2} y={plotBottom - 6} fontSize={10} fill={colors.accentText} textAnchor="middle">
-          Zona 2
+          {t('fading.chart.zoneName', { zone: 2 })}
         </SvgText>
         <SvgText x={(plotRight + refX) / 2} y={plotBottom - 6} fontSize={10} fill={colors.textSecondary} textAnchor="middle">
-          Zona 4
+          {t('fading.chart.zoneName', { zone: 4 })}
         </SvgText>
         <SvgText x={(plotLeft + refX) / 2} y={plotTop + 14} fontSize={10} fill={colors.textSecondary} textAnchor="middle">
-          Zona 3
+          {t('fading.chart.zoneName', { zone: 3 })}
         </SvgText>
         <SvgText x={(plotRight + refX) / 2} y={plotTop + 14} fontSize={10} fill={colors.error} textAnchor="middle">
-          Zona 5
+          {t('fading.chart.zoneName', { zone: 5 })}
         </SvgText>
 
         <Circle cx={px(plottedX)} cy={py(plottedY)} r={7} fill={markerColor} stroke={colors.surface} strokeWidth={2} />
@@ -198,9 +197,9 @@ export function FadingZoneChart({
 
       <View style={[styles.summary, { backgroundColor: colors.accentSurface, borderColor: NEON_LILAC }]}>
         <Text style={[styles.zoneTitle, { color: zone === 1 ? colors.error : colors.accentText }]}>
-          Zona {zone}: {zoneInfo.title}
+          {t('fading.chart.zoneSummary', { zone, title: t(`fading.zones.zone${zone}.title`) })}
         </Text>
-        <Text style={[styles.zoneDescription, { color: colors.textSecondary }]}>{zoneInfo.description}</Text>
+        <Text style={[styles.zoneDescription, { color: colors.textSecondary }]}>{t(`fading.zones.zone${zone}.description`)}</Text>
       </View>
     </View>
   );

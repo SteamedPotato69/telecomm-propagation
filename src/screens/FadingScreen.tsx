@@ -1,10 +1,13 @@
 import { useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import { BackButton } from '../components/BackButton';
 import { FadingResultPanel } from '../components/FadingResultPanel';
 import { FadingZoneChart } from '../components/FadingZoneChart';
 import { NumericField } from '../components/NumericField';
 import { DELAY_SPREAD_PRESETS, calculateFading } from '../models/fading';
 import type { FadingResult } from '../models/fading';
+import { translateError } from '../i18n';
 import { useTheme } from '../theme';
 import { parseDecimal } from '../utils/validation';
 
@@ -16,6 +19,7 @@ interface FadingScreenProps {
 
 export function FadingScreen({ onBack }: FadingScreenProps) {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const [frequencyMHz, setFrequencyMHz] = useState('900');
   const [delaySpreadUs, setDelaySpreadUs] = useState('2');
   const [speedKmh, setSpeedKmh] = useState('36');
@@ -47,7 +51,7 @@ export function FadingScreen({ onBack }: FadingScreenProps) {
         Number.isNaN
       )
     ) {
-      return { result: null, errorMessage: 'Todos los campos numéricos deben tener un valor.' };
+      return { result: null, errorMessage: t('common.missingValues') };
     }
 
     try {
@@ -60,31 +64,28 @@ export function FadingScreen({ onBack }: FadingScreenProps) {
       });
       return { result: calculated, errorMessage: null };
     } catch (error) {
-      return { result: null, errorMessage: error instanceof Error ? error.message : 'Error desconocido.' };
+      return { result: null, errorMessage: translateError(t, error) };
     }
-  }, [frequencyMHz, delaySpreadUs, speedKmh, bandwidthKHz, effectiveSymbolDurationUs]);
+  }, [frequencyMHz, delaySpreadUs, speedKmh, bandwidthKHz, effectiveSymbolDurationUs, t]);
 
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Pressable onPress={onBack} style={styles.backButton}>
-          <Text style={[styles.backButtonText, { color: colors.accentText }]}>‹ Inicio</Text>
-        </Pressable>
+        <BackButton onPress={onBack} />
 
-        <Text style={[styles.title, { color: colors.textPrimary }]}>Simulador de desvanecimiento</Text>
+        <Text style={[styles.title, { color: colors.textPrimary }]}>{t('fading.title')}</Text>
         <Text style={[styles.citation, { color: colors.textMuted }]}>
-          Dispersión de retardo, ancho de banda de coherencia, Doppler y tiempo de coherencia —
-          docs/curso-referencia.md §8.
+          {t('fading.subtitle')}
         </Text>
 
         <NumericField
-          label="Frecuencia portadora"
+          label={t('fading.carrierFrequency')}
           unit="MHz"
           value={frequencyMHz}
           onChangeText={setFrequencyMHz}
         />
 
-        <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>Dispersión de retardo (D)</Text>
+        <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>{t('fields.delaySpread')}</Text>
         <View style={styles.chipRow}>
           {DELAY_SPREAD_PRESETS.map((preset) => {
             const isSelected = Number(delaySpreadUs) === preset.delaySpreadUs;
@@ -92,6 +93,8 @@ export function FadingScreen({ onBack }: FadingScreenProps) {
               <Pressable
                 key={preset.id}
                 onPress={() => setDelaySpreadUs(String(preset.delaySpreadUs))}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: isSelected }}
                 style={[
                   styles.chip,
                   { borderColor: colors.border },
@@ -99,39 +102,41 @@ export function FadingScreen({ onBack }: FadingScreenProps) {
                 ]}
               >
                 <Text style={[styles.chipText, { color: isSelected ? '#ffffff' : colors.textPrimary }]}>
-                  {preset.label} ({preset.delaySpreadUs} µs)
+                  {t(`fading.presets.${preset.id}`)} ({preset.delaySpreadUs} µs)
                 </Text>
               </Pressable>
             );
           })}
         </View>
         <NumericField
-          label="Dispersión de retardo (D)"
+          label={t('fields.delaySpread')}
           unit="µs"
           value={delaySpreadUs}
           onChangeText={setDelaySpreadUs}
-          helperText="Regla práctica del curso: 1 µs ≈ 300 m de diferencia de recorrido."
+          helperText={t('fading.delaySpreadHelper')}
         />
 
         <NumericField
-          label="Velocidad del móvil"
+          label={t('fields.mobileSpeed')}
           unit="km/h"
           value={speedKmh}
           onChangeText={setSpeedKmh}
-          helperText="v = 0 es un móvil estático: fd = 0, Tc → ∞ (canal invariante en el tiempo)."
+          helperText={t('fading.speedHelper')}
         />
 
         <NumericField
-          label="Ancho de banda de la señal (BT)"
+          label={t('fields.signalBandwidth')}
           unit="kHz"
           value={bandwidthKHz}
           onChangeText={setBandwidthKHz}
         />
 
-        <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>Duración de símbolo</Text>
+        <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>{t('fading.symbolHeading')}</Text>
         <View style={styles.chipRow}>
           <Pressable
             onPress={() => setSymbolInputMode('duration')}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: symbolInputMode === 'duration' }}
             style={[
               styles.chip,
               { borderColor: colors.border },
@@ -139,11 +144,13 @@ export function FadingScreen({ onBack }: FadingScreenProps) {
             ]}
           >
             <Text style={[styles.chipText, { color: symbolInputMode === 'duration' ? '#ffffff' : colors.textPrimary }]}>
-              Ts directo
+              {t('fading.tsDirect')}
             </Text>
           </Pressable>
           <Pressable
             onPress={() => setSymbolInputMode('rate')}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: symbolInputMode === 'rate' }}
             style={[
               styles.chip,
               { borderColor: colors.border },
@@ -151,24 +158,24 @@ export function FadingScreen({ onBack }: FadingScreenProps) {
             ]}
           >
             <Text style={[styles.chipText, { color: symbolInputMode === 'rate' ? '#ffffff' : colors.textPrimary }]}>
-              Tasa de símbolo (R)
+              {t('fading.symbolRate')}
             </Text>
           </Pressable>
         </View>
         {symbolInputMode === 'duration' ? (
           <NumericField
-            label="Duración de símbolo (Ts)"
+            label={t('fields.symbolDuration')}
             unit="µs"
             value={symbolDurationUs}
             onChangeText={setSymbolDurationUs}
           />
         ) : (
           <NumericField
-            label="Tasa de símbolo (R)"
+            label={t('fading.symbolRate')}
             unit="kbps"
             value={symbolRateKbps}
             onChangeText={setSymbolRateKbps}
-            helperText="Se asume Ts = 1/R (1 símbolo por bit), igual que el ejemplo del curso (§8.8)."
+            helperText={t('fading.symbolRateHelper')}
           />
         )}
 
@@ -190,9 +197,7 @@ export function FadingScreen({ onBack }: FadingScreenProps) {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  content: { padding: 20, paddingTop: 60, paddingBottom: 40 },
-  backButton: { marginBottom: 12 },
-  backButtonText: { fontSize: 14, fontWeight: '600' },
+  content: { padding: 20, paddingTop: 20, paddingBottom: 40 },
   title: { fontSize: 20, fontWeight: '700' },
   citation: { fontSize: 11, marginTop: 4, marginBottom: 16 },
   sectionLabel: { fontSize: 13, fontWeight: '600', marginBottom: 8, marginTop: 4 },
@@ -201,7 +206,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 20,
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 10,
     marginRight: 8,
     marginBottom: 8,
   },

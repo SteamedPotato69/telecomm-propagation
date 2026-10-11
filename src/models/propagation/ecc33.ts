@@ -1,4 +1,5 @@
 import { assertPositive, rangeWarningMessage } from '../../utils/validation';
+import type { FieldLabel } from '../../utils/localizedMessage';
 import type { PropagationInputs, PropagationModelDefinition, PropagationResult, PropagationWarning } from './types';
 
 /**
@@ -26,10 +27,10 @@ import type { PropagationInputs, PropagationModelDefinition, PropagationResult, 
 export function calculateEcc33Loss(inputs: PropagationInputs): PropagationResult {
   const { frequencyMHz, distanceKm, baseStationHeightM, mobileHeightM, citySize } = inputs;
 
-  assertPositive(frequencyMHz, 'Frecuencia');
-  assertPositive(distanceKm, 'Distancia');
-  assertPositive(baseStationHeightM, 'Altura de estación base');
-  assertPositive(mobileHeightM, 'Altura del móvil');
+  assertPositive(frequencyMHz, 'frequency');
+  assertPositive(distanceKm, 'distance');
+  assertPositive(baseStationHeightM, 'baseStationHeight');
+  assertPositive(mobileHeightM, 'mobileHeight');
 
   const warnings: PropagationWarning[] = [];
   const pushRangeWarning = (
@@ -37,17 +38,17 @@ export function calculateEcc33Loss(inputs: PropagationInputs): PropagationResult
     value: number,
     min: number,
     max: number,
-    label: string,
+    label: FieldLabel,
     unit: string
   ) => {
     const message = rangeWarningMessage(value, min, max, label, unit);
     if (message) warnings.push({ field, message });
   };
 
-  pushRangeWarning('frequencyMHz', frequencyMHz, 0, 4000, 'Frecuencia', 'MHz');
-  pushRangeWarning('distanceKm', distanceKm, 0, 10, 'Distancia', 'km');
-  pushRangeWarning('baseStationHeightM', baseStationHeightM, 20, 200, 'Altura de estación base', 'm');
-  pushRangeWarning('mobileHeightM', mobileHeightM, 5, 10, 'Altura del móvil', 'm');
+  pushRangeWarning('frequencyMHz', frequencyMHz, 0, 4000, 'frequency', 'MHz');
+  pushRangeWarning('distanceKm', distanceKm, 0, 10, 'distance', 'km');
+  pushRangeWarning('baseStationHeightM', baseStationHeightM, 20, 200, 'baseStationHeight', 'm');
+  pushRangeWarning('mobileHeightM', mobileHeightM, 5, 10, 'mobileHeight', 'm');
 
   const frequencyGHz = frequencyMHz / 1000;
   const logD = Math.log10(distanceKm);
@@ -68,9 +69,6 @@ export function calculateEcc33Loss(inputs: PropagationInputs): PropagationResult
 
 export const ecc33Model: PropagationModelDefinition = {
   id: 'ecc33',
-  label: 'ECC-33',
-  shortLabel: 'ECC-33',
-  citation: 'Electronic Communications Committee, Report 33. Válido para f: 0-4000 MHz (docs/curso-referencia.md §5.5).',
   implemented: true,
   calculate: calculateEcc33Loss,
 };

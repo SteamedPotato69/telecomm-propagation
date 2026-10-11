@@ -1,3 +1,4 @@
+import { LocalizedError } from '../../utils/localizedMessage';
 import { assertPositive, requireField } from '../../utils/validation';
 import type { PropagationInputs, PropagationModelDefinition, PropagationResult } from './types';
 
@@ -25,41 +26,37 @@ const MODEL_NAME = 'Ikegami';
 export function calculateIkegamiLoss(inputs: PropagationInputs): PropagationResult {
   const { frequencyMHz, distanceKm, mobileHeightM } = inputs;
 
-  assertPositive(frequencyMHz, 'Frecuencia');
-  assertPositive(distanceKm, 'Distancia');
-  assertPositive(mobileHeightM, 'Altura del móvil');
+  assertPositive(frequencyMHz, 'frequency');
+  assertPositive(distanceKm, 'distance');
+  assertPositive(mobileHeightM, 'mobileHeight');
 
-  const streetWidthM = requireField(inputs.streetWidthM, 'Ancho de calle (W)', MODEL_NAME);
+  const streetWidthM = requireField(inputs.streetWidthM, 'streetWidth', MODEL_NAME);
   const buildingHeightM = requireField(
     inputs.diffractingBuildingHeightM,
-    'Altura del edificio de difracción (H)',
+    'diffractingBuildingHeight',
     MODEL_NAME
   );
   const streetOrientationDeg = requireField(
     inputs.streetOrientationDeg,
-    'Ángulo de orientación de calle (Φ)',
+    'streetOrientation',
     MODEL_NAME
   );
   const facadeReflectionLr = requireField(
     inputs.facadeReflectionLr,
-    'Parámetro de reflexión de fachada (lr)',
+    'facadeReflection',
     MODEL_NAME
   );
 
-  assertPositive(streetWidthM, 'Ancho de calle (W)');
-  assertPositive(facadeReflectionLr, 'Parámetro de reflexión de fachada (lr)');
+  assertPositive(streetWidthM, 'streetWidth');
+  assertPositive(facadeReflectionLr, 'facadeReflection');
 
   if (buildingHeightM <= mobileHeightM) {
-    throw new Error(
-      'La altura del edificio de difracción (H) debe ser mayor que la altura del móvil (hr): sin eso, la difracción sobre el tejado no tiene sentido físico y log10(H - hr) queda indefinido.'
-    );
+    throw new LocalizedError('errors.diffractingBuildingBelowMobile');
   }
 
   const sinPhi = Math.sin((streetOrientationDeg * Math.PI) / 180);
   if (sinPhi <= 0) {
-    throw new Error(
-      'El ángulo de orientación de calle (Φ) no puede ser 0° o 180°: produce log10(sen Φ) indefinido (sen Φ = 0).'
-    );
+    throw new LocalizedError('errors.streetOrientationSinZero');
   }
 
   const pathLossDb =
@@ -76,10 +73,6 @@ export function calculateIkegamiLoss(inputs: PropagationInputs): PropagationResu
 
 export const ikegamiModel: PropagationModelDefinition = {
   id: 'ikegami',
-  label: 'Ikegami',
-  shortLabel: 'Ikegami',
-  citation:
-    'Ikegami et al. (1984). Fórmula: docs/curso-referencia.md §5.6 (la fuente marca los signos de esta sección como [OCR-verificar]).',
   implemented: true,
   extraFields: ['streetWidthM', 'diffractingBuildingHeightM', 'streetOrientationDeg', 'facadeReflectionLr'],
   calculate: calculateIkegamiLoss,

@@ -26,6 +26,9 @@
         "projectId": "d49ee7fe-6cb5-470f-9bae-664c6e548834"
       }
     },
-    "owner": "latriassona"
+    "owner": "latriassona",
+    "plugins": [
+      "expo-localization"
+    ]
   }
 }

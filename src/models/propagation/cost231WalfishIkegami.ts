@@ -1,3 +1,4 @@
+import { LocalizedError } from '../../utils/localizedMessage';
 import { assertPositive, requireField } from '../../utils/validation';
 import { calculateFreeSpaceLoss } from './freeSpace';
 import type { PropagationInputs, PropagationModelDefinition, PropagationResult } from './types';
@@ -10,9 +11,7 @@ const MODEL_NAME = 'COST-231 Walfish-Ikegami';
  */
 function calculateLori(streetOrientationDeg: number): number {
   if (streetOrientationDeg < 0 || streetOrientationDeg > 90) {
-    throw new Error(
-      'El ángulo de orientación de calle (Φ) debe estar entre 0° y 90° para este modelo: la fórmula de Lori no tiene una rama definida fuera de ese rango.'
-    );
+    throw new LocalizedError('errors.streetOrientationRange');
   }
   if (streetOrientationDeg <= 35) {
     return -10 + 0.3571 * streetOrientationDeg;
@@ -60,31 +59,29 @@ function calculateLori(streetOrientationDeg: number): number {
 export function calculateCost231WalfishIkegamiLoss(inputs: PropagationInputs): PropagationResult {
   const { frequencyMHz, distanceKm, baseStationHeightM, mobileHeightM, metropolitanCenter } = inputs;
 
-  assertPositive(frequencyMHz, 'Frecuencia');
-  assertPositive(distanceKm, 'Distancia');
-  assertPositive(baseStationHeightM, 'Altura de estación base');
-  assertPositive(mobileHeightM, 'Altura del móvil');
+  assertPositive(frequencyMHz, 'frequency');
+  assertPositive(distanceKm, 'distance');
+  assertPositive(baseStationHeightM, 'baseStationHeight');
+  assertPositive(mobileHeightM, 'mobileHeight');
 
-  const streetWidthM = requireField(inputs.streetWidthM, 'Ancho de calle (W)', MODEL_NAME);
+  const streetWidthM = requireField(inputs.streetWidthM, 'streetWidth', MODEL_NAME);
   const streetOrientationDeg = requireField(
     inputs.streetOrientationDeg,
-    'Ángulo de orientación de calle (Φ)',
+    'streetOrientation',
     MODEL_NAME
   );
   const averageBuildingHeightM = requireField(
     inputs.averageBuildingHeightM,
-    'Altura media de edificios (hR)',
+    'averageBuildingHeight',
     MODEL_NAME
   );
-  const buildingSeparationM = requireField(inputs.buildingSeparationM, 'Separación entre edificios (b)', MODEL_NAME);
+  const buildingSeparationM = requireField(inputs.buildingSeparationM, 'buildingSeparation', MODEL_NAME);
 
-  assertPositive(streetWidthM, 'Ancho de calle (W)');
-  assertPositive(buildingSeparationM, 'Separación entre edificios (b)');
+  assertPositive(streetWidthM, 'streetWidth');
+  assertPositive(buildingSeparationM, 'buildingSeparation');
 
   if (averageBuildingHeightM <= mobileHeightM) {
-    throw new Error(
-      'La altura media de edificios (hR) debe ser mayor que la altura del móvil (hm): ΔhR = hR - hm debe ser positivo para log10(ΔhR).'
-    );
+    throw new LocalizedError('errors.averageBuildingBelowMobile');
   }
 
   const deltaHR = averageBuildingHeightM - mobileHeightM;
@@ -119,10 +116,6 @@ export function calculateCost231WalfishIkegamiLoss(inputs: PropagationInputs): P
 
 export const cost231WalfishIkegamiModel: PropagationModelDefinition = {
   id: 'cost231-walfish-ikegami',
-  label: 'COST-231 Walfish-Ikegami',
-  shortLabel: 'COST231-WI',
-  citation:
-    'COST Action 231. Fórmula: docs/curso-referencia.md §5.8, verificada contra documentación técnica independiente (Altair WinProp).',
   implemented: true,
   extraFields: ['streetWidthM', 'streetOrientationDeg', 'averageBuildingHeightM', 'buildingSeparationM'],
   calculate: calculateCost231WalfishIkegamiLoss,

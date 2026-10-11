@@ -1,4 +1,7 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import { BackButton } from '../components/BackButton';
+import { ListCard } from '../components/ListCard';
 import { ENVIRONMENT_CATEGORIES } from '../models/propagation';
 import type { EnvironmentCategory } from '../models/propagation';
 import { useTheme } from '../theme';
@@ -10,46 +13,29 @@ interface EnvironmentScreenProps {
 
 export function EnvironmentScreen({ onSelectEnvironment, onBack }: EnvironmentScreenProps) {
   const { colors } = useTheme();
+  const { t } = useTranslation();
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      <Pressable onPress={onBack} style={styles.backButton}>
-        <Text style={[styles.backButtonText, { color: colors.accentText }]}>‹ Inicio</Text>
-      </Pressable>
+      <BackButton onPress={onBack} />
 
-      <Text style={[styles.title, { color: colors.textPrimary }]}>Elige un entorno</Text>
+      <Text style={[styles.title, { color: colors.textPrimary }]}>{t('environment.title')}</Text>
       <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-        Determina qué modelos de predicción de pérdida están disponibles para tu ejercicio.
+        {t('environment.subtitle')}
       </Text>
 
       {ENVIRONMENT_CATEGORIES.map((environment) => {
-        const isEmpty = environment.applicableModelIds.length === 0;
+        const count = environment.applicableModelIds.length;
+        const isEmpty = count === 0;
         return (
-          <Pressable
+          <ListCard
             key={environment.id}
+            title={t(`environments.${environment.id}.label`)}
+            description={t(`environments.${environment.id}.description`)}
+            statusText={isEmpty ? t('common.comingSoon') : t('environment.modelsAvailable', { count })}
             disabled={isEmpty}
             onPress={() => onSelectEnvironment(environment)}
-            style={[
-              styles.card,
-              { borderColor: colors.border, backgroundColor: colors.surface },
-              isEmpty && { backgroundColor: colors.surfaceDisabled, opacity: 0.55 },
-            ]}
-          >
-            <Text style={[styles.cardTitle, { color: isEmpty ? colors.textDisabled : colors.textPrimary }]}>
-              {environment.label}
-            </Text>
-            <Text style={[styles.cardDescription, { color: isEmpty ? colors.textDisabled : colors.textSecondary }]}>
-              {environment.description}
-            </Text>
-            {!isEmpty ? (
-              <Text style={[styles.cardModelCount, { color: colors.accentText }]}>
-                {environment.applicableModelIds.length} modelo{environment.applicableModelIds.length === 1 ? '' : 's'}{' '}
-                disponible{environment.applicableModelIds.length === 1 ? '' : 's'}
-              </Text>
-            ) : (
-              <Text style={[styles.cardModelCount, { color: colors.textDisabled }]}>Próximamente</Text>
-            )}
-          </Pressable>
+          />
         );
       })}
     </ScrollView>
@@ -57,18 +43,7 @@ export function EnvironmentScreen({ onSelectEnvironment, onBack }: EnvironmentSc
 }
 
 const styles = StyleSheet.create({
-  content: { padding: 20, paddingTop: 60, paddingBottom: 40 },
-  backButton: { marginBottom: 16 },
-  backButtonText: { fontSize: 15, fontWeight: '600' },
+  content: { padding: 20, paddingTop: 20, paddingBottom: 40 },
   title: { fontSize: 20, fontWeight: '700' },
   subtitle: { fontSize: 13, marginTop: 4, marginBottom: 20 },
-  card: {
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-  },
-  cardTitle: { fontSize: 15, fontWeight: '700' },
-  cardDescription: { fontSize: 12, marginTop: 4, lineHeight: 16 },
-  cardModelCount: { fontSize: 11, fontWeight: '600', marginTop: 8 },
 });

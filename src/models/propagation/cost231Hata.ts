@@ -1,4 +1,5 @@
 import { assertPositive, rangeWarningMessage } from '../../utils/validation';
+import type { FieldLabel } from '../../utils/localizedMessage';
 import type { PropagationInputs, PropagationModelDefinition, PropagationResult, PropagationWarning } from './types';
 
 /**
@@ -16,13 +17,33 @@ import type { PropagationInputs, PropagationModelDefinition, PropagationResult, 
  *
  * Empirical range: f 1500-2000 MHz, hb 30-200 m, hm 1-10 m, d 1-20 km.
  */
-export function calculateCost231HataLoss(inputs: PropagationInputs): PropagationResult {
-  const { frequencyMHz, distanceKm, baseStationHeightM, mobileHeightM, metropolitanCenter } = inputs;
+type Cost231HataGeometryInputs = Omit<PropagationInputs, 'distanceKm'>;
 
-  assertPositive(frequencyMHz, 'Frecuencia');
-  assertPositive(distanceKm, 'Distancia');
-  assertPositive(baseStationHeightM, 'Altura de estación base');
-  assertPositive(mobileHeightM, 'Altura del móvil');
+/** Everything except the d-dependent term -- see hata.ts's identically-shaped helper for why this is split out. */
+function cost231DistanceIndependentTerms(inputs: Cost231HataGeometryInputs): {
+  baseLossDb: number;
+  distanceCoefficient: number;
+} {
+  const { frequencyMHz, baseStationHeightM, mobileHeightM, metropolitanCenter } = inputs;
+
+  const logF = Math.log10(frequencyMHz);
+  const logHb = Math.log10(baseStationHeightM);
+  const aHm = (1.1 * logF - 0.7) * mobileHeightM - (1.56 * logF - 0.8);
+  const cm = metropolitanCenter ? 3 : 0;
+  const distanceCoefficient = 44.9 - 6.55 * logHb;
+
+  const baseLossDb = 46.3 + 33.9 * logF - 13.82 * logHb - aHm + cm;
+
+  return { baseLossDb, distanceCoefficient };
+}
+
+export function calculateCost231HataLoss(inputs: PropagationInputs): PropagationResult {
+  const { frequencyMHz, distanceKm, baseStationHeightM, mobileHeightM } = inputs;
+
+  assertPositive(frequencyMHz, 'frequency');
+  assertPositive(distanceKm, 'distance');
+  assertPositive(baseStationHeightM, 'baseStationHeight');
+  assertPositive(mobileHeightM, 'mobileHeight');
 
   const warnings: PropagationWarning[] = [];
   const pushRangeWarning = (
@@ -30,34 +51,45 @@ export function calculateCost231HataLoss(inputs: PropagationInputs): Propagation
     value: number,
     min: number,
     max: number,
-    label: string,
+    label: FieldLabel,
     unit: string
   ) => {
     const message = rangeWarningMessage(value, min, max, label, unit);
     if (message) warnings.push({ field, message });
   };
 
-  pushRangeWarning('frequencyMHz', frequencyMHz, 1500, 2000, 'Frecuencia', 'MHz');
-  pushRangeWarning('baseStationHeightM', baseStationHeightM, 30, 200, 'Altura de estación base', 'm');
-  pushRangeWarning('mobileHeightM', mobileHeightM, 1, 10, 'Altura del móvil', 'm');
-  pushRangeWarning('distanceKm', distanceKm, 1, 20, 'Distancia', 'km');
+  pushRangeWarning('frequencyMHz', frequencyMHz, 1500, 2000, 'frequency', 'MHz');
+  pushRangeWarning('baseStationHeightM', baseStationHeightM, 30, 200, 'baseStationHeight', 'm');
+  pushRangeWarning('mobileHeightM', mobileHeightM, 1, 10, 'mobileHeight', 'm');
+  pushRangeWarning('distanceKm', distanceKm, 1, 20, 'distance', 'km');
 
-  const logF = Math.log10(frequencyMHz);
-  const logHb = Math.log10(baseStationHeightM);
-  const aHm = (1.1 * logF - 0.7) * mobileHeightM - (1.56 * logF - 0.8);
-  const cm = metropolitanCenter ? 3 : 0;
-
-  const pathLossDb =
-    46.3 + 33.9 * logF - 13.82 * logHb - aHm + (44.9 - 6.55 * logHb) * Math.log10(distanceKm) + cm;
+  const { baseLossDb, distanceCoefficient } = cost231DistanceIndependentTerms(inputs);
+  const pathLossDb = baseLossDb + distanceCoefficient * Math.log10(distanceKm);
 
   return { pathLossDb, warnings };
 }
 
+/**
+ * Inverts calculateCost231HataLoss for distance -- closed-form algebra,
+ * same reasoning as solveHataDistanceKm. No course-cited worked example
+ * uses COST-231-Hata for the link-budget/MAPL exercises (both diap. 45-46
+ * examples use plain Okumura-Hata, confirmed against the original PDF) --
+ * verified instead by a round-trip self-check in cost231Hata.test.ts
+ * (calculate then solve recovers the original distance), not a course
+ * oracle.
+ */
+export function solveCost231HataDistanceKm(inputs: Cost231HataGeometryInputs, targetLossDb: number): number {
+  assertPositive(inputs.frequencyMHz, 'frequency');
+  assertPositive(inputs.baseStationHeightM, 'baseStationHeight');
+  assertPositive(inputs.mobileHeightM, 'mobileHeight');
+
+  const { baseLossDb, distanceCoefficient } = cost231DistanceIndependentTerms(inputs);
+  return Math.pow(10, (targetLossDb - baseLossDb) / distanceCoefficient);
+}
+
 export const cost231HataModel: PropagationModelDefinition = {
   id: 'cost231-hata',
-  label: 'COST-231 Hata',
-  shortLabel: 'COST-231',
-  citation: 'COST Action 231 (1999). Extensión de Hata para f: 1500-2000 MHz.',
   implemented: true,
   calculate: calculateCost231HataLoss,
+  solveDistanceKm: solveCost231HataDistanceKm,
 };

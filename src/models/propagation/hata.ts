@@ -1,4 +1,5 @@
 import { assertPositive, rangeWarningMessage } from '../../utils/validation';
+import type { FieldLabel } from '../../utils/localizedMessage';
 import type {
   CitySize,
   PropagationInputs,
@@ -45,13 +46,42 @@ function mobileHeightCorrectionDb(frequencyMHz: number, mobileHeightM: number, c
  * same Okumura curve-fit; the course material takes precedence here
  * since this is a course deliverable.
  */
-export function calculateHataLoss(inputs: PropagationInputs): PropagationResult {
-  const { frequencyMHz, distanceKm, baseStationHeightM, mobileHeightM, citySize, environment } = inputs;
+type HataGeometryInputs = Omit<PropagationInputs, 'distanceKm'>;
 
-  assertPositive(frequencyMHz, 'Frecuencia');
-  assertPositive(distanceKm, 'Distancia');
-  assertPositive(baseStationHeightM, 'Altura de estación base');
-  assertPositive(mobileHeightM, 'Altura del móvil');
+/**
+ * Everything in the Hata formula except the d-dependent term -- shared by
+ * calculateHataLoss (adds distanceCoefficient*log10(d)) and
+ * solveHataDistanceKm (solves that same equation for d), so the formula
+ * itself lives in exactly one place.
+ */
+function hataDistanceIndependentTerms(inputs: HataGeometryInputs): {
+  baseLossDb: number;
+  distanceCoefficient: number;
+} {
+  const { frequencyMHz, baseStationHeightM, mobileHeightM, citySize, environment } = inputs;
+
+  const logF = Math.log10(frequencyMHz);
+  const logHb = Math.log10(baseStationHeightM);
+  const aHm = mobileHeightCorrectionDb(frequencyMHz, mobileHeightM, citySize);
+  const distanceCoefficient = 44.9 - 6.55 * logHb;
+
+  let baseLossDb = 69.55 + 26.26 * logF - 13.82 * logHb - aHm;
+  if (environment === 'suburban') {
+    baseLossDb -= 2 * Math.pow(Math.log10(frequencyMHz / 28), 2) + 5.4;
+  } else if (environment === 'open-rural') {
+    baseLossDb += -4.78 * Math.pow(logF, 2) + 18.33 * logF - 40.94;
+  }
+
+  return { baseLossDb, distanceCoefficient };
+}
+
+export function calculateHataLoss(inputs: PropagationInputs): PropagationResult {
+  const { frequencyMHz, distanceKm, baseStationHeightM, mobileHeightM } = inputs;
+
+  assertPositive(frequencyMHz, 'frequency');
+  assertPositive(distanceKm, 'distance');
+  assertPositive(baseStationHeightM, 'baseStationHeight');
+  assertPositive(mobileHeightM, 'mobileHeight');
 
   const warnings: PropagationWarning[] = [];
   const pushRangeWarning = (
@@ -59,40 +89,45 @@ export function calculateHataLoss(inputs: PropagationInputs): PropagationResult 
     value: number,
     min: number,
     max: number,
-    label: string,
+    label: FieldLabel,
     unit: string
   ) => {
     const message = rangeWarningMessage(value, min, max, label, unit);
     if (message) warnings.push({ field, message });
   };
 
-  pushRangeWarning('frequencyMHz', frequencyMHz, 150, 1500, 'Frecuencia', 'MHz');
-  pushRangeWarning('baseStationHeightM', baseStationHeightM, 30, 200, 'Altura de estación base', 'm');
-  pushRangeWarning('mobileHeightM', mobileHeightM, 1, 10, 'Altura del móvil', 'm');
-  pushRangeWarning('distanceKm', distanceKm, 1, 20, 'Distancia', 'km');
+  pushRangeWarning('frequencyMHz', frequencyMHz, 150, 1500, 'frequency', 'MHz');
+  pushRangeWarning('baseStationHeightM', baseStationHeightM, 30, 200, 'baseStationHeight', 'm');
+  pushRangeWarning('mobileHeightM', mobileHeightM, 1, 10, 'mobileHeight', 'm');
+  pushRangeWarning('distanceKm', distanceKm, 1, 20, 'distance', 'km');
 
-  const logF = Math.log10(frequencyMHz);
-  const logHb = Math.log10(baseStationHeightM);
-  const aHm = mobileHeightCorrectionDb(frequencyMHz, mobileHeightM, citySize);
-
-  const urbanLossDb =
-    69.55 + 26.26 * logF - 13.82 * logHb - aHm + (44.9 - 6.55 * logHb) * Math.log10(distanceKm);
-
-  let pathLossDb = urbanLossDb;
-  if (environment === 'suburban') {
-    pathLossDb = urbanLossDb - 2 * Math.pow(Math.log10(frequencyMHz / 28), 2) - 5.4;
-  } else if (environment === 'open-rural') {
-    pathLossDb = urbanLossDb - 4.78 * Math.pow(logF, 2) + 18.33 * logF - 40.94;
-  }
+  const { baseLossDb, distanceCoefficient } = hataDistanceIndependentTerms(inputs);
+  const pathLossDb = baseLossDb + distanceCoefficient * Math.log10(distanceKm);
 
   return { pathLossDb, warnings };
 }
 
+/**
+ * Inverts calculateHataLoss for distance: Hata is linear in log10(d), so
+ * this is closed-form algebra, not a search -- solve
+ * targetLossDb = baseLossDb + distanceCoefficient*log10(d) for d.
+ * docs/curso-referencia.md §13.3 (diap. 45-46): MAPL=141dB -> R=2.5km and
+ * MAPL=133dB -> R=1.5km, both Okumura-Hata Urbano -- verified against this
+ * function to within 0.3 dB (the PDF's own rounding), not exactly, since
+ * the professor's slides round intermediate results.
+ */
+export function solveHataDistanceKm(inputs: HataGeometryInputs, targetLossDb: number): number {
+  assertPositive(inputs.frequencyMHz, 'frequency');
+  assertPositive(inputs.baseStationHeightM, 'baseStationHeight');
+  assertPositive(inputs.mobileHeightM, 'mobileHeight');
+
+  const { baseLossDb, distanceCoefficient } = hataDistanceIndependentTerms(inputs);
+  return Math.pow(10, (targetLossDb - baseLossDb) / distanceCoefficient);
+}
+
 export const hataModel: PropagationModelDefinition = {
   id: 'hata',
-  label: 'Okumura-Hata',
-  shortLabel: 'Hata',
-  citation: 'Hata, M. (1980), IEEE Trans. Vehicular Technology. Válido para f: 150-1500 MHz.',
   implemented: true,
   calculate: calculateHataLoss,
+  solveDistanceKm: solveHataDistanceKm,
 };

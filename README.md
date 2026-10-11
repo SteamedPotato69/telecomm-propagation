@@ -1,22 +1,42 @@
 # telecomm-propagation
 
+**Español** · [English](README.en.md) · [Português](README.pt.md)
+
 Calculadora de modelos de pérdida de propagación en canales móviles (espacio libre, Hata, COST-231, ECC-33, Ikegami, Walfisch-Bertoni, COST-231 Walfish-Ikegami) desarrollada en Expo/React Native. Proyecto del curso de énfasis 2 Análisis de redes móviles — Universidad del Cauca.
 
 ## Navegación de la app
 
-`Inicio` → `Entorno` → `Calculadora` → `Comparación`, y por separado `Inicio` → `Simulador de desvanecimiento` (ver `src/screens/RootNavigator.tsx`):
+`Inicio` → `Entorno` → `Calculadora` → `Comparación`, y por separado `Inicio` → `Simulador de desvanecimiento`, `Inicio` → `Planificación celular` y `Inicio` → `Ajustes` (ver `src/screens/RootNavigator.tsx`):
 
-1. **Inicio**: dos cards, ambas habilitadas. "Métodos empíricos de propagación" (pérdida de trayecto) y "Simulador de desvanecimiento" (flat/selectivo y lento/rápido).
+1. **Inicio**: tres cards habilitadas -- "Métodos empíricos de propagación" (pérdida de trayecto), "Simulador de desvanecimiento" (plano/selectivo y lento/rápido) y "Planificación celular" -- y un botón ⚙ arriba a la derecha que abre **Ajustes** (tema e idioma).
 2. **Entorno**: elige una categoría de la taxonomía de entornos (`src/models/propagation/environments.ts`) -- determina qué modelos son aplicables.
 3. **Calculadora**: el selector de modelos solo muestra los aplicables al entorno elegido; los campos de geometría (ancho de calle, altura de edificios, etc.) solo aparecen cuando el modelo seleccionado los necesita.
 4. **Comparación**: corre todos los modelos aplicables del entorno con los mismos parámetros y los compara contra la pérdida en espacio libre ("predicción ideal"); el de menor distancia se marca como mejor ajuste. Debajo de las tarjetas, dos gráficas (`src/components/LineChart.tsx`, sobre `react-native-svg`) de pérdida vs. distancia -- escala logarítmica y lineal, todas las curvas superpuestas, muestreadas en 0.3-20 km con los demás parámetros fijos.
 5. **Simulador de desvanecimiento** (`src/screens/FadingScreen.tsx`): a partir de frecuencia portadora, dispersión de retardo (D, con chips de preset Rural/Suburbano/Urbano), velocidad del móvil, ancho de banda de la señal y duración de símbolo (o tasa de símbolo, invertible a Ts), calcula el ancho de banda de coherencia (Bc), el corrimiento Doppler (fd) y el tiempo de coherencia (Tc); clasifica el canal como plano/selectivo en frecuencia y lento/rápido (selectivo en tiempo), y ubica el punto de operación en una de las 5 zonas del plano BT/Bc vs. Ts/Tc (`src/components/FadingZoneChart.tsx`, gráfica de punto sobre `react-native-svg`, no una serie de líneas -- distinta de `LineChart.tsx`).
 
-## Tema claro/oscuro
+## Ajustes: tema e idioma
 
-Debajo del subtítulo de Inicio hay un switch de 3 posiciones (`🌙 Oscuro` / `Auto` / `☀ Claro`) para elegir el modo directamente, sin ciclar. "Auto" sigue la preferencia del sistema operativo/navegador (`useColorScheme`); una elección manual se guarda con `@react-native-async-storage/async-storage` y se recuerda entre sesiones.
+El botón ⚙ de Inicio abre la pantalla de Ajustes (`src/screens/SettingsScreen.tsx`), que agrupa las dos preferencias del usuario.
+
+### Tema claro/oscuro
+
+Un switch de 3 posiciones (`🌙 Oscuro` / `Auto` / `☀ Claro`) para elegir el modo directamente, sin ciclar. "Auto" sigue la preferencia del sistema operativo/navegador (`useColorScheme`); una elección manual se guarda con `@react-native-async-storage/async-storage` y se recuerda entre sesiones.
 
 Los tokens de color están en [`src/theme/palette.ts`](src/theme/palette.ts), consumidos vía el hook `useTheme()` de [`src/theme/ThemeContext.tsx`](src/theme/ThemeContext.tsx). El **lila neón (`#c084fc`) es idéntico en ambas paletas a propósito** -- es el color de marca de la app (el brillo de la card de Inicio, el borde del modelo ganador en Comparación) y no debe cambiar según el tema. Lo que sí cambia por tema es `accentText` (texto legible en la misma familia de morados: oscuro sobre fondo claro, claro sobre fondo oscuro) -- usar el lila puro como color de texto fallaría el contraste en modo claro.
+
+### Idioma (español / English / Português)
+
+Lista de opciones: `Automático (idioma del dispositivo)`, `Español`, `English`, `Português` -- cada idioma siempre se muestra con su propio nombre, para que alguien que cayó en el idioma equivocado pueda encontrar el suyo. "Automático" toma el primer idioma soportado de las preferencias del dispositivo (`expo-localization`) y, si no hay ninguno, español. La elección se guarda con AsyncStorage (misma técnica que el tema) y se aplica al instante, sin reiniciar; en web además se actualiza `<html lang>`.
+
+**Cómo está construido** (`src/i18n/`):
+
+- `i18next` + `react-i18next`. El español (`src/i18n/locales/es/`) es la fuente de verdad; `en/` y `pt/` están tipadas contra su forma (`DeepStrings<typeof es>`), así que **una clave que falte o sobre en cualquier idioma rompe `npx tsc --noEmit`**. Las llamadas `t('clave')` también se verifican contra el español.
+- **Los modelos de cálculo siguen siendo puros** (`src/models/**` y `src/utils/**` no importan React ni i18n; vitest los corre bajo Node). En vez de lanzar o devolver textos en español, producen un mensaje neutral al idioma -- una clave más parámetros (`LocalizedError` / `LocalizedMessage`, en `src/utils/localizedMessage.ts`) -- y la UI lo traduce con `translateMessage` / `translateError` (`src/i18n/translateMessage.ts`). Lo mismo aplica a los nombres de modelos, entornos, zonas de desvanecimiento y servicios WCDMA: los modelos solo exponen un `id`, y el texto vive en los archivos de idioma.
+- Los nombres técnicos, símbolos y unidades (Bc, fd, Eb/No, MAPL, km², dBm...) no se traducen. `docs/curso-referencia.md` (la base de conocimiento del curso) se mantiene en español.
+- **Entrada decimal permisiva**: los campos numéricos aceptan coma o punto sin importar el idioma elegido (`parseDecimal`). Los resultados se muestran siempre con punto decimal.
+- Hay tests (`src/i18n/i18n.test.ts`) de que `en`/`pt` conservan los mismos `{{marcadores}}` que `es` en cada texto -- lo único que el chequeo de tipos no ve -- y de que `translateMessage` resuelve correctamente errores, advertencias y plurales.
+
+> **Nota sobre el portugués:** la traducción al portugués no ha pasado por revisión de un hablante nativo -- la terminología de telecomunicaciones (p. ej. *ERB* para estación base, *link budget*, *desvanecimento*) conviene validarla antes de entregarla como material de curso.
 
 ## Estado de los modelos
 
@@ -56,19 +76,19 @@ Verificado numéricamente contra los 3 ejemplos resueltos del curso (§8.8): D=2
 
 ## Próximas funcionalidades: planificación y dimensionamiento celular (propuestas)
 
-Inspiradas en un segundo PDF del curso, `Planificación de redes de comunicaciones móviles e inalámbricas.pdf` (24/04/2026, ver [`docs/curso-referencia.md`](docs/curso-referencia.md) §13) -- distinto del que ya sustenta la calculadora de propagación y el simulador de desvanecimiento de arriba. Ninguna de estas funcionalidades está implementada todavía; esta sección es el punto de partida para la siguiente ronda de desarrollo.
+Inspiradas en un segundo PDF del curso, `Planificación de redes de comunicaciones móviles e inalámbricas.pdf` (24/04/2026, ver [`docs/curso-referencia.md`](docs/curso-referencia.md) §13) -- distinto del que ya sustenta la calculadora de propagación y el simulador de desvanecimiento de arriba. En desarrollo en la rama `feature/cellular-planning`: las 6 funcionalidades aprobadas (1, 2, 3, 4a, 5, 6) ya están implementadas y verificadas (ver estado por fila abajo); 4b, 7, 8 y 9 siguen `[PENDIENTE]` por las razones ya explicadas en cada fila.
 
-**Convención de estado:** ✅ **Aprobada** = teoría completa y sin ambigüedad, verificada contra al menos un ejemplo numérico del curso -- lista para implementar directamente. 🕒 **[PENDIENTE]** = falta información (fórmula ambigua, sin verificación numérica, o sin confirmar en el material oficial) -- no implementar el cálculo todavía; debe aparecer en la UI como funcionalidad futura (ver nota de UI al final de esta sección), nunca como resultado numérico sin advertencia.
+**Convención de estado:** ✅ **Aprobada** = teoría completa y sin ambigüedad, verificada contra al menos un ejemplo numérico del curso -- lista para implementar directamente. 🚀 **Implementada** = ya está en la app (rama `feature/cellular-planning`), verificada con tests (`vitest`, ver [Verificación de tipos](#verificación-de-tipos)) y en el navegador. 🕒 **[PENDIENTE]** = falta información (fórmula ambigua, sin verificación numérica, o sin confirmar en el material oficial) -- no implementar el cálculo todavía; debe aparecer en la UI como funcionalidad futura (ver nota de UI al final de esta sección), nunca como resultado numérico sin advertencia.
 
 | # | Funcionalidad | Estado | Por qué |
 |---|---|---|---|
-| 1 | Geometría celular y reutilización de frecuencias | ✅ Aprobada | Fórmulas completas (§13.1), verificadas visualmente contra las diapositivas 20-22, no solo por OCR |
-| 2 | Erlang B -- dimensionamiento por capacidad | ✅ Aprobada | Recursión sin ambigüedad, verificada contra 3 ejercicios resueltos del curso (§13.2) |
-| 3 | Puente densidad de tráfico ↔ geometría (`p = B(ρ·Sc, K)`) | ✅ Aprobada | Es Erlang B con `A = ρ·Sc`; no introduce matemática nueva (§13.2) |
-| 4a | Link budget con inversión MAPL → R, para Hata / COST-231-Hata | ✅ Aprobada | Ambos modelos son lineales en `log10(d)`; la inversión es álgebra cerrada, sin ambigüedad |
+| 1 | Geometría celular y reutilización de frecuencias | 🚀 Implementada | `src/models/geometry/`. Verificada contra N=7 → D=√21·R (§13.1, diap. 23) |
+| 2 | Erlang B -- dimensionamiento por capacidad | 🚀 Implementada | `src/models/traffic/erlangB.ts`. Verificada contra los 3 ejercicios del curso (§13.2) -- 2 de las 3 cifras de referencia están ~3-4% desviadas de la inversión continua exacta, documentado en los tests como redondeo del curso, no error |
+| 3 | Puente densidad de tráfico ↔ geometría (`p = B(ρ·Sc, K)`) | 🚀 Implementada | `src/models/traffic/density.ts`. Verificada contra ρ=30.77/500=0.0615 Erlang/km² (§13.2-13.3, diap. 31-32) |
+| 4a | Link budget con inversión MAPL → R, para Hata / COST-231-Hata | 🚀 Implementada | `src/models/propagation/{hata,cost231Hata,linkBudget}.ts`. Confirmado contra el PDF original que ambos ejemplos (1G y 2G) usan Okumura-Hata, no COST-231-Hata -- la inversión de distancia es exacta (§13.3, diap. 45-46); la fórmula de MAPL a partir del presupuesto de enlace reproduce el ejemplo 2G exacto pero el 1G queda 2dB por encima sin explicación en el material, documentado como discrepancia abierta |
 | 4b | Link budget con inversión MAPL → R, para Ikegami / Walfisch-Bertoni / COST-231 Walfish-Ikegami | 🕒 [PENDIENTE] | Heredan las ambigüedades ya marcadas `[OCR-verificar]` en `ikegami.ts` / `walfischBertoni.ts`; falta confirmar que la inversión tiene forma cerrada |
-| 5 | Flujo de dimensionamiento completo 1G/2G (capacidad vs. cobertura, tomar el máximo) | ✅ Aprobada | Patrón verificado numéricamente en 2 ejercicios completos del curso (§13.3); depende solo de 1, 2 y 4a |
-| 6 | Carga UMTS uplink + bucle iterativo de *cell breathing* | ✅ Aprobada | Ejercicio de 6 pasos completamente verificado numéricamente (§13.4, diap. 66-74) |
+| 5 | Flujo de dimensionamiento completo 1G/2G (capacidad vs. cobertura, tomar el máximo) | 🚀 Implementada | `src/models/dimensioning/`. Lado de capacidad coincide exacto con ambos ejercicios (6 y 5 celdas); lado de cobertura difiere del curso (2 vs 3, 7 vs 8) como consecuencia directa del hallazgo de MAPL de 4a, no un error nuevo -- la conclusión cualitativa (1G limitado por capacidad, 2G por cobertura) sí coincide en ambos casos |
+| 6 | Carga UMTS uplink + bucle iterativo de *cell breathing* | 🚀 Implementada | `src/models/wcdma/`. Gp/sensibilidad/MAPL exactos para los 3 servicios; ρ exacto para PS64k/PS384k, no para voz (0.0148 calculado vs. 0.0210 declarado -- no reproducible desde los datos dados); la fórmula que conecta usuarios/celda con carga de salida en la tabla de iteraciones del curso no está documentada -- se implementó con la ecuación de carga estándar (amortiguada para estabilidad numérica), que converge a un punto físicamente sensato pero no idéntico al R=1.07km/η=54% de la diapositiva |
 | 7 | Carga UMTS downlink (η_DL) | 🕒 [PENDIENTE] | Variable `β` no definida en el material extraído; sin ejercicio de verificación (§13.4-13.5) |
 | 8 | Erlang C (modelo de cola) | 🕒 [PENDIENTE] | No aparece en el material del curso; aplicabilidad a canales de radio (sistema de pérdida, no de cola) sin confirmar |
 | 9 | Engset / Erlang B extendido (con reintentos) | 🕒 [PENDIENTE] | Solo en el resumen de industria (`erlang.com`), no en material oficial del curso |
@@ -251,7 +271,15 @@ No usar el perfil `production` para esto: genera un `.aab`, pensado para subir a
 npx tsc --noEmit
 ```
 
-No hay suite de tests todavía (ver [Trabajo futuro](#trabajo-futuro)).
+Además del código, esto verifica que las tres traducciones tengan exactamente las mismas claves y que cada `t('clave')` de la UI exista.
+
+## Tests
+
+```bash
+npx vitest run
+```
+
+Alcance limitado a `src/models/**` y a los *datos* de traducción en `src/i18n/` (más `translateMessage`): ese código no importa nada de `react-native`/Expo, así que corre bajo Node sin necesitar mocks de RN/jsdom (el test de i18n crea su propia instancia de `i18next` en vez de importar `src/i18n/index.ts`, que sí necesita `expo-localization`). Cubre las funcionalidades de planificación celular (geometría, Erlang B, link budget) -- los modelos de propagación y desvanecimiento originales todavía se verifican solo a ojo en el navegador (ver [Trabajo futuro](#trabajo-futuro)).
 
 ## Estructura del proyecto
 
@@ -268,32 +296,75 @@ src/
     ikegami.ts                   # Ikegami (requiere geometría de calle)
     walfischBertoni.ts           # Walfisch-Bertoni (requiere geometría de edificios)
     cost231WalfishIkegami.ts     # COST-231 Walfish-Ikegami (combina Ikegami + Walfisch-Bertoni)
+    linkBudget.ts                # calculateMapl(): MAPL desde un presupuesto de enlace completo (§13.3)
     sampleSeries.ts               # evalúa un modelo sobre un rango de distancias, para las gráficas
     index.ts                     # registro: PROPAGATION_MODELS / PROPAGATION_MODEL_LIST
   models/fading/
     types.ts                     # FadingInputs/Result, FadingZone
     fading.ts                    # calculateFading(): Bc, fd, Tc, clasificación y las 5 zonas (§8.7)
     environments.ts              # DELAY_SPREAD_PRESETS: presets Rural/Suburbano/Urbano (§8.6)
-    zoneLabels.ts                 # título/descripción en español por cada FadingZone
+    index.ts                     # barrel
+  models/geometry/                # planificación celular (§13.1) -- rama feature/cellular-planning
+    types.ts                     # GeometryInputs/Result
+    rhombicNumbers.ts            # tabla de ejemplo + isValidRhombicNumber (N=i²+ij+j²)
+    geometry.ts                  # calculateCellularGeometry(): retícula hexagonal, reuso, Q
+    index.ts                     # barrel
+  models/traffic/                 # planificación celular (§13.2-13.3) -- rama feature/cellular-planning
+    erlangB.ts                   # erlangBBlocking / erlangBInverseTraffic / erlangBInverseChannels
+    density.ts                   # puente densidad de tráfico <-> geometría (p = B(ρ·Sc, K))
+    index.ts                     # barrel
+  models/dimensioning/             # planificación celular (§13.3) -- rama feature/cellular-planning
+    types.ts                     # DimensioningInputs/Result
+    dimensioning.ts               # calculateDimensioning(): orquesta traffic + propagation, max(capacidad, cobertura)
+    index.ts                     # barrel
+  models/wcdma/                    # planificación celular (§13.4) -- rama feature/cellular-planning
+    types.ts                     # ServiceMix/Load, WcdmaLoadInputs/Result, WcdmaIterationStep
+    presets.ts                   # DEFAULT_SERVICE_MIX: mix del ejercicio del curso (70% voz / 20% PS64k / 10% PS384k)
+    wcdma.ts                      # calculateServiceLoad, calculateWcdmaUplinkLoad (bucle de cell breathing amortiguado)
     index.ts                     # barrel
   utils/
-    validation.ts                # assertPositive, assertNonNegative, rangeWarningMessage, parseDecimal, requireField
+    validation.ts                # assertPositive, assertNonNegative, assertUnitInterval, assertInteger, rangeWarningMessage, parseDecimal, requireField
+    localizedMessage.ts          # LocalizedError / LocalizedMessage: errores y advertencias neutrales al idioma (clave + parámetros)
     format.ts                    # formatPathLoss, formatCoherenceBandwidth, formatDopplerShift, formatCoherenceTime
   components/
     NumericField.tsx             # campo numérico controlado (unit opcional para parámetros sin unidad)
-    ModelSelector.tsx            # selector de modelo (chips)
+    ModelSelector.tsx            # selector de modelo (chips), genérico sobre {id,label,disabled}
     ResultPanel.tsx              # resultado + advertencias + errores
     LineChart.tsx                 # gráfica de líneas sobre react-native-svg (eje lineal o log)
     FadingResultPanel.tsx        # Bc/fd/Tc + clasificación plano-selectivo / lento-rápido
     FadingZoneChart.tsx          # gráfica de punto BT/Bc vs Ts/Tc sobre react-native-svg (no LineChart)
+    GlowCard.tsx                 # card con brillo neón (cards de nivel superior en Inicio)
+    SegmentedControl.tsx         # switch de pocas opciones cortas (modo de tema)
+    BackButton.tsx               # botón de volver (solo flecha, objetivo táctil de 48dp)
+    ListCard.tsx                 # card de lista simple (pantallas hub: Entorno, Planificación celular)
+    GeometryResultPanel.tsx      # resultado de geometría celular
+    TrafficResultPanel.tsx       # resultado genérico de un solo número (Erlang B / densidad)
+    LinkBudgetForm.tsx           # bloque de ~8 campos de presupuesto de enlace, compartido entre pantallas
+    LinkBudgetResultPanel.tsx    # EIRP / MAPL / radio de celda máximo
+    DimensioningResultPanel.tsx  # tabla por etapas: capacidad / cobertura / resultado final
+    WcdmaResultPanel.tsx          # carga por servicio, usuarios simultáneos, traza de convergencia
   screens/
-    RootNavigator.tsx            # estado de navegación: home -> environment -> calculator -> comparison -> fading
-    HomeScreen.tsx                # las dos cards de entrada
+    RootNavigator.tsx            # estado de navegación (union Route, un case por pantalla)
+    HomeScreen.tsx                # cards de nivel superior, data-driven + botón de Ajustes
+    SettingsScreen.tsx            # ajustes: tema e idioma
     EnvironmentScreen.tsx         # selector de entorno
     CalculatorScreen.tsx          # formulario + resultado, filtrado por entorno
     ComparisonScreen.tsx          # vista "versus" entre todos los modelos del entorno
-    geometryFieldConfig.ts        # label/unidad/helper/default por cada GeometryFieldKey
+    geometryFieldConfig.ts        # unidad/default por cada GeometryFieldKey (etiqueta y ayuda: i18n `geometryFields.*`)
     FadingScreen.tsx              # simulador de desvanecimiento: formulario + resultado + gráfica de zona
+    CellularHubScreen.tsx        # hub de planificación celular -- rama feature/cellular-planning
+    GeometryScreen.tsx            # ídem
+    TrafficScreen.tsx             # ídem (modos Bloqueo/Tráfico/Canales/Densidad)
+    LinkBudgetScreen.tsx          # ídem
+    DimensioningScreen.tsx        # ídem (capacidad + cobertura, orquesta 1, 2 y 4a)
+    WcdmaLoadScreen.tsx           # ídem (carga UMTS uplink + cell breathing)
+  i18n/
+    index.ts                     # inicializa i18next (idioma del dispositivo) y re-exporta el módulo
+    languages.ts                 # Language, nombres nativos, detección del idioma del dispositivo
+    LocaleContext.tsx            # LocaleProvider + useLocale(); persistencia con AsyncStorage, <html lang> en web
+    translateMessage.ts          # translateMessage / translateError: LocalizedMessage -> texto
+    i18next.d.ts                 # tipa t('clave') contra el español
+    locales/{es,en,pt}/          # textos por idioma (core, propagation, calculator, fading, cellular); es es la fuente de verdad
   theme/
     palette.ts                    # tokens de color claro/oscuro; accent (lila neón) es constante en ambos
     ThemeContext.tsx               # ThemeProvider + useTheme(); persistencia con AsyncStorage
@@ -302,16 +373,17 @@ src/
 ## Cómo agregar un nuevo modelo de propagación
 
 1. Crear `src/models/propagation/miModelo.ts` que exporte una función `calculate(inputs: PropagationInputs): PropagationResult` y un objeto `PropagationModelDefinition` (ver `freeSpace.ts` como plantilla mínima o `hata.ts` para uno con validación de rango y corrección por entorno).
-2. Usar `assertPositive` para cualquier valor que entre a un `log10`, `rangeWarningMessage` para el rango empírico del modelo, y `requireField` para cualquier parámetro geométrico opcional que el modelo necesite.
+2. Usar `assertPositive` para cualquier valor que entre a un `log10`, `rangeWarningMessage` para el rango empírico del modelo, y `requireField` para cualquier parámetro geométrico opcional que el modelo necesite. Estos helpers (y cualquier error propio, vía `LocalizedError`) reciben **claves** de traducción (`fields.*`, `errors.*`), no texto: el modelo no escribe en ningún idioma.
 3. Si el modelo necesita un parámetro geométrico que `PropagationInputs` no tiene todavía, extenderlo ahí como campo **opcional**, agregarlo a `GeometryFieldKey`, y declarar `extraFields` en el `PropagationModelDefinition` -- eso es lo único que hace falta para que `CalculatorScreen` muestre el campo correcto automáticamente, sin tocar la UI.
 4. Registrar el modelo en `src/models/propagation/index.ts` (`PROPAGATION_MODELS` y `PROPAGATION_MODEL_LIST`).
 5. Agregar el modelo a `applicableModelIds` de la(s) categoría(s) de `environments.ts` donde aplique.
+6. Agregar `models.<id>` (`label`, `shortLabel`, `citation`) en los tres idiomas de `src/i18n/locales/` (y las claves `fields.*` / `errors.*` nuevas que use) -- `tsc` avisa si falta alguna.
 
 No hace falta tocar los componentes de UI directamente: leen el registro y la taxonomía dinámicamente.
 
 ## Trabajo futuro
 
-- Añadir tests unitarios por modelo, con valores de referencia resueltos a mano o en clase -- **no** buscados en fuentes genéricas de internet (ver `docs/curso-referencia.md` §5.2 para el ejercicio pendiente de resolver que serviría de caso de prueba).
+- Extender la cobertura de `vitest` (introducida para los modelos de planificación celular, ver [Verificación de tipos](#verificación-de-tipos)) a los modelos de propagación y desvanecimiento originales -- hoy solo tienen un test de humo (`freeSpace.test.ts`), el resto sigue verificado únicamente a ojo en el navegador. Usar valores de referencia resueltos a mano o en clase -- **no** buscados en fuentes genéricas de internet (ver `docs/curso-referencia.md` §5.2 para el ejercicio pendiente de resolver que serviría de caso de prueba).
 - Implementar 3GPP TR 38.901 (6 escenarios, LOS/NLOS, unidades en GHz/metros) -- deliberadamente fuera de esta ronda por tamaño.
 - Las gráficas de la comparación samplean un rango fijo de distancias (0.3-20 km) independiente del rango de validez documentado de cada modelo -- una curva puede extenderse visualmente más allá de donde el modelo está validado, igual que ya toleran las advertencias de rango en la calculadora. Vale la pena marcar visualmente ese tramo si se vuelve confuso en la práctica.
 - Simulador de desvanecimiento: la desigualdad exacta de la "zona rayada" (zona 1, §8.7) no está en el texto extraído del curso -- ver la advertencia `[interpretación no verificada]` en `src/models/fading/fading.ts`. Si el estudiante consigue el diagrama original, vale la pena revisar el criterio implementado (`BT·Ts < 1` restringido al cuadrante plano/plano) contra la desigualdad real.
