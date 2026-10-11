@@ -1,9 +1,12 @@
 import { useMemo } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import { BackButton } from '../components/BackButton';
 import { LineChart } from '../components/LineChart';
 import type { ChartSeries } from '../components/LineChart';
 import { PROPAGATION_MODELS, generateLogSpacedDistances, sampleModelOverDistance } from '../models/propagation';
-import type { EnvironmentCategory, PropagationInputs } from '../models/propagation';
+import type { EnvironmentCategory, PropagationInputs, PropagationModelId } from '../models/propagation';
+import { translateError } from '../i18n';
 import { useTheme } from '../theme';
 import { formatPathLoss } from '../utils/format';
 
@@ -14,16 +17,14 @@ interface ComparisonScreenProps {
 }
 
 interface ComparisonEntry {
-  modelId: string;
-  label: string;
-  citation: string;
+  modelId: PropagationModelId;
   pathLossDb: number | null;
   distanceToIdealDb: number | null;
   errorMessage: string | null;
 }
 
 /** Distinct color per model so the same series reads consistently across both charts. */
-const MODEL_COLORS: Record<string, string> = {
+const MODEL_COLORS: Partial<Record<PropagationModelId, string>> = {
   hata: '#2563eb',
   'cost231-hata': '#059669',
   ecc33: '#d97706',
@@ -48,6 +49,7 @@ const CHART_SAMPLE_COUNT = 40;
  */
 export function ComparisonScreen({ environment, inputs, onBack }: ComparisonScreenProps) {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const entries = useMemo<ComparisonEntry[]>(() => {
     const idealPathLossDb = PROPAGATION_MODELS['free-space'].calculate(inputs).pathLossDb;
 
@@ -59,8 +61,6 @@ export function ComparisonScreen({ environment, inputs, onBack }: ComparisonScre
           const result = candidateModel.calculate(inputs);
           return {
             modelId: candidateModel.id,
-            label: candidateModel.label,
-            citation: candidateModel.citation,
             pathLossDb: result.pathLossDb,
             distanceToIdealDb: Math.abs(result.pathLossDb - idealPathLossDb),
             errorMessage: null,
@@ -68,15 +68,13 @@ export function ComparisonScreen({ environment, inputs, onBack }: ComparisonScre
         } catch (error) {
           return {
             modelId: candidateModel.id,
-            label: candidateModel.label,
-            citation: candidateModel.citation,
             pathLossDb: null,
             distanceToIdealDb: null,
-            errorMessage: error instanceof Error ? error.message : 'Error desconocido.',
+            errorMessage: translateError(t, error),
           };
         }
       });
-  }, [environment, inputs]);
+  }, [environment, inputs, t]);
 
   const availableEntries = entries.filter((entry) => entry.distanceToIdealDb !== null);
   const winnerId =
@@ -90,7 +88,7 @@ export function ComparisonScreen({ environment, inputs, onBack }: ComparisonScre
 
     const idealSeries: ChartSeries = {
       id: 'ideal',
-      label: 'Ideal (espacio libre)',
+      label: t('comparison.idealSeries'),
       color: IDEAL_COLOR,
       dashed: true,
       points: sampleModelOverDistance(PROPAGATION_MODELS['free-space'], inputs, distances).map((p) => ({
@@ -104,7 +102,7 @@ export function ComparisonScreen({ environment, inputs, onBack }: ComparisonScre
       .filter((candidateModel) => candidateModel.implemented && candidateModel.id !== 'free-space')
       .map((candidateModel): ChartSeries => ({
         id: candidateModel.id,
-        label: candidateModel.label,
+        label: t(`models.${candidateModel.id}.label`),
         color: MODEL_COLORS[candidateModel.id] ?? '#374151',
         strokeWidth: candidateModel.id === winnerId ? 3 : 1.5,
         points: sampleModelOverDistance(candidateModel, inputs, distances).map((p) => ({
@@ -114,19 +112,16 @@ export function ComparisonScreen({ environment, inputs, onBack }: ComparisonScre
       }));
 
     return [idealSeries, ...modelSeries];
-  }, [environment, inputs, winnerId]);
+  }, [environment, inputs, winnerId, t]);
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      <Pressable onPress={onBack} style={styles.backButton}>
-        <Text style={[styles.backButtonText, { color: colors.accentText }]}>‹ Volver a la calculadora</Text>
-      </Pressable>
+      <BackButton onPress={onBack} />
 
-      <Text style={[styles.title, { color: colors.textPrimary }]}>Comparación de modelos</Text>
-      <Text style={[styles.subtitle, { color: colors.accentText }]}>{environment.label}</Text>
+      <Text style={[styles.title, { color: colors.textPrimary }]}>{t('comparison.title')}</Text>
+      <Text style={[styles.subtitle, { color: colors.accentText }]}>{t(`environments.${environment.id}.label`)}</Text>
       <Text style={[styles.explainer, { color: colors.textMuted }]}>
-        "Distancia al ideal" = diferencia absoluta contra la pérdida en espacio libre (cota teórica inferior) con los
-        mismos parámetros. Menor distancia = mejor.
+        {t('comparison.explainer')}
       </Text>
 
       {entries.map((entry) => {
@@ -142,9 +137,9 @@ export function ComparisonScreen({ environment, inputs, onBack }: ComparisonScre
             ]}
           >
             {isWinner ? (
-              <Text style={[styles.winnerBadge, { backgroundColor: colors.accent }]}>MEJOR AJUSTE</Text>
+              <Text style={[styles.winnerBadge, { backgroundColor: colors.accent }]}>{t('comparison.bestFit')}</Text>
             ) : null}
-            <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>{entry.label}</Text>
+            <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>{t(`models.${entry.modelId}.label`)}</Text>
 
             {entry.errorMessage ? (
               <Text style={[styles.cardError, { color: colors.textDisabled }]}>{entry.errorMessage}</Text>
@@ -154,35 +149,33 @@ export function ComparisonScreen({ environment, inputs, onBack }: ComparisonScre
                   {formatPathLoss(entry.pathLossDb!)}
                 </Text>
                 <Text style={[styles.cardDistance, { color: colors.textSecondary }]}>
-                  Distancia al ideal: {entry.distanceToIdealDb!.toFixed(2)} dB
+                  {t('comparison.distanceToIdeal', { value: entry.distanceToIdealDb!.toFixed(2) })}
                 </Text>
               </>
             )}
-            <Text style={[styles.cardCitation, { color: colors.textDisabled }]}>{entry.citation}</Text>
+            <Text style={[styles.cardCitation, { color: colors.textDisabled }]}>{t(`models.${entry.modelId}.citation`)}</Text>
           </View>
         );
       })}
 
       <View style={styles.chartsSection}>
-        <Text style={[styles.chartsHeading, { color: colors.textPrimary }]}>Pérdida vs. distancia</Text>
+        <Text style={[styles.chartsHeading, { color: colors.textPrimary }]}>{t('comparison.chartsHeading')}</Text>
         <Text style={[styles.explainer, { color: colors.textMuted }]}>
-          Cada modelo evaluado en un rango de distancias fijo (0.3-20 km), con los demás parámetros iguales a los de
-          arriba. La línea gris punteada es espacio libre (la "predicción ideal"); entre más cerca esté una curva de
-          esa línea, mejor ajuste.
+          {t('comparison.chartsExplainer')}
         </Text>
         <LineChart
-          title="Escala logarítmica de distancia"
+          title={t('comparison.logScaleTitle')}
           series={chartSeries}
           xScale="log"
-          xLabel="Distancia (km, escala log)"
-          yLabel="Pérdida (dB)"
+          xLabel={t('comparison.xLabelLog')}
+          yLabel={t('comparison.yLabel')}
         />
         <LineChart
-          title="Escala lineal de distancia"
+          title={t('comparison.linearScaleTitle')}
           series={chartSeries}
           xScale="linear"
-          xLabel="Distancia (km)"
-          yLabel="Pérdida (dB)"
+          xLabel={t('comparison.xLabelLinear')}
+          yLabel={t('comparison.yLabel')}
         />
       </View>
     </ScrollView>
@@ -190,9 +183,7 @@ export function ComparisonScreen({ environment, inputs, onBack }: ComparisonScre
 }
 
 const styles = StyleSheet.create({
-  content: { padding: 20, paddingTop: 60, paddingBottom: 40 },
-  backButton: { marginBottom: 12 },
-  backButtonText: { fontSize: 14, fontWeight: '600' },
+  content: { padding: 20, paddingTop: 20, paddingBottom: 40 },
   title: { fontSize: 20, fontWeight: '700' },
   subtitle: { fontSize: 15, fontWeight: '600', marginTop: 4 },
   explainer: { fontSize: 12, marginTop: 8, marginBottom: 20, lineHeight: 17 },

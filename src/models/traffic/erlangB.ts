@@ -1,4 +1,5 @@
-import { assertNonNegative, assertPositive, assertUnitInterval } from '../../utils/validation';
+import { LocalizedError } from '../../utils/localizedMessage';
+import { assertInteger, assertNonNegative, assertPositive, assertUnitInterval } from '../../utils/validation';
 
 /**
  * Erlang B loss formula (docs/curso-referencia.md §13.2), used to dimension
@@ -7,11 +8,9 @@ import { assertNonNegative, assertPositive, assertUnitInterval } from '../../uti
  * realistic channel counts): B(0,A)=1, B(n,A) = A*B(n-1,A) / (n + A*B(n-1,A)).
  */
 export function erlangBBlocking(channels: number, trafficErlangs: number): number {
-  assertNonNegative(channels, 'Número de canales (K)');
-  if (!Number.isInteger(channels)) {
-    throw new Error('El número de canales (K) debe ser un entero.');
-  }
-  assertNonNegative(trafficErlangs, 'Tráfico ofrecido (A)');
+  assertNonNegative(channels, 'channels');
+  assertInteger(channels, 'channels');
+  assertNonNegative(trafficErlangs, 'offeredTraffic');
 
   let blocking = 1;
   for (let n = 1; n <= channels; n++) {
@@ -26,11 +25,9 @@ export function erlangBBlocking(channels: number, trafficErlangs: number): numbe
  * is a plain expand-then-bisect search, not a closed-form inverse.
  */
 export function erlangBInverseTraffic(channels: number, targetGoS: number): number {
-  assertPositive(channels, 'Número de canales (K)');
-  if (!Number.isInteger(channels)) {
-    throw new Error('El número de canales (K) debe ser un entero.');
-  }
-  assertUnitInterval(targetGoS, 'GoS objetivo');
+  assertPositive(channels, 'channels');
+  assertInteger(channels, 'channels');
+  assertUnitInterval(targetGoS, 'targetGos');
 
   let low = 0;
   let high = 1;
@@ -56,8 +53,8 @@ export function erlangBInverseTraffic(channels: number, targetGoS: number): numb
  * from calling erlangBBlocking from scratch at every step).
  */
 export function erlangBInverseChannels(trafficErlangs: number, targetGoS: number): number {
-  assertPositive(trafficErlangs, 'Tráfico ofrecido (A)');
-  assertUnitInterval(targetGoS, 'GoS objetivo');
+  assertPositive(trafficErlangs, 'offeredTraffic');
+  assertUnitInterval(targetGoS, 'targetGos');
 
   const MAX_CHANNELS = 100_000; // guard against a pathological/unreachable target
   let blocking = 1;
@@ -65,7 +62,7 @@ export function erlangBInverseChannels(trafficErlangs: number, targetGoS: number
   while (blocking > targetGoS) {
     channels += 1;
     if (channels > MAX_CHANNELS) {
-      throw new Error('No se alcanzó el GoS objetivo con un número razonable de canales.');
+      throw new LocalizedError('errors.gosUnreachable');
     }
     blocking = (trafficErlangs * blocking) / (channels + trafficErlangs * blocking);
   }

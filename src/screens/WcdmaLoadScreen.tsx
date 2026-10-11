@@ -1,12 +1,15 @@
 import { useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import { BackButton } from '../components/BackButton';
 import { ModelSelector } from '../components/ModelSelector';
 import { NumericField } from '../components/NumericField';
 import { WcdmaResultPanel } from '../components/WcdmaResultPanel';
 import { calculateWcdmaUplinkLoad, DEFAULT_SERVICE_MIX } from '../models/wcdma';
-import type { WcdmaLoadResult } from '../models/wcdma';
+import type { WcdmaLoadResult, WcdmaServiceId } from '../models/wcdma';
 import { PROPAGATION_MODEL_LIST } from '../models/propagation';
 import type { CitySize, Environment, PropagationModelId } from '../models/propagation';
+import { translateError } from '../i18n';
 import { useTheme } from '../theme';
 import { parseDecimal } from '../utils/validation';
 
@@ -16,16 +19,13 @@ interface WcdmaLoadScreenProps {
 
 const INVERTIBLE_MODELS = PROPAGATION_MODEL_LIST.filter((m) => m.solveDistanceKm);
 
-const ENVIRONMENT_LABELS: Record<Environment, string> = {
-  urban: 'Urbano',
-  suburban: 'Suburbano',
-  'open-rural': 'Abierto/rural',
-};
+const ENVIRONMENT_OPTIONS: Environment[] = ['urban', 'suburban', 'open-rural'];
 
 export function WcdmaLoadScreen({ onBack }: WcdmaLoadScreenProps) {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const [modelId, setModelId] = useState<PropagationModelId>(INVERTIBLE_MODELS[0]?.id ?? 'hata');
-  const [referenceServiceLabel, setReferenceServiceLabel] = useState(DEFAULT_SERVICE_MIX[0].label);
+  const [referenceServiceId, setReferenceServiceId] = useState<WcdmaServiceId>(DEFAULT_SERVICE_MIX[0].id);
   const [chipRateMcps, setChipRateMcps] = useState('3.84');
   const [interferenceFactor, setInterferenceFactor] = useState('0.55');
   const [targetUplinkLoad, setTargetUplinkLoad] = useState('0.5');
@@ -69,14 +69,14 @@ export function WcdmaLoadScreen({ onBack }: WcdmaLoadScreenProps) {
     };
 
     if (Object.values(scalarInputs).some(Number.isNaN) || !model?.solveDistanceKm) {
-      return { result: null, errorMessage: 'Todos los campos numéricos deben tener un valor.' };
+      return { result: null, errorMessage: t('common.missingValues') };
     }
 
     try {
       const calculated = calculateWcdmaUplinkLoad({
         chipRateMcps: scalarInputs.chipRateMcps,
         services: DEFAULT_SERVICE_MIX,
-        referenceServiceLabel,
+        referenceServiceId,
         interferenceFactor: scalarInputs.interferenceFactor,
         targetUplinkLoad: scalarInputs.targetUplinkLoad,
         linkBudget: {
@@ -102,7 +102,7 @@ export function WcdmaLoadScreen({ onBack }: WcdmaLoadScreenProps) {
       });
       return { result: calculated, errorMessage: null };
     } catch (error) {
-      return { result: null, errorMessage: error instanceof Error ? error.message : 'Error desconocido.' };
+      return { result: null, errorMessage: translateError(t, error) };
     }
   }, [
     chipRateMcps,
@@ -123,60 +123,60 @@ export function WcdmaLoadScreen({ onBack }: WcdmaLoadScreenProps) {
     citySize,
     envOption,
     metropolitanCenter,
-    referenceServiceLabel,
+    referenceServiceId,
     model,
+    t,
   ]);
 
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Pressable onPress={onBack} style={styles.backButton}>
-          <Text style={[styles.backButtonText, { color: colors.accentText }]}>‹ Planificación celular</Text>
-        </Pressable>
+        <BackButton onPress={onBack} />
 
-        <Text style={[styles.title, { color: colors.textPrimary }]}>Carga UMTS uplink y cell breathing</Text>
+        <Text style={[styles.title, { color: colors.textPrimary }]}>{t('wcdma.title')}</Text>
         <Text style={[styles.citation, { color: colors.textMuted }]}>
-          Ganancia de procesado, carga por usuario y bucle iterativo de convergencia -- docs/curso-referencia.md
-          §13.4.
+          {t('wcdma.subtitle')}
         </Text>
 
         <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>
-          Mix de servicios (fijo, ejemplo del curso)
+          {t('wcdma.serviceMixHeading')}
         </Text>
         {DEFAULT_SERVICE_MIX.map((service) => (
-          <Text key={service.label} style={[styles.serviceLine, { color: colors.textSecondary }]}>
-            {`${(service.shareOfUsers * 100).toFixed(0)}% ${service.label} (${service.bitRateKbps} kbps, Eb/No=${service.ebN0Db}dB)`}
+          <Text key={service.id} style={[styles.serviceLine, { color: colors.textSecondary }]}>
+            {`${(service.shareOfUsers * 100).toFixed(0)}% ${t(`wcdma.services.${service.id}`)} (${service.bitRateKbps} kbps, Eb/No=${service.ebN0Db}dB)`}
           </Text>
         ))}
 
-        <NumericField label="Chip rate (W)" unit="Mcps" value={chipRateMcps} onChangeText={setChipRateMcps} />
+        <NumericField label={t('fields.chipRate')} unit="Mcps" value={chipRateMcps} onChangeText={setChipRateMcps} />
         <NumericField
-          label="Factor de interferencia (i_oc)"
+          label={t('fields.interferenceFactor')}
           value={interferenceFactor}
           onChangeText={setInterferenceFactor}
         />
         <NumericField
-          label="Carga objetivo (η)"
+          label={t('fields.targetLoad')}
           value={targetUplinkLoad}
           onChangeText={setTargetUplinkLoad}
-          helperText="Fracción entre 0 y 1 (0.5 = 50%)."
+          helperText={t('wcdma.targetLoadHelper')}
         />
-        <NumericField label="Usuarios totales" value={totalUsers} onChangeText={setTotalUsers} />
+        <NumericField label={t('fields.totalUsers')} value={totalUsers} onChangeText={setTotalUsers} />
         <NumericField
-          label="Erlang promedio por usuario"
+          label={t('fields.averageErlangPerUser')}
           value={averageErlangPerUser}
           onChangeText={setAverageErlangPerUser}
         />
-        <NumericField label="Área total" unit="km²" value={totalAreaKm2} onChangeText={setTotalAreaKm2} />
+        <NumericField label={t('fields.totalArea')} unit="km²" value={totalAreaKm2} onChangeText={setTotalAreaKm2} />
 
-        <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>Servicio de referencia (cobertura)</Text>
+        <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>{t('wcdma.referenceService')}</Text>
         <View style={styles.chipRow}>
           {DEFAULT_SERVICE_MIX.map((service) => {
-            const isSelected = referenceServiceLabel === service.label;
+            const isSelected = referenceServiceId === service.id;
             return (
               <Pressable
-                key={service.label}
-                onPress={() => setReferenceServiceLabel(service.label)}
+                key={service.id}
+                onPress={() => setReferenceServiceId(service.id)}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: isSelected }}
                 style={[
                   styles.chip,
                   { borderColor: colors.border },
@@ -184,53 +184,53 @@ export function WcdmaLoadScreen({ onBack }: WcdmaLoadScreenProps) {
                 ]}
               >
                 <Text style={[styles.chipText, { color: isSelected ? '#ffffff' : colors.textPrimary }]}>
-                  {service.label}
+                  {t(`wcdma.services.${service.id}`)}
                 </Text>
               </Pressable>
             );
           })}
         </View>
 
-        <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>Presupuesto de enlace UMTS</Text>
-        <NumericField label="EIRP móvil" unit="dBm" value={eirpDbm} onChangeText={setEirpDbm} />
+        <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>{t('wcdma.linkBudgetHeading')}</Text>
+        <NumericField label={t('wcdma.mobileEirp')} unit="dBm" value={eirpDbm} onChangeText={setEirpDbm} />
         <NumericField
-          label="Ruido térmico (kTB)"
+          label={t('wcdma.thermalNoise')}
           unit="dBm"
           value={thermalNoiseDbm}
           onChangeText={setThermalNoiseDbm}
         />
-        <NumericField label="Figura de ruido NodeB" unit="dB" value={noiseFigureDb} onChangeText={setNoiseFigureDb} />
+        <NumericField label={t('wcdma.noiseFigure')} unit="dB" value={noiseFigureDb} onChangeText={setNoiseFigureDb} />
         <NumericField
-          label="Ganancia antena NodeB"
+          label={t('wcdma.nodeBAntennaGain')}
           unit="dBi"
           value={receiveAntennaGainDbi}
           onChangeText={setReceiveAntennaGainDbi}
         />
-        <NumericField label="Pérdida feeder" unit="dB" value={feederLossDb} onChangeText={setFeederLossDb} />
+        <NumericField label={t('fields.feederLoss')} unit="dB" value={feederLossDb} onChangeText={setFeederLossDb} />
         <NumericField
-          label="Margen de sombra"
+          label={t('fields.shadowFadingMargin')}
           unit="dB"
           value={shadowFadingMarginDb}
           onChangeText={setShadowFadingMarginDb}
         />
 
-        <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>Modelo de propagación (cobertura)</Text>
+        <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>{t('propagationOptions.modelCoverage')}</Text>
         <ModelSelector
-          items={PROPAGATION_MODEL_LIST.map((m) => ({ id: m.id, label: m.shortLabel, disabled: !m.solveDistanceKm }))}
+          items={PROPAGATION_MODEL_LIST.map((m) => ({ id: m.id, label: t(`models.${m.id}.shortLabel`), disabled: !m.solveDistanceKm }))}
           selectedId={modelId}
           onSelect={(id) => setModelId(id as PropagationModelId)}
         />
-        <NumericField label="Frecuencia" unit="MHz" value={frequencyMHz} onChangeText={setFrequencyMHz} />
+        <NumericField label={t('fields.frequency')} unit="MHz" value={frequencyMHz} onChangeText={setFrequencyMHz} />
         <NumericField
-          label="Altura estación base"
+          label={t('fields.baseStationHeight')}
           unit="m"
           value={baseStationHeightM}
           onChangeText={setBaseStationHeightM}
         />
-        <NumericField label="Altura del móvil" unit="m" value={mobileHeightM} onChangeText={setMobileHeightM} />
+        <NumericField label={t('fields.mobileHeight')} unit="m" value={mobileHeightM} onChangeText={setMobileHeightM} />
 
         <View style={styles.row}>
-          <Text style={[styles.toggleLabel, { color: colors.textPrimary }]}>Ciudad grande (solo Hata)</Text>
+          <Text style={[styles.toggleLabel, { color: colors.textPrimary }]}>{t('propagationOptions.largeCityHataOnly')}</Text>
           <Switch
             value={citySize === 'large'}
             onValueChange={(value) => setCitySize(value ? 'large' : 'small-medium')}
@@ -238,18 +238,20 @@ export function WcdmaLoadScreen({ onBack }: WcdmaLoadScreenProps) {
           />
         </View>
         <View style={styles.row}>
-          <Text style={[styles.toggleLabel, { color: colors.textPrimary }]}>Centro metropolitano — Cm (solo COST-231)</Text>
+          <Text style={[styles.toggleLabel, { color: colors.textPrimary }]}>{t('propagationOptions.metropolitanCostOnly')}</Text>
           <Switch value={metropolitanCenter} onValueChange={setMetropolitanCenter} trackColor={{ true: colors.accentSolid }} />
         </View>
 
-        <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>Entorno (solo Hata)</Text>
+        <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>{t('propagationOptions.environmentHataOnly')}</Text>
         <View style={styles.row}>
-          {(Object.keys(ENVIRONMENT_LABELS) as Environment[]).map((option) => {
+          {ENVIRONMENT_OPTIONS.map((option) => {
             const isSelected = envOption === option;
             return (
               <Pressable
                 key={option}
                 onPress={() => setEnvOption(option)}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: isSelected }}
                 style={[
                   styles.envChip,
                   { borderColor: colors.border },
@@ -257,7 +259,7 @@ export function WcdmaLoadScreen({ onBack }: WcdmaLoadScreenProps) {
                 ]}
               >
                 <Text style={[styles.envChipText, { color: isSelected ? '#ffffff' : colors.textPrimary }]}>
-                  {ENVIRONMENT_LABELS[option]}
+                  {t(`envOptions.${option}`)}
                 </Text>
               </Pressable>
             );
@@ -272,9 +274,7 @@ export function WcdmaLoadScreen({ onBack }: WcdmaLoadScreenProps) {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  content: { padding: 20, paddingTop: 60, paddingBottom: 40 },
-  backButton: { marginBottom: 12 },
-  backButtonText: { fontSize: 14, fontWeight: '600' },
+  content: { padding: 20, paddingTop: 20, paddingBottom: 40 },
   title: { fontSize: 20, fontWeight: '700' },
   citation: { fontSize: 11, marginTop: 4, marginBottom: 16 },
   sectionLabel: { fontSize: 13, fontWeight: '600', marginBottom: 8, marginTop: 12 },
@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 20,
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 10,
     marginRight: 8,
     marginBottom: 8,
   },
@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 20,
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 10,
     marginRight: 8,
     marginBottom: 8,
   },

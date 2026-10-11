@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { NumericField } from './NumericField';
 
 /** String-valued mirror of LinkBudgetInputs, for controlled NumericFields (raw text, parsed by the caller). */
@@ -36,53 +37,54 @@ interface LinkBudgetFormProps {
  * copy-pasted three times.
  */
 export function LinkBudgetForm({ values, onChange }: LinkBudgetFormProps) {
+  const { t } = useTranslation();
   return (
     <>
       <NumericField
-        label="Potencia MS (Pt)"
+        label={t('linkBudgetForm.transmitPower')}
         unit="dBm"
         value={values.transmitPowerDbm}
         onChangeText={(v) => onChange('transmitPowerDbm', v)}
       />
       <NumericField
-        label="Ganancia antena MS"
+        label={t('linkBudgetForm.msAntennaGain')}
         unit="dBi"
         value={values.transmitAntennaGainDbi}
         onChangeText={(v) => onChange('transmitAntennaGainDbi', v)}
       />
       <NumericField
-        label="Body loss"
+        label={t('fields.bodyLoss')}
         unit="dB"
         value={values.bodyLossDb}
         onChangeText={(v) => onChange('bodyLossDb', v)}
       />
       <NumericField
-        label="Ganancia antena BTS"
+        label={t('linkBudgetForm.btsAntennaGain')}
         unit="dBi"
         value={values.receiveAntennaGainDbi}
         onChangeText={(v) => onChange('receiveAntennaGainDbi', v)}
       />
       <NumericField
-        label="Pérdida feeder BTS"
+        label={t('linkBudgetForm.btsFeederLoss')}
         unit="dB"
         value={values.feederLossDb}
         onChangeText={(v) => onChange('feederLossDb', v)}
       />
       <NumericField
-        label="Sensibilidad BTS"
+        label={t('linkBudgetForm.btsSensitivity')}
         unit="dBm"
         value={values.receiverSensitivityDbm}
         onChangeText={(v) => onChange('receiverSensitivityDbm', v)}
-        helperText="Negativa, p. ej. -116."
+        helperText={t('linkBudgetForm.sensitivityHelper')}
       />
       <NumericField
-        label="Margen de sombra"
+        label={t('fields.shadowFadingMargin')}
         unit="dB"
         value={values.shadowFadingMarginDb}
         onChangeText={(v) => onChange('shadowFadingMarginDb', v)}
       />
       <NumericField
-        label="Margen de interferencia"
+        label={t('fields.interferenceMargin')}
         unit="dB"
         value={values.interferenceMarginDb}
         onChangeText={(v) => onChange('interferenceMarginDb', v)}

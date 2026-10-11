@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import { BackButton } from '../components/BackButton';
 import { DEFAULT_LINK_BUDGET_VALUES, LinkBudgetForm } from '../components/LinkBudgetForm';
 import type { LinkBudgetFormValues } from '../components/LinkBudgetForm';
 import { LinkBudgetResultPanel } from '../components/LinkBudgetResultPanel';
@@ -7,6 +9,7 @@ import { ModelSelector } from '../components/ModelSelector';
 import { NumericField } from '../components/NumericField';
 import { PROPAGATION_MODEL_LIST, calculateMapl } from '../models/propagation';
 import type { CitySize, Environment, PropagationModelId } from '../models/propagation';
+import { translateError } from '../i18n';
 import { useTheme } from '../theme';
 import { parseDecimal } from '../utils/validation';
 
@@ -20,14 +23,11 @@ interface LinkBudgetScreenProps {
 // not via a hardcoded id list.
 const INVERTIBLE_MODELS = PROPAGATION_MODEL_LIST.filter((m) => m.solveDistanceKm);
 
-const ENVIRONMENT_LABELS: Record<Environment, string> = {
-  urban: 'Urbano',
-  suburban: 'Suburbano',
-  'open-rural': 'Abierto/rural',
-};
+const ENVIRONMENT_OPTIONS: Environment[] = ['urban', 'suburban', 'open-rural'];
 
 export function LinkBudgetScreen({ onBack }: LinkBudgetScreenProps) {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const [modelId, setModelId] = useState<PropagationModelId>(INVERTIBLE_MODELS[0]?.id ?? 'hata');
   const [frequencyMHz, setFrequencyMHz] = useState('900');
   const [baseStationHeightM, setBaseStationHeightM] = useState('30');
@@ -61,7 +61,7 @@ export function LinkBudgetScreen({ onBack }: LinkBudgetScreenProps) {
 
     const allValues = [parsedFrequency, parsedBaseStationHeight, parsedMobileHeight, ...Object.values(parsedLinkBudget)];
     if (allValues.some(Number.isNaN)) {
-      return { eirpDbm: null, maplDb: null, cellRadiusKm: null, errorMessage: 'Todos los campos numéricos deben tener un valor.' };
+      return { eirpDbm: null, maplDb: null, cellRadiusKm: null, errorMessage: t('common.missingValues') };
     }
 
     try {
@@ -81,41 +81,38 @@ export function LinkBudgetScreen({ onBack }: LinkBudgetScreenProps) {
         : null;
       return { eirpDbm: eirp, maplDb: mapl, cellRadiusKm, errorMessage: null };
     } catch (error) {
-      return { eirpDbm: null, maplDb: null, cellRadiusKm: null, errorMessage: error instanceof Error ? error.message : 'Error desconocido.' };
+      return { eirpDbm: null, maplDb: null, cellRadiusKm: null, errorMessage: translateError(t, error) };
     }
-  }, [frequencyMHz, baseStationHeightM, mobileHeightM, citySize, envOption, metropolitanCenter, linkBudgetValues, model]);
+  }, [frequencyMHz, baseStationHeightM, mobileHeightM, citySize, envOption, metropolitanCenter, linkBudgetValues, model, t]);
 
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Pressable onPress={onBack} style={styles.backButton}>
-          <Text style={[styles.backButtonText, { color: colors.accentText }]}>‹ Planificación celular</Text>
-        </Pressable>
+        <BackButton onPress={onBack} />
 
-        <Text style={[styles.title, { color: colors.textPrimary }]}>Link budget (Hata / COST-231-Hata)</Text>
+        <Text style={[styles.title, { color: colors.textPrimary }]}>{t('linkBudget.title')}</Text>
         <Text style={[styles.citation, { color: colors.textMuted }]}>
-          MAPL a partir de un presupuesto de enlace completo, e inversión a radio de celda máximo --
-          docs/curso-referencia.md §13.3.
+          {t('linkBudget.subtitle')}
         </Text>
 
         <ModelSelector
-          items={PROPAGATION_MODEL_LIST.map((m) => ({ id: m.id, label: m.shortLabel, disabled: !m.solveDistanceKm }))}
+          items={PROPAGATION_MODEL_LIST.map((m) => ({ id: m.id, label: t(`models.${m.id}.shortLabel`), disabled: !m.solveDistanceKm }))}
           selectedId={modelId}
           onSelect={(id) => setModelId(id as PropagationModelId)}
         />
 
-        <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>Modelo de propagación</Text>
-        <NumericField label="Frecuencia" unit="MHz" value={frequencyMHz} onChangeText={setFrequencyMHz} />
+        <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>{t('propagationOptions.model')}</Text>
+        <NumericField label={t('fields.frequency')} unit="MHz" value={frequencyMHz} onChangeText={setFrequencyMHz} />
         <NumericField
-          label="Altura estación base"
+          label={t('fields.baseStationHeight')}
           unit="m"
           value={baseStationHeightM}
           onChangeText={setBaseStationHeightM}
         />
-        <NumericField label="Altura del móvil" unit="m" value={mobileHeightM} onChangeText={setMobileHeightM} />
+        <NumericField label={t('fields.mobileHeight')} unit="m" value={mobileHeightM} onChangeText={setMobileHeightM} />
 
         <View style={styles.row}>
-          <Text style={[styles.toggleLabel, { color: colors.textPrimary }]}>Ciudad grande (solo Hata)</Text>
+          <Text style={[styles.toggleLabel, { color: colors.textPrimary }]}>{t('propagationOptions.largeCityHataOnly')}</Text>
           <Switch
             value={citySize === 'large'}
             onValueChange={(value) => setCitySize(value ? 'large' : 'small-medium')}
@@ -124,18 +121,20 @@ export function LinkBudgetScreen({ onBack }: LinkBudgetScreenProps) {
         </View>
 
         <View style={styles.row}>
-          <Text style={[styles.toggleLabel, { color: colors.textPrimary }]}>Centro metropolitano — Cm (solo COST-231)</Text>
+          <Text style={[styles.toggleLabel, { color: colors.textPrimary }]}>{t('propagationOptions.metropolitanCostOnly')}</Text>
           <Switch value={metropolitanCenter} onValueChange={setMetropolitanCenter} trackColor={{ true: colors.accentSolid }} />
         </View>
 
-        <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>Entorno (solo Hata)</Text>
+        <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>{t('propagationOptions.environmentHataOnly')}</Text>
         <View style={styles.row}>
-          {(Object.keys(ENVIRONMENT_LABELS) as Environment[]).map((option) => {
+          {ENVIRONMENT_OPTIONS.map((option) => {
             const isSelected = envOption === option;
             return (
               <Pressable
                 key={option}
                 onPress={() => setEnvOption(option)}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: isSelected }}
                 style={[
                   styles.envChip,
                   { borderColor: colors.border },
@@ -143,14 +142,14 @@ export function LinkBudgetScreen({ onBack }: LinkBudgetScreenProps) {
                 ]}
               >
                 <Text style={[styles.envChipText, { color: isSelected ? '#ffffff' : colors.textPrimary }]}>
-                  {ENVIRONMENT_LABELS[option]}
+                  {t(`envOptions.${option}`)}
                 </Text>
               </Pressable>
             );
           })}
         </View>
 
-        <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>Presupuesto de enlace</Text>
+        <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>{t('propagationOptions.budgetHeading')}</Text>
         <LinkBudgetForm
           values={linkBudgetValues}
           onChange={(field, value) => setLinkBudgetValues((previous) => ({ ...previous, [field]: value }))}
@@ -164,9 +163,7 @@ export function LinkBudgetScreen({ onBack }: LinkBudgetScreenProps) {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  content: { padding: 20, paddingTop: 60, paddingBottom: 40 },
-  backButton: { marginBottom: 12 },
-  backButtonText: { fontSize: 14, fontWeight: '600' },
+  content: { padding: 20, paddingTop: 20, paddingBottom: 40 },
   title: { fontSize: 20, fontWeight: '700' },
   citation: { fontSize: 11, marginTop: 4, marginBottom: 16 },
   sectionLabel: { fontSize: 13, fontWeight: '600', marginBottom: 8, marginTop: 12 },
@@ -176,7 +173,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 20,
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 10,
     marginRight: 8,
     marginBottom: 8,
   },

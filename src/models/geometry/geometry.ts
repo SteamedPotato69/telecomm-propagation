@@ -1,3 +1,4 @@
+import { LocalizedError } from '../../utils/localizedMessage';
 import { assertPositive } from '../../utils/validation';
 import { isValidRhombicNumber } from './rhombicNumbers';
 import type { GeometryInputs, GeometryResult } from './types';
@@ -13,14 +14,11 @@ const SQRT3 = Math.sqrt(3);
 export function calculateCellularGeometry(inputs: GeometryInputs): GeometryResult {
   const { cellRadiusKm, clusterSize, totalAreaKm2 } = inputs;
 
-  assertPositive(cellRadiusKm, 'Radio de celda (R)');
+  assertPositive(cellRadiusKm, 'cellRadius');
   if (!isValidRhombicNumber(clusterSize)) {
     // Geometrically impossible, not an empirical range violation -- same
     // severity as assertPositive (throw, don't just warn).
-    throw new Error(
-      `El tamaño de agrupación N=${clusterSize} no es geométricamente válido: debe ser expresable como ` +
-        'i²+ij+j² para enteros i,j >= 0 (por ejemplo 1, 3, 4, 7, 9, 12, 13...).'
-    );
+    throw new LocalizedError('errors.invalidClusterSize', { n: clusterSize });
   }
 
   const latticeStepKm = cellRadiusKm * SQRT3;
@@ -31,7 +29,7 @@ export function calculateCellularGeometry(inputs: GeometryInputs): GeometryResul
 
   let clusterCount: number | undefined;
   if (totalAreaKm2 !== undefined) {
-    assertPositive(totalAreaKm2, 'Área total a cubrir (S_T)');
+    assertPositive(totalAreaKm2, 'totalCoverageArea');
     clusterCount = Math.ceil(totalAreaKm2 / ((3 * reuseDistanceKm ** 2) / 2)) + 1;
   }
 

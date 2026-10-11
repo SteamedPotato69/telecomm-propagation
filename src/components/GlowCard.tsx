@@ -35,7 +35,12 @@ export function GlowCard({ title, subtitle, onPress }: GlowCardProps) {
   }, [glowPulse]);
 
   return (
-    <Pressable onPress={onPress} style={styles.cardShell}>
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`${title}, ${subtitle}`}
+      style={styles.cardShell}
+    >
       {/* Static glow: always visible, guarantees the neon look renders even if the
           animation below doesn't (e.g. reduced-motion). Pulsing layer sits on top.
           Uses the literal NEON_LILAC constant, not a theme token: this color is

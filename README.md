@@ -1,22 +1,42 @@
 # telecomm-propagation
 
+**Español** · [English](README.en.md) · [Português](README.pt.md)
+
 Calculadora de modelos de pérdida de propagación en canales móviles (espacio libre, Hata, COST-231, ECC-33, Ikegami, Walfisch-Bertoni, COST-231 Walfish-Ikegami) desarrollada en Expo/React Native. Proyecto del curso de énfasis 2 Análisis de redes móviles — Universidad del Cauca.
 
 ## Navegación de la app
 
-`Inicio` → `Entorno` → `Calculadora` → `Comparación`, y por separado `Inicio` → `Simulador de desvanecimiento` (ver `src/screens/RootNavigator.tsx`):
+`Inicio` → `Entorno` → `Calculadora` → `Comparación`, y por separado `Inicio` → `Simulador de desvanecimiento`, `Inicio` → `Planificación celular` y `Inicio` → `Ajustes` (ver `src/screens/RootNavigator.tsx`):
 
-1. **Inicio**: dos cards, ambas habilitadas. "Métodos empíricos de propagación" (pérdida de trayecto) y "Simulador de desvanecimiento" (flat/selectivo y lento/rápido).
+1. **Inicio**: tres cards habilitadas -- "Métodos empíricos de propagación" (pérdida de trayecto), "Simulador de desvanecimiento" (plano/selectivo y lento/rápido) y "Planificación celular" -- y un botón ⚙ arriba a la derecha que abre **Ajustes** (tema e idioma).
 2. **Entorno**: elige una categoría de la taxonomía de entornos (`src/models/propagation/environments.ts`) -- determina qué modelos son aplicables.
 3. **Calculadora**: el selector de modelos solo muestra los aplicables al entorno elegido; los campos de geometría (ancho de calle, altura de edificios, etc.) solo aparecen cuando el modelo seleccionado los necesita.
 4. **Comparación**: corre todos los modelos aplicables del entorno con los mismos parámetros y los compara contra la pérdida en espacio libre ("predicción ideal"); el de menor distancia se marca como mejor ajuste. Debajo de las tarjetas, dos gráficas (`src/components/LineChart.tsx`, sobre `react-native-svg`) de pérdida vs. distancia -- escala logarítmica y lineal, todas las curvas superpuestas, muestreadas en 0.3-20 km con los demás parámetros fijos.
 5. **Simulador de desvanecimiento** (`src/screens/FadingScreen.tsx`): a partir de frecuencia portadora, dispersión de retardo (D, con chips de preset Rural/Suburbano/Urbano), velocidad del móvil, ancho de banda de la señal y duración de símbolo (o tasa de símbolo, invertible a Ts), calcula el ancho de banda de coherencia (Bc), el corrimiento Doppler (fd) y el tiempo de coherencia (Tc); clasifica el canal como plano/selectivo en frecuencia y lento/rápido (selectivo en tiempo), y ubica el punto de operación en una de las 5 zonas del plano BT/Bc vs. Ts/Tc (`src/components/FadingZoneChart.tsx`, gráfica de punto sobre `react-native-svg`, no una serie de líneas -- distinta de `LineChart.tsx`).
 
-## Tema claro/oscuro
+## Ajustes: tema e idioma
 
-Debajo del subtítulo de Inicio hay un switch de 3 posiciones (`🌙 Oscuro` / `Auto` / `☀ Claro`) para elegir el modo directamente, sin ciclar. "Auto" sigue la preferencia del sistema operativo/navegador (`useColorScheme`); una elección manual se guarda con `@react-native-async-storage/async-storage` y se recuerda entre sesiones.
+El botón ⚙ de Inicio abre la pantalla de Ajustes (`src/screens/SettingsScreen.tsx`), que agrupa las dos preferencias del usuario.
+
+### Tema claro/oscuro
+
+Un switch de 3 posiciones (`🌙 Oscuro` / `Auto` / `☀ Claro`) para elegir el modo directamente, sin ciclar. "Auto" sigue la preferencia del sistema operativo/navegador (`useColorScheme`); una elección manual se guarda con `@react-native-async-storage/async-storage` y se recuerda entre sesiones.
 
 Los tokens de color están en [`src/theme/palette.ts`](src/theme/palette.ts), consumidos vía el hook `useTheme()` de [`src/theme/ThemeContext.tsx`](src/theme/ThemeContext.tsx). El **lila neón (`#c084fc`) es idéntico en ambas paletas a propósito** -- es el color de marca de la app (el brillo de la card de Inicio, el borde del modelo ganador en Comparación) y no debe cambiar según el tema. Lo que sí cambia por tema es `accentText` (texto legible en la misma familia de morados: oscuro sobre fondo claro, claro sobre fondo oscuro) -- usar el lila puro como color de texto fallaría el contraste en modo claro.
+
+### Idioma (español / English / Português)
+
+Lista de opciones: `Automático (idioma del dispositivo)`, `Español`, `English`, `Português` -- cada idioma siempre se muestra con su propio nombre, para que alguien que cayó en el idioma equivocado pueda encontrar el suyo. "Automático" toma el primer idioma soportado de las preferencias del dispositivo (`expo-localization`) y, si no hay ninguno, español. La elección se guarda con AsyncStorage (misma técnica que el tema) y se aplica al instante, sin reiniciar; en web además se actualiza `<html lang>`.
+
+**Cómo está construido** (`src/i18n/`):
+
+- `i18next` + `react-i18next`. El español (`src/i18n/locales/es/`) es la fuente de verdad; `en/` y `pt/` están tipadas contra su forma (`DeepStrings<typeof es>`), así que **una clave que falte o sobre en cualquier idioma rompe `npx tsc --noEmit`**. Las llamadas `t('clave')` también se verifican contra el español.
+- **Los modelos de cálculo siguen siendo puros** (`src/models/**` y `src/utils/**` no importan React ni i18n; vitest los corre bajo Node). En vez de lanzar o devolver textos en español, producen un mensaje neutral al idioma -- una clave más parámetros (`LocalizedError` / `LocalizedMessage`, en `src/utils/localizedMessage.ts`) -- y la UI lo traduce con `translateMessage` / `translateError` (`src/i18n/translateMessage.ts`). Lo mismo aplica a los nombres de modelos, entornos, zonas de desvanecimiento y servicios WCDMA: los modelos solo exponen un `id`, y el texto vive en los archivos de idioma.
+- Los nombres técnicos, símbolos y unidades (Bc, fd, Eb/No, MAPL, km², dBm...) no se traducen. `docs/curso-referencia.md` (la base de conocimiento del curso) se mantiene en español.
+- **Entrada decimal permisiva**: los campos numéricos aceptan coma o punto sin importar el idioma elegido (`parseDecimal`). Los resultados se muestran siempre con punto decimal.
+- Hay tests (`src/i18n/i18n.test.ts`) de que `en`/`pt` conservan los mismos `{{marcadores}}` que `es` en cada texto -- lo único que el chequeo de tipos no ve -- y de que `translateMessage` resuelve correctamente errores, advertencias y plurales.
+
+> **Nota sobre el portugués:** la traducción al portugués no ha pasado por revisión de un hablante nativo -- la terminología de telecomunicaciones (p. ej. *ERB* para estación base, *link budget*, *desvanecimento*) conviene validarla antes de entregarla como material de curso.
 
 ## Estado de los modelos
 
@@ -251,13 +271,15 @@ No usar el perfil `production` para esto: genera un `.aab`, pensado para subir a
 npx tsc --noEmit
 ```
 
+Además del código, esto verifica que las tres traducciones tengan exactamente las mismas claves y que cada `t('clave')` de la UI exista.
+
 ## Tests
 
 ```bash
 npx vitest run
 ```
 
-Alcance limitado a `src/models/**` (rama `feature/cellular-planning`): esos módulos no importan nada de `react-native`/Expo, así que corren bajo Node sin necesitar mocks de RN/jsdom. Cubre las funcionalidades de planificación celular (geometría, Erlang B, link budget) -- los modelos de propagación y desvanecimiento originales todavía se verifican solo a ojo en el navegador (ver [Trabajo futuro](#trabajo-futuro)).
+Alcance limitado a `src/models/**` y a los *datos* de traducción en `src/i18n/` (más `translateMessage`): ese código no importa nada de `react-native`/Expo, así que corre bajo Node sin necesitar mocks de RN/jsdom (el test de i18n crea su propia instancia de `i18next` en vez de importar `src/i18n/index.ts`, que sí necesita `expo-localization`). Cubre las funcionalidades de planificación celular (geometría, Erlang B, link budget) -- los modelos de propagación y desvanecimiento originales todavía se verifican solo a ojo en el navegador (ver [Trabajo futuro](#trabajo-futuro)).
 
 ## Estructura del proyecto
 
@@ -281,7 +303,6 @@ src/
     types.ts                     # FadingInputs/Result, FadingZone
     fading.ts                    # calculateFading(): Bc, fd, Tc, clasificación y las 5 zonas (§8.7)
     environments.ts              # DELAY_SPREAD_PRESETS: presets Rural/Suburbano/Urbano (§8.6)
-    zoneLabels.ts                 # título/descripción en español por cada FadingZone
     index.ts                     # barrel
   models/geometry/                # planificación celular (§13.1) -- rama feature/cellular-planning
     types.ts                     # GeometryInputs/Result
@@ -302,7 +323,8 @@ src/
     wcdma.ts                      # calculateServiceLoad, calculateWcdmaUplinkLoad (bucle de cell breathing amortiguado)
     index.ts                     # barrel
   utils/
-    validation.ts                # assertPositive, assertNonNegative, assertUnitInterval, rangeWarningMessage, parseDecimal, requireField
+    validation.ts                # assertPositive, assertNonNegative, assertUnitInterval, assertInteger, rangeWarningMessage, parseDecimal, requireField
+    localizedMessage.ts          # LocalizedError / LocalizedMessage: errores y advertencias neutrales al idioma (clave + parámetros)
     format.ts                    # formatPathLoss, formatCoherenceBandwidth, formatDopplerShift, formatCoherenceTime
   components/
     NumericField.tsx             # campo numérico controlado (unit opcional para parámetros sin unidad)
@@ -312,6 +334,8 @@ src/
     FadingResultPanel.tsx        # Bc/fd/Tc + clasificación plano-selectivo / lento-rápido
     FadingZoneChart.tsx          # gráfica de punto BT/Bc vs Ts/Tc sobre react-native-svg (no LineChart)
     GlowCard.tsx                 # card con brillo neón (cards de nivel superior en Inicio)
+    SegmentedControl.tsx         # switch de pocas opciones cortas (modo de tema)
+    BackButton.tsx               # botón de volver (solo flecha, objetivo táctil de 48dp)
     ListCard.tsx                 # card de lista simple (pantallas hub: Entorno, Planificación celular)
     GeometryResultPanel.tsx      # resultado de geometría celular
     TrafficResultPanel.tsx       # resultado genérico de un solo número (Erlang B / densidad)
@@ -321,11 +345,12 @@ src/
     WcdmaResultPanel.tsx          # carga por servicio, usuarios simultáneos, traza de convergencia
   screens/
     RootNavigator.tsx            # estado de navegación (union Route, un case por pantalla)
-    HomeScreen.tsx                # cards de nivel superior, data-driven
+    HomeScreen.tsx                # cards de nivel superior, data-driven + botón de Ajustes
+    SettingsScreen.tsx            # ajustes: tema e idioma
     EnvironmentScreen.tsx         # selector de entorno
     CalculatorScreen.tsx          # formulario + resultado, filtrado por entorno
     ComparisonScreen.tsx          # vista "versus" entre todos los modelos del entorno
-    geometryFieldConfig.ts        # label/unidad/helper/default por cada GeometryFieldKey
+    geometryFieldConfig.ts        # unidad/default por cada GeometryFieldKey (etiqueta y ayuda: i18n `geometryFields.*`)
     FadingScreen.tsx              # simulador de desvanecimiento: formulario + resultado + gráfica de zona
     CellularHubScreen.tsx        # hub de planificación celular -- rama feature/cellular-planning
     GeometryScreen.tsx            # ídem
@@ -333,6 +358,13 @@ src/
     LinkBudgetScreen.tsx          # ídem
     DimensioningScreen.tsx        # ídem (capacidad + cobertura, orquesta 1, 2 y 4a)
     WcdmaLoadScreen.tsx           # ídem (carga UMTS uplink + cell breathing)
+  i18n/
+    index.ts                     # inicializa i18next (idioma del dispositivo) y re-exporta el módulo
+    languages.ts                 # Language, nombres nativos, detección del idioma del dispositivo
+    LocaleContext.tsx            # LocaleProvider + useLocale(); persistencia con AsyncStorage, <html lang> en web
+    translateMessage.ts          # translateMessage / translateError: LocalizedMessage -> texto
+    i18next.d.ts                 # tipa t('clave') contra el español
+    locales/{es,en,pt}/          # textos por idioma (core, propagation, calculator, fading, cellular); es es la fuente de verdad
   theme/
     palette.ts                    # tokens de color claro/oscuro; accent (lila neón) es constante en ambos
     ThemeContext.tsx               # ThemeProvider + useTheme(); persistencia con AsyncStorage
@@ -341,10 +373,11 @@ src/
 ## Cómo agregar un nuevo modelo de propagación
 
 1. Crear `src/models/propagation/miModelo.ts` que exporte una función `calculate(inputs: PropagationInputs): PropagationResult` y un objeto `PropagationModelDefinition` (ver `freeSpace.ts` como plantilla mínima o `hata.ts` para uno con validación de rango y corrección por entorno).
-2. Usar `assertPositive` para cualquier valor que entre a un `log10`, `rangeWarningMessage` para el rango empírico del modelo, y `requireField` para cualquier parámetro geométrico opcional que el modelo necesite.
+2. Usar `assertPositive` para cualquier valor que entre a un `log10`, `rangeWarningMessage` para el rango empírico del modelo, y `requireField` para cualquier parámetro geométrico opcional que el modelo necesite. Estos helpers (y cualquier error propio, vía `LocalizedError`) reciben **claves** de traducción (`fields.*`, `errors.*`), no texto: el modelo no escribe en ningún idioma.
 3. Si el modelo necesita un parámetro geométrico que `PropagationInputs` no tiene todavía, extenderlo ahí como campo **opcional**, agregarlo a `GeometryFieldKey`, y declarar `extraFields` en el `PropagationModelDefinition` -- eso es lo único que hace falta para que `CalculatorScreen` muestre el campo correcto automáticamente, sin tocar la UI.
 4. Registrar el modelo en `src/models/propagation/index.ts` (`PROPAGATION_MODELS` y `PROPAGATION_MODEL_LIST`).
 5. Agregar el modelo a `applicableModelIds` de la(s) categoría(s) de `environments.ts` donde aplique.
+6. Agregar `models.<id>` (`label`, `shortLabel`, `citation`) en los tres idiomas de `src/i18n/locales/` (y las claves `fields.*` / `errors.*` nuevas que use) -- `tsc` avisa si falta alguna.
 
 No hace falta tocar los componentes de UI directamente: leen el registro y la taxonomía dinámicamente.
 

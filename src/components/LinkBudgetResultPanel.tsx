@@ -1,4 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../theme';
 
 interface LinkBudgetResultPanelProps {
@@ -10,6 +11,7 @@ interface LinkBudgetResultPanelProps {
 
 export function LinkBudgetResultPanel({ eirpDbm, maplDb, cellRadiusKm, errorMessage }: LinkBudgetResultPanelProps) {
   const { colors } = useTheme();
+  const { t } = useTranslation();
 
   if (errorMessage) {
     return (
@@ -38,7 +40,7 @@ export function LinkBudgetResultPanel({ eirpDbm, maplDb, cellRadiusKm, errorMess
       {cellRadiusKm !== null ? (
         <View style={styles.row}>
           <View style={styles.metric}>
-            <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>Radio de celda máximo (R)</Text>
+            <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>{t('linkBudget.result.maxRadius')}</Text>
             <Text style={[styles.metricValue, { color: colors.textPrimary }]}>{cellRadiusKm.toFixed(3)} km</Text>
           </View>
         </View>

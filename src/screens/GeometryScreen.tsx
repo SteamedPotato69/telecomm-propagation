@@ -1,9 +1,12 @@
 import { useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import { BackButton } from '../components/BackButton';
 import { GeometryResultPanel } from '../components/GeometryResultPanel';
 import { NumericField } from '../components/NumericField';
 import { RHOMBIC_NUMBER_EXAMPLES, calculateCellularGeometry } from '../models/geometry';
 import type { GeometryResult } from '../models/geometry';
+import { translateError } from '../i18n';
 import { useTheme } from '../theme';
 import { parseDecimal } from '../utils/validation';
 
@@ -19,6 +22,7 @@ const CLUSTER_SIZE_CHIPS = Array.from(new Set(RHOMBIC_NUMBER_EXAMPLES.map((e) =>
 
 export function GeometryScreen({ onBack }: GeometryScreenProps) {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const [cellRadiusKm, setCellRadiusKm] = useState('1');
   const [clusterSize, setClusterSize] = useState('7');
   const [totalAreaKm2, setTotalAreaKm2] = useState('');
@@ -33,7 +37,7 @@ export function GeometryScreen({ onBack }: GeometryScreenProps) {
       Number.isNaN(parsedCluster) ||
       (parsedArea !== undefined && Number.isNaN(parsedArea))
     ) {
-      return { result: null, errorMessage: 'Todos los campos numéricos deben tener un valor.' };
+      return { result: null, errorMessage: t('common.missingValues') };
     }
 
     try {
@@ -44,27 +48,23 @@ export function GeometryScreen({ onBack }: GeometryScreenProps) {
       });
       return { result: calculated, errorMessage: null };
     } catch (error) {
-      return { result: null, errorMessage: error instanceof Error ? error.message : 'Error desconocido.' };
+      return { result: null, errorMessage: translateError(t, error) };
     }
-  }, [cellRadiusKm, clusterSize, totalAreaKm2]);
+  }, [cellRadiusKm, clusterSize, totalAreaKm2, t]);
 
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Pressable onPress={onBack} style={styles.backButton}>
-          <Text style={[styles.backButtonText, { color: colors.accentText }]}>‹ Planificación celular</Text>
-        </Pressable>
+        <BackButton onPress={onBack} />
 
-        <Text style={[styles.title, { color: colors.textPrimary }]}>
-          Geometría celular y reutilización de frecuencias
-        </Text>
+        <Text style={[styles.title, { color: colors.textPrimary }]}>{t('geometry.title')}</Text>
         <Text style={[styles.citation, { color: colors.textMuted }]}>
-          Retícula hexagonal, distancia de reutilización y número de agrupaciones — docs/curso-referencia.md §13.1.
+          {t('geometry.subtitle')}
         </Text>
 
-        <NumericField label="Radio de celda (R)" unit="km" value={cellRadiusKm} onChangeText={setCellRadiusKm} />
+        <NumericField label={t('fields.cellRadius')} unit="km" value={cellRadiusKm} onChangeText={setCellRadiusKm} />
 
-        <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>Tamaño de agrupación (N)</Text>
+        <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>{t('geometry.clusterSize')}</Text>
         <View style={styles.chipRow}>
           {CLUSTER_SIZE_CHIPS.map((n) => {
             const isSelected = Number(clusterSize) === n;
@@ -72,6 +72,8 @@ export function GeometryScreen({ onBack }: GeometryScreenProps) {
               <Pressable
                 key={n}
                 onPress={() => setClusterSize(String(n))}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: isSelected }}
                 style={[
                   styles.chip,
                   { borderColor: colors.border },
@@ -84,18 +86,18 @@ export function GeometryScreen({ onBack }: GeometryScreenProps) {
           })}
         </View>
         <NumericField
-          label="Tamaño de agrupación (N)"
+          label={t('geometry.clusterSize')}
           value={clusterSize}
           onChangeText={setClusterSize}
-          helperText="Debe ser un número rómbico: N = i²+ij+j² para enteros i,j ≥ 0 (1, 3, 4, 7, 9, 12, 13...)."
+          helperText={t('geometry.clusterHelper')}
         />
 
         <NumericField
-          label="Área total a cubrir (S_T)"
+          label={t('fields.totalCoverageArea')}
           unit="km²"
           value={totalAreaKm2}
           onChangeText={setTotalAreaKm2}
-          helperText="Opcional -- déjalo vacío si solo necesitas la geometría de una celda, sin el número de agrupaciones."
+          helperText={t('geometry.totalAreaHelper')}
         />
 
         <GeometryResultPanel result={result} errorMessage={errorMessage} />
@@ -106,9 +108,7 @@ export function GeometryScreen({ onBack }: GeometryScreenProps) {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  content: { padding: 20, paddingTop: 60, paddingBottom: 40 },
-  backButton: { marginBottom: 12 },
-  backButtonText: { fontSize: 14, fontWeight: '600' },
+  content: { padding: 20, paddingTop: 20, paddingBottom: 40 },
   title: { fontSize: 20, fontWeight: '700' },
   citation: { fontSize: 11, marginTop: 4, marginBottom: 16 },
   sectionLabel: { fontSize: 13, fontWeight: '600', marginBottom: 8, marginTop: 4 },
@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 20,
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 10,
     marginRight: 8,
     marginBottom: 8,
   },

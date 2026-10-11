@@ -1,3 +1,4 @@
+import { LocalizedError } from '../../utils/localizedMessage';
 import { assertPositive, assertUnitInterval } from '../../utils/validation';
 import type {
   ServiceLoad,
@@ -31,9 +32,9 @@ export function calculateServiceLoad(
   chipRateMcps: number,
   linkBudget: WcdmaCommonLinkBudget
 ): ServiceLoad {
-  assertPositive(service.bitRateKbps, `Tasa de bits (${service.label})`);
-  assertPositive(chipRateMcps, 'Chip rate (W)');
-  assertPositive(service.activityFactor, `Factor de actividad (${service.label})`);
+  assertPositive(service.bitRateKbps, { key: 'serviceBitRate', params: { service: { key: `wcdma.services.${service.id}` } } });
+  assertPositive(chipRateMcps, 'chipRate');
+  assertPositive(service.activityFactor, { key: 'serviceActivityFactor', params: { service: { key: `wcdma.services.${service.id}` } } });
 
   const chipRateKcps = chipRateMcps * 1000;
   const processingGainDb = 10 * Math.log10(chipRateKcps / service.bitRateKbps);
@@ -52,7 +53,7 @@ export function calculateServiceLoad(
     linkBudget.feederLossDb -
     linkBudget.shadowFadingMarginDb;
 
-  return { label: service.label, processingGainDb, loadFactorPerUser, sensitivityDbm, maplZeroLoadDb };
+  return { id: service.id, processingGainDb, loadFactorPerUser, sensitivityDbm, maplZeroLoadDb };
 }
 
 /**
@@ -84,7 +85,7 @@ export function calculateServiceLoad(
  *
  * Reference service: the course uses voice (the design-priority service
  * whose coverage the operator wants to guarantee), not whichever service
- * happens to have the lowest MAPL -- see WcdmaLoadInputs.referenceServiceLabel.
+ * happens to have the lowest MAPL -- see WcdmaLoadInputs.referenceServiceId.
  *
  * Downlink (eta_DL) is out of scope, same as the project's existing
  * precedent for Ericsson-9999/Lee: the course's own extracted material
@@ -94,7 +95,7 @@ export function calculateWcdmaUplinkLoad(inputs: WcdmaLoadInputs): WcdmaLoadResu
   const {
     chipRateMcps,
     services,
-    referenceServiceLabel,
+    referenceServiceId,
     interferenceFactor,
     targetUplinkLoad,
     linkBudget,
@@ -108,13 +109,13 @@ export function calculateWcdmaUplinkLoad(inputs: WcdmaLoadInputs): WcdmaLoadResu
     dampingFactor = 0.3,
   } = inputs;
 
-  assertUnitInterval(targetUplinkLoad, 'Carga objetivo (η)');
-  assertPositive(totalUsers, 'Usuarios totales');
-  assertPositive(totalAreaKm2, 'Área total');
-  assertPositive(averageErlangPerUser, 'Erlang promedio por usuario');
-  assertPositive(interferenceFactor, 'Factor de interferencia (i_oc)');
+  assertUnitInterval(targetUplinkLoad, 'targetLoad');
+  assertPositive(totalUsers, 'totalUsers');
+  assertPositive(totalAreaKm2, 'totalArea');
+  assertPositive(averageErlangPerUser, 'averageErlangPerUser');
+  assertPositive(interferenceFactor, 'interferenceFactor');
   if (!Number.isFinite(dampingFactor) || dampingFactor <= 0 || dampingFactor > 1) {
-    throw new Error('El factor de amortiguación debe estar entre 0 (exclusivo) y 1 (inclusivo).');
+    throw new LocalizedError('errors.invalidDamping');
   }
 
   const serviceLoads = services.map((service) => calculateServiceLoad(service, chipRateMcps, linkBudget));
@@ -126,13 +127,13 @@ export function calculateWcdmaUplinkLoad(inputs: WcdmaLoadInputs): WcdmaLoadResu
 
   const maxSimultaneousUsersPerCell = targetUplinkLoad / (mixLoadFactor * (1 + interferenceFactor));
   const usersPerServicePerCell = services.map((service) => ({
-    label: service.label,
+    id: service.id,
     users: Math.round(maxSimultaneousUsersPerCell * service.shareOfUsers),
   }));
 
-  const referenceLoad = serviceLoads.find((load) => load.label === referenceServiceLabel);
+  const referenceLoad = serviceLoads.find((load) => load.id === referenceServiceId);
   if (!referenceLoad) {
-    throw new Error(`No se encontró el servicio de referencia "${referenceServiceLabel}" entre los servicios dados.`);
+    throw new LocalizedError('errors.referenceServiceNotFound', { service: referenceServiceId });
   }
 
   const totalTrafficErlangs = totalUsers * averageErlangPerUser;

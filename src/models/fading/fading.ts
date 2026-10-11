@@ -50,10 +50,10 @@ export function calculateFading(inputs: FadingInputs): FadingResult {
   const { frequencyMHz, delaySpreadUs, speedKmh, bandwidthKHz, symbolDurationUs } = inputs;
 
   assertPositive(frequencyMHz, 'Frecuencia portadora');
-  assertPositive(delaySpreadUs, 'Dispersión de retardo (D)');
-  assertNonNegative(speedKmh, 'Velocidad del móvil');
-  assertPositive(bandwidthKHz, 'Ancho de banda de la señal (BT)');
-  assertPositive(symbolDurationUs, 'Duración de símbolo (Ts)');
+  assertPositive(delaySpreadUs, 'delaySpread');
+  assertNonNegative(speedKmh, 'mobileSpeed');
+  assertPositive(bandwidthKHz, 'signalBandwidth');
+  assertPositive(symbolDurationUs, 'symbolDuration');
 
   const delaySpreadS = delaySpreadUs * 1e-6;
   const coherenceBandwidthHz = 1 / (2 * Math.PI * delaySpreadS);

@@ -1,4 +1,5 @@
 import { assertPositive, rangeWarningMessage } from '../../utils/validation';
+import type { FieldLabel } from '../../utils/localizedMessage';
 import type {
   CitySize,
   PropagationInputs,
@@ -77,10 +78,10 @@ function hataDistanceIndependentTerms(inputs: HataGeometryInputs): {
 export function calculateHataLoss(inputs: PropagationInputs): PropagationResult {
   const { frequencyMHz, distanceKm, baseStationHeightM, mobileHeightM } = inputs;
 
-  assertPositive(frequencyMHz, 'Frecuencia');
-  assertPositive(distanceKm, 'Distancia');
-  assertPositive(baseStationHeightM, 'Altura de estación base');
-  assertPositive(mobileHeightM, 'Altura del móvil');
+  assertPositive(frequencyMHz, 'frequency');
+  assertPositive(distanceKm, 'distance');
+  assertPositive(baseStationHeightM, 'baseStationHeight');
+  assertPositive(mobileHeightM, 'mobileHeight');
 
   const warnings: PropagationWarning[] = [];
   const pushRangeWarning = (
@@ -88,17 +89,17 @@ export function calculateHataLoss(inputs: PropagationInputs): PropagationResult 
     value: number,
     min: number,
     max: number,
-    label: string,
+    label: FieldLabel,
     unit: string
   ) => {
     const message = rangeWarningMessage(value, min, max, label, unit);
     if (message) warnings.push({ field, message });
   };
 
-  pushRangeWarning('frequencyMHz', frequencyMHz, 150, 1500, 'Frecuencia', 'MHz');
-  pushRangeWarning('baseStationHeightM', baseStationHeightM, 30, 200, 'Altura de estación base', 'm');
-  pushRangeWarning('mobileHeightM', mobileHeightM, 1, 10, 'Altura del móvil', 'm');
-  pushRangeWarning('distanceKm', distanceKm, 1, 20, 'Distancia', 'km');
+  pushRangeWarning('frequencyMHz', frequencyMHz, 150, 1500, 'frequency', 'MHz');
+  pushRangeWarning('baseStationHeightM', baseStationHeightM, 30, 200, 'baseStationHeight', 'm');
+  pushRangeWarning('mobileHeightM', mobileHeightM, 1, 10, 'mobileHeight', 'm');
+  pushRangeWarning('distanceKm', distanceKm, 1, 20, 'distance', 'km');
 
   const { baseLossDb, distanceCoefficient } = hataDistanceIndependentTerms(inputs);
   const pathLossDb = baseLossDb + distanceCoefficient * Math.log10(distanceKm);
@@ -116,9 +117,9 @@ export function calculateHataLoss(inputs: PropagationInputs): PropagationResult 
  * the professor's slides round intermediate results.
  */
 export function solveHataDistanceKm(inputs: HataGeometryInputs, targetLossDb: number): number {
-  assertPositive(inputs.frequencyMHz, 'Frecuencia');
-  assertPositive(inputs.baseStationHeightM, 'Altura de estación base');
-  assertPositive(inputs.mobileHeightM, 'Altura del móvil');
+  assertPositive(inputs.frequencyMHz, 'frequency');
+  assertPositive(inputs.baseStationHeightM, 'baseStationHeight');
+  assertPositive(inputs.mobileHeightM, 'mobileHeight');
 
   const { baseLossDb, distanceCoefficient } = hataDistanceIndependentTerms(inputs);
   return Math.pow(10, (targetLossDb - baseLossDb) / distanceCoefficient);
@@ -126,9 +127,6 @@ export function solveHataDistanceKm(inputs: HataGeometryInputs, targetLossDb: nu
 
 export const hataModel: PropagationModelDefinition = {
   id: 'hata',
-  label: 'Okumura-Hata',
-  shortLabel: 'Hata',
-  citation: 'Hata, M. (1980), IEEE Trans. Vehicular Technology. Válido para f: 150-1500 MHz.',
   implemented: true,
   calculate: calculateHataLoss,
   solveDistanceKm: solveHataDistanceKm,
