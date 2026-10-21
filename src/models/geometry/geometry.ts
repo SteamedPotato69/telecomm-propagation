@@ -30,7 +30,11 @@ export function calculateCellularGeometry(inputs: GeometryInputs): GeometryResul
   let clusterCount: number | undefined;
   if (totalAreaKm2 !== undefined) {
     assertPositive(totalAreaKm2, 'totalCoverageArea');
-    clusterCount = Math.ceil(totalAreaKm2 / ((3 * reuseDistanceKm ** 2) / 2)) + 1;
+    // Diap. 24: Q = E[S_T / S_RC] + 1 with S_RC = N*Sc = sqrt(3)*D^2/2 (the
+    // cocell rhombus area computed above). E[.] is the integer part (floor).
+    // An earlier version used 3*D^2/2 here (the sqrt(3) was lost in the
+    // transcription) and ceil(): it under-counted clusters by up to ~40%.
+    clusterCount = Math.floor(totalAreaKm2 / cocellAreaKm2) + 1;
   }
 
   return { latticeStepKm, reuseDistanceKm, cellAreaKm2, cocellAreaKm2, sectorAreaKm2, clusterCount };

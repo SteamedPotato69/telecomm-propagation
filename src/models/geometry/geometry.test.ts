@@ -51,10 +51,32 @@ describe('calculateCellularGeometry', () => {
     expect(result.sectorAreaKm2).toBeCloseTo(result.cellAreaKm2 / 3, 9);
   });
 
-  it('self-check: clusterCount for R=1, N=7, S_T=100 km^2', () => {
-    // D = sqrt(21) ~= 4.5826 km; 3*D^2/2 = 31.5; ceil(100/31.5)+1 = 4+1 = 5.
+  // Diap. 24: Q = E[S_T/S_RC] + 1, S_RC = N*Sc = sqrt(3)*D^2/2. The numbers
+  // below are computed by hand from that formula (the course has no worked
+  // numeric example for Q), not an independent course oracle.
+  it('clusterCount for R=1, N=7, S_T=100 km^2: S_RC=18.187 -> floor(5.499)+1 = 6', () => {
     const result = calculateCellularGeometry({ cellRadiusKm: 1, clusterSize: 7, totalAreaKm2: 100 });
-    expect(result.clusterCount).toBe(5);
+    expect(result.cocellAreaKm2).toBeCloseTo(18.187, 3);
+    expect(result.clusterCount).toBe(6);
+  });
+
+  it('clusterCount for a large area: R=1, N=7, S_T=500 km^2 -> 28 (the old formula gave 17)', () => {
+    const result = calculateCellularGeometry({ cellRadiusKm: 1, clusterSize: 7, totalAreaKm2: 500 });
+    expect(result.clusterCount).toBe(28);
+  });
+
+  it('clusterCount always covers the area: Q * S_RC >= S_T', () => {
+    for (const [r, n, area] of [[1, 7, 50], [2.5, 7, 50], [1, 4, 50], [0.8, 3, 20], [1.5, 12, 333]] as const) {
+      const result = calculateCellularGeometry({ cellRadiusKm: r, clusterSize: n, totalAreaKm2: area });
+      expect(result.clusterCount! * result.cocellAreaKm2).toBeGreaterThanOrEqual(area);
+    }
+  });
+
+  it('literal reading of E[.]: an exact integer ratio still adds the +1', () => {
+    // S_T = 3 * S_RC exactly -> floor(3)+1 = 4 (ceil would give 3).
+    const probe = calculateCellularGeometry({ cellRadiusKm: 1, clusterSize: 7 });
+    const result = calculateCellularGeometry({ cellRadiusKm: 1, clusterSize: 7, totalAreaKm2: 3 * probe.cocellAreaKm2 });
+    expect(result.clusterCount).toBe(4);
   });
 
   it('omits clusterCount when totalAreaKm2 is not supplied', () => {

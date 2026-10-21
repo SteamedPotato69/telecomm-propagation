@@ -801,7 +801,9 @@ Ejemplo dado: agrupación de 7 celdas → D = √21·R.
 
 Número de agrupaciones para cubrir un área total S_T (diap. 24):
 ```
-Q = ceil( S_T / (3·D²/2) ) + 1        # Q es también el índice de reutilización
+Q = E[ S_T / S_RC ] + 1 = E[ S_T / (√3·D²/2) ] + 1     # E[·] = parte entera; Q es también el índice de reutilización
+# CORREGIDO 2026-10: antes decía 3·D²/2 y ceil(). La diap. 24 (leída como imagen) imprime S_RC = N·Sc = √3·D²/2:
+# la raíz de 3 se perdió en la transcripción y subestimaba Q hasta ~40 % (N=7, R=1 km, S_T=500 km² → 17 en vez de 28).
 ```
 Si K es el número de canales por celda, la red dispone de Q·K·N canales en total.
 
