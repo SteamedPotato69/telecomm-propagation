@@ -95,7 +95,12 @@ export const propagation = {
   cellularHub: {
     title: 'Planificación celular',
     subtitle: 'Geometría, dimensionamiento por tráfico y capacidad/cobertura -- docs/curso-referencia.md §13.',
+    toolsHeading: 'Herramientas sueltas',
     features: {
+      guided: {
+        title: 'Planificación guiada',
+        description: 'Paso a paso, igual que a lápiz y papel (1G y 2G) o casi automática (3G). Tu plan queda guardado en este dispositivo.',
+      },
       geometry: {
         title: 'Geometría celular y reutilización de frecuencias',
         description: 'Radio de celda, paso de retícula, distancia de reutilización y número de agrupaciones.',
