@@ -879,10 +879,13 @@ Número máximo de usuarios del servicio j por celda (UL):
 N_j = η_UL,max / (ρ_j · (1 + i_oc))
 ```
 
-**[OCR-verificar / incompleto]** Carga en downlink (diap. 67), extraída con ambigüedad:
+**[Estructura confirmada 2026-10 sobre la imagen de la diap. 67; β sigue sin definir]** Carga en downlink:
 ```
-η_DL = Σ [ α_i · (Eb/N0)_i · R_bi / W ] · (1 − β) + i_other
+η_DL = Σ [ α_i · (Eb/N0)_i · (R_bi / W) ] · [ (1 − β) + i_other ]
 ```
+CORREGIDO: la transcripción anterior (`Σ[...]·(1 − β) + i_other`) sacaba `i_other` del producto; en la imagen el corchete `[(1−β)+i_other]` es un factor común que multiplica la suma. Nótese que `ρ_UL = L/(1+L)` con `L = α·R·(Eb/N0)/W`, la misma `L` del corchete interior de η_DL.
+
+**Discrepancia de ρ de voz (verificada 2026-10 contra las imágenes de las diap. 67, 69 y 72):** la ecuación impresa (diap. 67) da 0.00669 para voz; la diap. 69 escribe su ejemplo SIN α (`1/(1+W/(R·Eb/N0))`) y da ≈0.00995 pero afirma ≈0.020; la diap. 72 usa 0.0210. Ningún valor dado reproduce 0.0210. Para PS64k/PS384k (α = 1) los tres coinciden con 0.0357/0.137. El PS 64k aparece con Eb/N0 = 4.0 dB en la diap. 66 y con 3.5 dB en la diap. 72 (el PDF se contradice; la app usa 3.5, el de los ρ impresos).
 La variable `β` no está definida en el texto extraído (probablemente el factor de ortogonalidad del código, típico en literatura UMTS, pero no confirmado contra el PDF original) y no hay ningún ejercicio resuelto en el material que ejercite η_DL numéricamente — solo η_UL se usa en el ejercicio completo de diap. 69-74.
 
 Margen de carga y bucle iterativo (diap. 68-70, 73):

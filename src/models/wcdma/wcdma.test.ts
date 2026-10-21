@@ -40,14 +40,24 @@ describe('calculateServiceLoad', () => {
     expect(calculateServiceLoad(PS384, 3.84, LINK_BUDGET).loadFactorPerUser).toBeCloseTo(0.137, 3);
   });
 
-  it('voice load factor does not reproduce the course-stated 0.0210 -- documents the actual formula result', () => {
-    // With the table's own Eb/No=5dB, alpha=0.67, R=12.2kbps, the formula
-    // that correctly reproduces PS64k/PS384k above gives 0.0148 for voice,
-    // not the slide's stated 0.0210 -- no combination of the given inputs
-    // was found that reproduces 0.0210. See wcdma.ts's doc comment.
+  it('voice follows the equation printed on diap. 67 (0.00669) and does NOT reproduce the course-stated 0.0210', () => {
+    // rho = 1/(1 + W/(alpha*R*Eb/N0)) with Eb/No=5dB, alpha=0.67, R=12.2kbps.
+    // Three values circulate: this equation 0.00669; the old code (alpha
+    // dividing) 0.01477; diap. 69's own example without alpha 0.00995; and
+    // the course states 0.0210 (diap. 72). Nothing given reproduces 0.0210.
     const voz = calculateServiceLoad(VOZ, 3.84, LINK_BUDGET);
-    expect(voz.loadFactorPerUser).toBeCloseTo(0.0148, 3);
+    expect(voz.loadFactorPerUser).toBeCloseTo(0.00669, 4);
     expect(voz.loadFactorPerUser).not.toBeCloseTo(0.021, 3);
+    expect(voz.loadFactorPerUser).not.toBeCloseTo(0.01477, 4); // the old, inverted-alpha result
+  });
+
+  it('alpha reduces the load: rho = L/(1+L) with L = alpha*R*(Eb/N0)/W, and rho grows with alpha', () => {
+    const L = (0.67 * 12.2e3 * 10 ** 0.5) / 3.84e6;
+    expect(calculateServiceLoad(VOZ, 3.84, LINK_BUDGET).loadFactorPerUser).toBeCloseTo(L / (1 + L), 12);
+    const half = calculateServiceLoad({ ...VOZ, activityFactor: 0.5 }, 3.84, LINK_BUDGET).loadFactorPerUser;
+    const full = calculateServiceLoad({ ...VOZ, activityFactor: 1 }, 3.84, LINK_BUDGET).loadFactorPerUser;
+    expect(half).toBeLessThan(calculateServiceLoad(VOZ, 3.84, LINK_BUDGET).loadFactorPerUser);
+    expect(calculateServiceLoad(VOZ, 3.84, LINK_BUDGET).loadFactorPerUser).toBeLessThan(full);
   });
 
   it('throws for a non-positive bit rate or activity factor', () => {
@@ -92,14 +102,16 @@ function baseInputs(overrides: Partial<WcdmaLoadInputs> = {}): WcdmaLoadInputs {
 }
 
 describe('calculateWcdmaUplinkLoad', () => {
-  it('N_max structurally matches eta_obj / (mix_rho * (1+i_oc)) using this module\'s own (formula-correct) rho values', () => {
+  it('N_max structurally matches eta_obj / (mix_rho * (1+i_oc)) using the diap. 67 rho values', () => {
     // Not the course's stated N_max=9: that used the course's own
-    // (unreproduced) voice rho=0.0210. This module's mixLoadFactor uses
-    // the formula-verified per-service rho values instead, so N_max
-    // comes out at ~10.3, not 9 -- a downstream, documented consequence
-    // of the voice-rho finding above, not a separate bug.
+    // (unreproduced) voice rho=0.0210. With the printed equation N_max
+    // comes out at ~12.6 -- a downstream, documented consequence of the
+    // voice-rho finding above, not a separate discrepancy.
     const result = calculateWcdmaUplinkLoad(baseInputs());
-    const expectedMix = 0.7 * 0.014773717572374763 + 0.2 * 0.03596990904719988 + 0.1 * 0.13680688860321003;
+    const rho = (rKbps: number, ebN0Db: number, alpha: number) =>
+      1 / (1 + 3.84e6 / (alpha * rKbps * 1e3 * 10 ** (ebN0Db / 10)));
+    const expectedMix = 0.7 * rho(12.2, 5.0, 0.67) + 0.2 * rho(64, 3.5, 1) + 0.1 * rho(384, 2.0, 1);
+    expect(result.maxSimultaneousUsersPerCell).toBeCloseTo(12.62, 2);
     expect(result.mixLoadFactor).toBeCloseTo(expectedMix, 6);
     expect(result.maxSimultaneousUsersPerCell).toBeCloseTo(0.5 / (expectedMix * 1.55), 6);
   });
