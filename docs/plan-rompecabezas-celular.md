@@ -152,3 +152,25 @@ Estado: P0 y P1 implementados en `feature/cell-puzzle` (sin subir). `tsc` limpio
 4. **Hallazgos de la auditoría** para la IA del contexto: `docs/hallazgos-verificados-para-ia-de-contexto.md`.
 
 **Siguiente**: PR B (almacenamiento + asistente), tras revisar este.
+
+# 9. Registro de implementación -- PR B (hecho)
+
+Estado: asistente 1G/2G/3G + plan guardado, apilado sobre el PR A (rama `feature/plan-wizard`). `tsc` limpio, `vitest` verde.
+
+**Qué hay**
+- `models/plan/guidedPlan.ts` (pasos en el orden del curso, `COURSE_3G`, `computePlan*` que nunca lanzan) y `ledger.ts` ("Tu plan hasta ahora" como filas neutrales al idioma).
+- `storage/planStore.ts`: guarda **entradas + paso + instantánea**; los resultados se recalculan al abrir. Tolera JSON corrupto, otra versión, tipos erróneos, un plan 1G en la ranura 2G, una instantánea dañada y un almacén que lanza (12 tests con un almacén en memoria).
+- `plan/PlanContext.tsx`: carga al abrir, guarda con 400 ms de retardo y **nunca escribe antes de terminar de leer** (si no, pisaría lo guardado con un estado vacío).
+- UI: `PlanStartScreen` (elegir generación; continuar / empezar de nuevo con confirmación de dos toques), `PlanWizardScreen` (6 pasos 1G/2G, 3 pasos 3G), `PlanShell`, `PlanLedger`, `PlanNumberField`, `AdvancedSection` (el link budget y el entorno quedan plegados), `SummaryStep`; entrada en el hub y botón atrás de Android por pasos.
+- Textos es/en/pt (`plan.*`, tipados).
+
+**Decisiones tomadas al construirlo**
+1. **Los campos guardan números, no texto** (`PlanNumberField`): un "2." a medias o un campo vacío no meten NaN en el plan; el campo se pone rojo y se sigue usando el último valor correcto. Si el valor guardado cambia desde fuera (empezar de nuevo), el texto lo sigue.
+2. **Los presets son constantes compartidas: siempre se copian.** Un test mío mutó `COURSE_1G` sin querer y contaminó los siguientes; por eso el contexto clona (JSON) y los tests usan copias.
+3. **El botón "Ir al rompecabezas" está desactivado** ("llega en la siguiente entrega"): el flujo se lee de punta a punta sin prometer lo que aún no existe.
+4. **La instantánea sirve para avisar**, no para mostrar números: si con los modelos actuales el plan da otro número de celdas que cuando se guardó, la pantalla inicial lo dice.
+5. Abrir el asistente **no guarda nada** hasta que el estudiante empieza o edita (`recordSnapshot` ignora planes que no existen).
+
+**Verificado en el navegador** (escritorio y 375 px, es/en/pt, sin claves crudas): 1G con los valores del curso (416 → 59 canales, 48,70 Erl, 6 celdas; MAPL 143 dB, R 2,90 km, 2 por cobertura; resumen con hexágono de 1,791 km), 2G (40 → 10 → 70, MAPL 133, 7 por cobertura), 3G (convergió en 6, 20 NodeB; con 20 000 usuarios el paso estándar oscilaba y se reintentó con 0,1: R=0,95 km, 40 NodeB), usuarios = 0 (mensaje traducido, "Siguiente" desactivado), campo inválido, guardado en `localStorage` y restauración tras recargar, reinicio con confirmación.
+
+**No verificado (lo prueba el estudiante en Expo Go)**: el botón atrás de hardware de Android dentro del asistente, AsyncStorage nativo (en web es `localStorage`), teclado numérico en móvil real.

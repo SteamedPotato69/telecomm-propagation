@@ -2,6 +2,7 @@ import { StatusBar } from 'expo-status-bar';
 import { StyleSheet } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { LocaleProvider } from './src/i18n';
+import { PlanProvider } from './src/plan/PlanContext';
 import { RootNavigator } from './src/screens/RootNavigator';
 import { ThemeProvider, useTheme } from './src/theme';
 
@@ -20,7 +21,9 @@ export default function App() {
     <SafeAreaProvider>
       <LocaleProvider>
         <ThemeProvider>
-          <AppContent />
+          <PlanProvider>
+            <AppContent />
+          </PlanProvider>
         </ThemeProvider>
       </LocaleProvider>
     </SafeAreaProvider>
