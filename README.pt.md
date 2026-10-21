@@ -16,7 +16,8 @@ Calculadora de modelos de perda de propagação em canais móveis (espaço livre
 4. **Comparação**: executa todos os modelos aplicáveis do ambiente com os mesmos parâmetros e os compara com a perda no espaço livre ("predição ideal"); o de menor distância é marcado como melhor ajuste. Abaixo dos cards, dois gráficos (`src/components/LineChart.tsx`, sobre `react-native-svg`) de perda vs. distância -- escala logarítmica e linear, todas as curvas sobrepostas, amostradas em 0.3-20 km com os demais parâmetros fixos.
 5. **Simulador de desvanecimento** (`src/screens/FadingScreen.tsx`): a partir da frequência da portadora, dispersão de atraso (D, com chips de preset Rural/Suburbano/Urbano), velocidade do móvel, largura de banda do sinal e duração do símbolo (ou taxa de símbolo, convertível em Ts), calcula a largura de banda de coerência (Bc), o deslocamento Doppler (fd) e o tempo de coerência (Tc); classifica o canal como plano/seletivo em frequência e lento/rápido (seletivo no tempo), e posiciona o ponto de operação em uma das 5 zonas do plano BT/Bc vs. Ts/Tc (`src/components/FadingZoneChart.tsx`, gráfico de ponto sobre `react-native-svg`, não uma série de linhas -- diferente do `LineChart.tsx`).
 6. **Planejamento guiado** (Planejamento celular → Planejamento guiado; `src/screens/PlanStartScreen.tsx`, `PlanWizardScreen.tsx`): um assistente passo a passo que reutiliza os modelos acima. **1G e 2G seguem a ordem do cálculo à mão** (slides 44-46): cenário → espectro e agrupamento → capacidade → cobertura → resultado → resumo; **3G é quase automático** (apenas área, usuários e Erlang por usuário; o resto vem do exemplo do curso). Cada tela mostra "Seu plano até agora" com o que já foi calculado, o modelo de propagação é escolhido pela frequência, e o plano **fica salvo neste dispositivo** (apenas as entradas; os resultados são recalculados ao abrir, então uma correção de modelo nunca deixa números antigos). A última tela resume o que o quebra-cabeça vai usar; ele **só lê** o plano e nunca o altera.
-7. **Quebra-cabeça celular** (a partir do resumo do plano, "Ir ao quebra-cabeça"; `src/screens/CellPuzzleScreen.tsx`, `src/components/puzzle/`): quatro passos. (1) **Seu mapa**: envie uma imagem (arquivo, galeria no celular, arrastar ou colar com Ctrl+V na web; serve qualquer formato que o dispositivo saiba abrir) ou tire uma foto com a câmera (webcam no navegador, a traseira no celular, com botão para trocar); a imagem não é guardada. (2) **Linha de referência**: trace com o dedo ou o cursor uma linha que meça 1 km (0,5 / 2 / 5 km também); dela sai a escala de todo o jogo. (3) **Posicione a área**: a área S_T do plano (não pode ser alterada) é arrastada sobre o mapa; retângulo ou elipse, proporção e giro; se não couber na imagem, a tela diz exatamente quantos pixels faltam. (4) **Cubra a área**: cada toque coloca um agrupamento de N células que se encaixa sozinho na rede (cada cor é um grupo de frequências; a primeira peça fixa a rede); desfazer, reiniciar, dica e autocompletar. As estrelas são medidas contra o mínimo que o próprio jogo encontra (uma busca sobre rotações e posições, não uma demonstração): ★ cobrir toda a área, ★★ com no máximo 2 agrupamentos a mais, ★★★ igualar o mínimo; as dicas limitam a 2 estrelas e o autocompletar a 1. O resultado também mostra quantas células são realmente necessárias frente às do plano: a borda da área sempre pede células extras.
+7. **Quebra-cabeça celular** (a missão do caminho de níveis, aberta a partir do resumo do plano com "Ir ao quebra-cabeça"; `src/screens/CellPuzzleScreen.tsx`, `src/components/puzzle/`): quatro passos. (1) **Seu mapa**: envie uma imagem (arquivo, galeria no celular, arrastar ou colar com Ctrl+V na web; serve qualquer formato que o dispositivo saiba abrir) ou tire uma foto com a câmera (webcam no navegador, a traseira no celular, com botão para trocar); a imagem não é guardada. (2) **Linha de referência**: trace com o dedo ou o cursor uma linha que meça 1 km (0,5 / 2 / 5 km também); dela sai a escala de todo o jogo. (3) **Posicione a área**: a área S_T do plano (não pode ser alterada) é arrastada sobre o mapa; retângulo ou elipse, proporção e giro; se não couber na imagem, a tela diz exatamente quantos pixels faltam. (4) **Cubra a área**: cada toque coloca um agrupamento de N células que se encaixa sozinho na rede (cada cor é um grupo de frequências; a primeira peça fixa a rede); desfazer, reiniciar, dica e autocompletar. As estrelas são medidas contra o mínimo que o próprio jogo encontra (uma busca sobre rotações e posições, não uma demonstração): ★ cobrir toda a área, ★★ com no máximo 2 agrupamentos a mais, ★★★ igualar o mínimo; as dicas limitam a 2 estrelas e o autocompletar a 1. O resultado também mostra quantas células são realmente necessárias frente às do plano: a borda da área sempre pede células extras.
+8. **Caminho de níveis e gamificação** (`src/screens/PuzzlePathScreen.tsx`, `TutorialScreen.tsx`, `src/models/game/`): "Ir ao quebra-cabeça" abre primeiro um caminho com **quatro níveis curtos** de dados inventados (um hexágono → ladrilhar um trecho → montar o agrupamento com N = 3 → reutilizar com N = 7, o exemplo do curso, onde se desenha a distância D = √(3N)·R entre células da mesma cor) e, no final, **Sua missão**: o quebra-cabeça do item 7 com o seu plano e a sua imagem, sempre aberta. Os tutoriais usam o mesmo jogo da missão. Cada nível concluído dá **XP** (20 na primeira vez e 15 por cada nova estrela; repetir sem melhorar não dá XP), estrelas e uma **sequência** diária; ao terminar há confete e, no celular, vibração. O progresso fica salvo neste dispositivo (`src/storage/progressStore.ts`), não há vidas nem nada que bloqueie, os efeitos se desligam em Ajustes e se desligam sozinhos quando o sistema pede para reduzir o movimento.
 
 ## Configurações: tema e idioma
 
@@ -283,7 +284,7 @@ Além do código, isso verifica que as três traduções tenham exatamente as me
 npx vitest run
 ```
 
-Escopo limitado a `src/models/**`, à persistência do plano em `src/storage/` (com um armazenamento em memória injetado) e aos *dados* de tradução em `src/i18n/` (mais o `translateMessage`): esse código não importa nada de `react-native`/Expo, então roda sob Node sem precisar de mocks de RN/jsdom (o teste de i18n cria sua própria instância do `i18next` em vez de importar `src/i18n/index.ts`, que precisa do `expo-localization`). Cobre as funcionalidades de planejamento celular (geometria, Erlang B, link budget) -- os modelos originais de propagação e desvanecimento ainda são verificados apenas a olho no navegador (veja [Trabalho futuro](#trabalho-futuro)).
+Escopo limitado a `src/models/**`, à persistência do plano e do progresso em `src/storage/` (com um armazenamento em memória injetado) e aos *dados* de tradução em `src/i18n/` (mais o `translateMessage`): esse código não importa nada de `react-native`/Expo, então roda sob Node sem precisar de mocks de RN/jsdom (o teste de i18n cria sua própria instância do `i18next` em vez de importar `src/i18n/index.ts`, que precisa do `expo-localization`). Cobre as funcionalidades de planejamento celular (geometria, Erlang B, link budget) -- os modelos originais de propagação e desvanecimento ainda são verificados apenas a olho no navegador (veja [Trabalho futuro](#trabalho-futuro)).
 
 ## Estrutura do projeto
 
@@ -344,6 +345,10 @@ src/
     areaPlacement.ts             # onde a área fica sobre a imagem (centro em pixels), ajuste à imagem, dá para jogar?
     placement.ts                 # redutor das peças colocadas: a primeira fixa a rede; desfazer, dicas, autocompletar
     puzzle.ts                    # cores por grupo, estrelas, dica e autocompletar
+  models/game/                     # caminho de níveis (puro) -- ramo feature/puzzle-gamification
+    levels.ts                    # os 4 tutoriais como dados e sua escala; a missão nunca fica bloqueada
+    progress.ts                  # XP, estrelas, sequência por dia, desbloqueio e recordResult
+    confetti.ts                  # onde cai cada peça do confete (determinista)
   utils/
     validation.ts                # assertPositive, assertNonNegative, assertUnitInterval, assertInteger, rangeWarningMessage, parseDecimal, requireField
     localizedMessage.ts          # LocalizedError / LocalizedMessage: erros e avisos neutros quanto ao idioma (chave + parâmetros)
@@ -374,6 +379,8 @@ src/
     PlanStartScreen.tsx           # planejamento guiado: escolher 1G/2G/3G, continuar ou recomeçar
     PlanWizardScreen.tsx          # os passos do assistente (1G/2G e 3G)
     CellPuzzleScreen.tsx          # o minijogo: imagem -> linha -> área -> jogo (só lê a missão do plano)
+    PuzzlePathScreen.tsx          # o caminho de níveis: XP, estrelas, sequência, 4 tutoriais e Sua missão
+    TutorialScreen.tsx            # um nível tutorial: o mesmo jogo com dados inventados
     EnvironmentScreen.tsx         # seletor de ambiente
     CalculatorScreen.tsx          # formulário + resultado, filtrado por ambiente
     ComparisonScreen.tsx          # visão "versus" entre todos os modelos do ambiente
@@ -394,8 +401,11 @@ src/
     locales/{es,en,pt}/          # textos por idioma (core, propagation, calculator, fading, cellular); es é a fonte de verdade
   plan/
     PlanContext.tsx              # PlanProvider + usePlan1g2g/usePlan3g: plano salvo, salvamento com atraso, nunca sobrescreve o salvo antes de terminar de carregar
+  progress/
+    ProgressContext.tsx          # ProgressProvider + useProgress: XP/estrelas/sequência salvos, record() devolve o que foi ganho
   storage/
     planStore.ts                 # persistência versionada do plano (entradas + passo + instantâneo); tolera dados corrompidos
+    progressStore.ts             # persistência versionada do progresso; descarta o corrompido campo a campo
   theme/
     palette.ts                    # tokens de cor claro/escuro; accent (lilás neon) é constante nos dois
     ThemeContext.tsx               # ThemeProvider + useTheme(); persistência com AsyncStorage
