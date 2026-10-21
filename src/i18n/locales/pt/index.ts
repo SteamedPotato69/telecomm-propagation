@@ -6,5 +6,6 @@ import { core } from './core';
 import { fading } from './fading';
 import { planTexts } from './plan';
 import { propagation } from './propagation';
+import { puzzleTexts } from './puzzle';
 
-export const pt: DeepStrings<typeof es> = { ...core, ...propagation, ...calculator, ...fading, ...cellular, ...planTexts };
+export const pt: DeepStrings<typeof es> = { ...core, ...propagation, ...calculator, ...fading, ...cellular, ...planTexts, ...puzzleTexts };
