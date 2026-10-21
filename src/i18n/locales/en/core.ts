@@ -57,6 +57,8 @@ export const core: DeepStrings<typeof esCore> = {
     mustBeUnitInterval: '{{field}} must be a number strictly between 0 and 1.',
     mustBeInteger: '{{field}} must be a whole number.',
     mustBeBetween: '{{field}} must be between {{min}} and {{max}}.',
+    referenceLineTooShort: 'The reference line is too short: it must be at least {{min}} pixels long.',
+    polygonDegenerate: 'The area needs at least 3 points and cannot have zero surface.',
     noChannelsPerCell: 'With N={{n}} the available spectrum does not give even one channel per cell.',
     missingParameter: 'Missing parameter "{{field}}", required by the {{model}} model.',
     diffractingBuildingBelowMobile:
@@ -115,6 +117,8 @@ export const core: DeepStrings<typeof esCore> = {
     tchPerCarrier: 'Traffic channels (TCH) per carrier',
     controlChannels: 'Control channels',
     plannedCells: 'Cells in the plan',
+    aspectRatio: 'Aspect ratio',
+    referenceLength: 'Reference length',
     cellArea: 'Cell area (S_c)',
     carrierFrequency: 'Carrier frequency',
     totalCoverageArea: 'Total area to cover (S_T)',

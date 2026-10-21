@@ -59,6 +59,8 @@ export const core = {
     mustBeUnitInterval: '{{field}} debe ser un número estrictamente entre 0 y 1.',
     mustBeInteger: '{{field}} debe ser un número entero.',
     mustBeBetween: '{{field}} debe estar entre {{min}} y {{max}}.',
+    referenceLineTooShort: 'La línea de referencia es demasiado corta: debe medir al menos {{min}} píxeles.',
+    polygonDegenerate: 'El área necesita al menos 3 puntos y no puede tener superficie cero.',
     noChannelsPerCell: 'Con N={{n}} el espectro disponible no alcanza para ningún canal por celda.',
     missingParameter: 'Falta el parámetro "{{field}}", requerido por el modelo {{model}}.',
     diffractingBuildingBelowMobile:
@@ -118,6 +120,8 @@ export const core = {
     tchPerCarrier: 'Canales de tráfico (TCH) por portadora',
     controlChannels: 'Canales de control',
     plannedCells: 'Celdas del plan',
+    aspectRatio: 'Relación de aspecto',
+    referenceLength: 'Longitud de referencia',
     cellArea: 'Área de celda (S_c)',
     carrierFrequency: 'Frecuencia portadora',
     totalCoverageArea: 'Área total a cubrir (S_T)',

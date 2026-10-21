@@ -58,6 +58,8 @@ export const core: DeepStrings<typeof esCore> = {
     mustBeUnitInterval: '{{field}} deve ser um número estritamente entre 0 e 1.',
     mustBeInteger: '{{field}} deve ser um número inteiro.',
     mustBeBetween: '{{field}} deve estar entre {{min}} e {{max}}.',
+    referenceLineTooShort: 'A linha de referência é curta demais: deve ter pelo menos {{min}} pixels.',
+    polygonDegenerate: 'A área precisa de pelo menos 3 pontos e não pode ter superfície zero.',
     noChannelsPerCell: 'Com N={{n}} o espectro disponível não dá nenhum canal por célula.',
     missingParameter: 'Falta o parâmetro "{{field}}", exigido pelo modelo {{model}}.',
     diffractingBuildingBelowMobile:
@@ -116,6 +118,8 @@ export const core: DeepStrings<typeof esCore> = {
     tchPerCarrier: 'Canais de tráfego (TCH) por portadora',
     controlChannels: 'Canais de controle',
     plannedCells: 'Células do plano',
+    aspectRatio: 'Proporção',
+    referenceLength: 'Comprimento de referência',
     cellArea: 'Área da célula (S_c)',
     carrierFrequency: 'Frequência da portadora',
     totalCoverageArea: 'Área total a cobrir (S_T)',
