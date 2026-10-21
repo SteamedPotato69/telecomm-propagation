@@ -104,6 +104,13 @@ export interface PropagationModelDefinition {
   /** false for models whose exact formula is still pending verification (see ikegami.ts / walfischBertoni.ts). */
   implemented: boolean;
   /**
+   * Documented empirical frequency range, MHz [min, max] -- the same constant the
+   * model's own out-of-range warning uses, exposed as data so a caller can pick the
+   * model whose range fits (see modelSelection.ts). Absent when the course documents no
+   * numeric frequency range (free space, Ikegami, COST-231 Walfish-Ikegami).
+   */
+  frequencyRangeMHz?: readonly [number, number];
+  /**
    * Which optional geometry fields this model reads. Drives which
    * extra NumericFields the calculator screen renders for the
    * currently selected model -- adding a model that needs a subset of

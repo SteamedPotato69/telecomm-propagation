@@ -15,7 +15,7 @@ export function calculateDimensioning(inputs: DimensioningInputs): DimensioningR
     inputs;
 
   assertPositive(totalTrafficErlangs, 'totalTraffic');
-  assertPositive(totalAreaKm2, 'Área total a cubrir');
+  assertPositive(totalAreaKm2, 'totalCoverageArea');
 
   const trafficPerCellErlangs = erlangBInverseTraffic(channelsPerCell, targetGoS);
   const cellsByCapacity = Math.ceil(totalTrafficErlangs / trafficPerCellErlangs);

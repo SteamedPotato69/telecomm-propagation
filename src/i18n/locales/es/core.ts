@@ -58,6 +58,10 @@ export const core = {
     mustBeNonNegative: '{{field}} debe ser un número mayor o igual que 0.',
     mustBeUnitInterval: '{{field}} debe ser un número estrictamente entre 0 y 1.',
     mustBeInteger: '{{field}} debe ser un número entero.',
+    mustBeBetween: '{{field}} debe estar entre {{min}} y {{max}}.',
+    referenceLineTooShort: 'La línea de referencia es demasiado corta: debe medir al menos {{min}} píxeles.',
+    polygonDegenerate: 'El área necesita al menos 3 puntos y no puede tener superficie cero.',
+    noChannelsPerCell: 'Con N={{n}} el espectro disponible no alcanza para ningún canal por celda.',
     missingParameter: 'Falta el parámetro "{{field}}", requerido por el modelo {{model}}.',
     diffractingBuildingBelowMobile:
       'La altura del edificio de difracción (H) debe ser mayor que la altura del móvil (hr): sin eso, la ' +
@@ -81,6 +85,12 @@ export const core = {
   },
 
   warnings: {
+    modelOutOfRange:
+      '{{model}} se usó a {{frequency}} MHz, fuera de su rango [{{min}}-{{max}}] MHz: es la mejor aproximación disponible (el ejemplo del curso hace lo mismo).',
+    clusterLargerThanPlan:
+      'La agrupación es de N={{n}} celdas y el plan solo tiene {{cells}}: el patrón de reutilización no llega a completarse ni una vez.',
+    cellBreathingNotConverged: 'El bucle de cell breathing no convergió: no se puede dar un número final de NodeB.',
+    uplinkOnly: 'Solo se evaluó el enlace ascendente (uplink); el downlink no está implementado.',
     outOfRange:
       '{{field}} = {{value}} {{unit}} está fuera del rango válido del modelo [{{min}}-{{max}}] {{unit}}; ' +
       'el resultado es una extrapolación.',
@@ -104,6 +114,16 @@ export const core = {
     shadowFadingMargin: 'Margen de sombra',
     interferenceMargin: 'Margen de interferencia',
     cellRadius: 'Radio de celda (R)',
+    bandwidth: 'Ancho de banda disponible',
+    channelWidth: 'Ancho de canal',
+    clusterSize: 'Tamaño de agrupación (N)',
+    tchPerCarrier: 'Canales de tráfico (TCH) por portadora',
+    controlChannels: 'Canales de control',
+    plannedCells: 'Celdas del plan',
+    aspectRatio: 'Relación de aspecto',
+    referenceLength: 'Longitud de referencia',
+    cellArea: 'Área de celda (S_c)',
+    carrierFrequency: 'Frecuencia portadora',
     totalCoverageArea: 'Área total a cubrir (S_T)',
     channels: 'Número de canales (K)',
     offeredTraffic: 'Tráfico ofrecido (A)',

@@ -75,6 +75,9 @@ function hataDistanceIndependentTerms(inputs: HataGeometryInputs): {
   return { baseLossDb, distanceCoefficient };
 }
 
+/** f 150-1500 MHz (docs/curso-referencia.md §5.3); shared by the warning below and hataModel. */
+export const HATA_FREQUENCY_RANGE_MHZ = [150, 1500] as const;
+
 export function calculateHataLoss(inputs: PropagationInputs): PropagationResult {
   const { frequencyMHz, distanceKm, baseStationHeightM, mobileHeightM } = inputs;
 
@@ -96,7 +99,7 @@ export function calculateHataLoss(inputs: PropagationInputs): PropagationResult 
     if (message) warnings.push({ field, message });
   };
 
-  pushRangeWarning('frequencyMHz', frequencyMHz, 150, 1500, 'frequency', 'MHz');
+  pushRangeWarning('frequencyMHz', frequencyMHz, HATA_FREQUENCY_RANGE_MHZ[0], HATA_FREQUENCY_RANGE_MHZ[1], 'frequency', 'MHz');
   pushRangeWarning('baseStationHeightM', baseStationHeightM, 30, 200, 'baseStationHeight', 'm');
   pushRangeWarning('mobileHeightM', mobileHeightM, 1, 10, 'mobileHeight', 'm');
   pushRangeWarning('distanceKm', distanceKm, 1, 20, 'distance', 'km');
@@ -128,6 +131,7 @@ export function solveHataDistanceKm(inputs: HataGeometryInputs, targetLossDb: nu
 export const hataModel: PropagationModelDefinition = {
   id: 'hata',
   implemented: true,
+  frequencyRangeMHz: HATA_FREQUENCY_RANGE_MHZ,
   calculate: calculateHataLoss,
   solveDistanceKm: solveHataDistanceKm,
 };

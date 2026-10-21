@@ -88,7 +88,7 @@ Inspiradas en un segundo PDF del curso, `Planificación de redes de comunicacion
 | 4a | Link budget con inversión MAPL → R, para Hata / COST-231-Hata | 🚀 Implementada | `src/models/propagation/{hata,cost231Hata,linkBudget}.ts`. Confirmado contra el PDF original que ambos ejemplos (1G y 2G) usan Okumura-Hata, no COST-231-Hata -- la inversión de distancia es exacta (§13.3, diap. 45-46); la fórmula de MAPL a partir del presupuesto de enlace reproduce el ejemplo 2G exacto pero el 1G queda 2dB por encima sin explicación en el material, documentado como discrepancia abierta |
 | 4b | Link budget con inversión MAPL → R, para Ikegami / Walfisch-Bertoni / COST-231 Walfish-Ikegami | 🕒 [PENDIENTE] | Heredan las ambigüedades ya marcadas `[OCR-verificar]` en `ikegami.ts` / `walfischBertoni.ts`; falta confirmar que la inversión tiene forma cerrada |
 | 5 | Flujo de dimensionamiento completo 1G/2G (capacidad vs. cobertura, tomar el máximo) | 🚀 Implementada | `src/models/dimensioning/`. Lado de capacidad coincide exacto con ambos ejercicios (6 y 5 celdas); lado de cobertura difiere del curso (2 vs 3, 7 vs 8) como consecuencia directa del hallazgo de MAPL de 4a, no un error nuevo -- la conclusión cualitativa (1G limitado por capacidad, 2G por cobertura) sí coincide en ambos casos |
-| 6 | Carga UMTS uplink + bucle iterativo de *cell breathing* | 🚀 Implementada | `src/models/wcdma/`. Gp/sensibilidad/MAPL exactos para los 3 servicios; ρ exacto para PS64k/PS384k, no para voz (0.0148 calculado vs. 0.0210 declarado -- no reproducible desde los datos dados); la fórmula que conecta usuarios/celda con carga de salida en la tabla de iteraciones del curso no está documentada -- se implementó con la ecuación de carga estándar (amortiguada para estabilidad numérica), que converge a un punto físicamente sensato pero no idéntico al R=1.07km/η=54% de la diapositiva |
+| 6 | Carga UMTS uplink + bucle iterativo de *cell breathing* | 🚀 Implementada | `src/models/wcdma/`. Gp/sensibilidad/MAPL exactos para los 3 servicios; ρ exacto para PS64k/PS384k; para voz se usa la ecuación impresa en la diap. 67 (α multiplica en el denominador): 0.00669, mientras el curso declara 0.0210 (diap. 72; la diap. 69 escribe su ejemplo sin α y da 0.00995) -- ninguna combinación de los datos dados reproduce 0.0210, documentado sin forzarlo (una versión anterior dividía por α, 0.0148, al revés de la física); la fórmula que conecta usuarios/celda con carga de salida en la tabla de iteraciones del curso no está documentada -- se implementó con la ecuación de carga estándar (amortiguada para estabilidad numérica); con los coeficientes COST-231 de la propia diapositiva converge a R≈1.04 km / η≈56 % (curso: 1.07 km / 54 %) |
 | 7 | Carga UMTS downlink (η_DL) | 🕒 [PENDIENTE] | Variable `β` no definida en el material extraído; sin ejercicio de verificación (§13.4-13.5) |
 | 8 | Erlang C (modelo de cola) | 🕒 [PENDIENTE] | No aparece en el material del curso; aplicabilidad a canales de radio (sistema de pérdida, no de cola) sin confirmar |
 | 9 | Engset / Erlang B extendido (con reintentos) | 🕒 [PENDIENTE] | Solo en el resumen de industria (`erlang.com`), no en material oficial del curso |
@@ -298,7 +298,9 @@ src/
     cost231WalfishIkegami.ts     # COST-231 Walfish-Ikegami (combina Ikegami + Walfisch-Bertoni)
     linkBudget.ts                # calculateMapl(): MAPL desde un presupuesto de enlace completo (§13.3)
     sampleSeries.ts               # evalúa un modelo sobre un rango de distancias, para las gráficas
-    index.ts                     # registro: PROPAGATION_MODELS / PROPAGATION_MODEL_LIST
+    registry.ts                  # registro: PROPAGATION_MODELS / PROPAGATION_MODEL_LIST
+    modelSelection.ts            # recommendInvertibleModel(f): elige el modelo cuyo rango de frecuencia encaja
+    index.ts                     # barrel
   models/fading/
     types.ts                     # FadingInputs/Result, FadingZone
     fading.ts                    # calculateFading(): Bc, fd, Tc, clasificación y las 5 zonas (§8.7)
@@ -322,6 +324,19 @@ src/
     presets.ts                   # DEFAULT_SERVICE_MIX: mix del ejercicio del curso (70% voz / 20% PS64k / 10% PS384k)
     wcdma.ts                      # calculateServiceLoad, calculateWcdmaUplinkLoad (bucle de cell breathing amortiguado)
     index.ts                     # barrel
+  models/plan/                     # motor del plan 1G/2G/3G (puro) -- rama feature/cell-puzzle
+    frequencyPlan.ts             # canales por celda: 1G 416 -> 59; 2G 40 portadoras -> 10 TRX -> 70 TCH (diap. 44-46)
+    plan1g2g.ts                  # escenario -> espectro -> capacidad -> cobertura -> resultado, en el orden "a lápiz"
+    plan3g.ts                    # 3G automático: 3 datos de entrada, el resto por defecto del curso (reintenta con paso menor si el bucle oscila)
+    gameMission.ts               # GameMission: lo único que el rompecabezas lee del plan (solo lectura)
+    presets.ts                   # COURSE_1G / COURSE_2G: el ejemplo resuelto del curso
+  models/layout/                   # geometría del rompecabezas (puro) -- rama feature/cell-puzzle
+    hexGrid.ts                   # celdas hexagonales en coordenadas axiales (d = R·√3, Sc = 3√3/2·R²)
+    clusterLattice.ts            # la agrupación de N celdas como pieza: N colores, imán a la retícula cocanal (distancia D)
+    areaShape.ts                 # el área S_T como forma movible de superficie exacta
+    scale.ts                     # línea de referencia (1 km por defecto) -> píxeles por km; ¿cabe el área en la imagen?
+    coverage.ts                  # cobertura por muestreo del área
+    autoTiling.ts                # mínimo de agrupaciones que cubren el área (referencia para estrellas y pistas)
   utils/
     validation.ts                # assertPositive, assertNonNegative, assertUnitInterval, assertInteger, rangeWarningMessage, parseDecimal, requireField
     localizedMessage.ts          # LocalizedError / LocalizedMessage: errores y advertencias neutrales al idioma (clave + parámetros)

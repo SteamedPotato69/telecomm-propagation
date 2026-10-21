@@ -49,7 +49,7 @@ function classifyZone(nyquistViolated: boolean, frequencySelective: boolean, tim
 export function calculateFading(inputs: FadingInputs): FadingResult {
   const { frequencyMHz, delaySpreadUs, speedKmh, bandwidthKHz, symbolDurationUs } = inputs;
 
-  assertPositive(frequencyMHz, 'Frecuencia portadora');
+  assertPositive(frequencyMHz, 'carrierFrequency');
   assertPositive(delaySpreadUs, 'delaySpread');
   assertNonNegative(speedKmh, 'mobileSpeed');
   assertPositive(bandwidthKHz, 'signalBandwidth');

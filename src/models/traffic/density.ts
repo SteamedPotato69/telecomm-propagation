@@ -16,14 +16,14 @@ export function blockingFromDensity(
   channels: number
 ): number {
   assertPositive(trafficDensityErlPerKm2, 'trafficDensity');
-  assertPositive(cellAreaKm2, 'Área de celda (S_c)');
+  assertPositive(cellAreaKm2, 'cellArea');
   const trafficErlangs = trafficDensityErlPerKm2 * cellAreaKm2;
   return erlangBBlocking(channels, trafficErlangs);
 }
 
 /** Maximum traffic density (Erlang/km^2) supportable at a target GoS, given K channels and cell area Sc. */
 export function maxDensityForGoS(channels: number, targetGoS: number, cellAreaKm2: number): number {
-  assertPositive(cellAreaKm2, 'Área de celda (S_c)');
+  assertPositive(cellAreaKm2, 'cellArea');
   const trafficErlangs = erlangBInverseTraffic(channels, targetGoS);
   return trafficErlangs / cellAreaKm2;
 }

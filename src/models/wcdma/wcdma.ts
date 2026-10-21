@@ -20,12 +20,23 @@ const HEX_AREA_COEFFICIENT = (3 * Math.sqrt(3)) / 2;
  * zero-load MAPL (docs/curso-referencia.md §13.4, diap. 66/72).
  *
  * Gp and sensitivity/MAPL match the course's worked example exactly for
- * all 3 services. The load factor (rho) formula matches PS64k and PS384k
- * exactly (0.0360~=0.0357, 0.1368~=0.137) but NOT voice: with the table's
- * own stated Eb/No=5dB, alpha=0.67, R=12.2kbps, this formula gives
- * rho=0.0148, not the slide's stated 0.0210 -- no combination of the
- * given inputs reproduces 0.0210 exactly. Flagged here rather than
- * fudged; see wcdma.test.ts.
+ * all 3 services. The load factor is the equation printed on diap. 67:
+ *
+ *   rho_i = 1 / (1 + W / (alpha_i * R_i * (Eb/N0)_i))
+ *
+ * alpha MULTIPLIES inside the denominator: a voice user transmitting only a
+ * fraction alpha of the time loads the cell less (equivalently
+ * rho = L/(1+L) with L = alpha*R*(Eb/N0)/W, the same L the downlink
+ * equation on that slide uses). A previous version divided by alpha
+ * (rho = 1/(1 + alpha*W/(R*Eb/N0)) = 0.01477 for voice), which made more
+ * activity mean MORE load; PS64k/PS384k never noticed because alpha = 1.
+ *
+ * PS64k and PS384k match the course's stated 0.0357 / 0.137. Voice does NOT
+ * match: this equation gives 0.00669, while the course states 0.0210 (diap.
+ * 72; diap. 69 says ~0.020). Diap. 69 also writes its own example WITHOUT
+ * alpha, which gives 0.00995 -- so three different values circulate and no
+ * combination of the given inputs reproduces 0.0210. Flagged here rather
+ * than fudged; see wcdma.test.ts.
  */
 export function calculateServiceLoad(
   service: ServiceMix,
@@ -42,7 +53,7 @@ export function calculateServiceLoad(
   const ebN0Linear = Math.pow(10, service.ebN0Db / 10);
   const chipRateCps = chipRateMcps * 1e6;
   const bitRateBps = service.bitRateKbps * 1000;
-  const loadFactorPerUser = 1 / (1 + chipRateCps / ((bitRateBps * ebN0Linear) / service.activityFactor));
+  const loadFactorPerUser = 1 / (1 + chipRateCps / (service.activityFactor * bitRateBps * ebN0Linear));
 
   const sensitivityDbm = linkBudget.thermalNoiseDbm + linkBudget.noiseFigureDb + service.ebN0Db - processingGainDb;
   const maplZeroLoadDb =

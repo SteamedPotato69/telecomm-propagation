@@ -37,6 +37,9 @@ function cost231DistanceIndependentTerms(inputs: Cost231HataGeometryInputs): {
   return { baseLossDb, distanceCoefficient };
 }
 
+/** f 1500-2000 MHz (docs/curso-referencia.md §5.4); shared by the warning below and cost231HataModel. */
+export const COST231_HATA_FREQUENCY_RANGE_MHZ = [1500, 2000] as const;
+
 export function calculateCost231HataLoss(inputs: PropagationInputs): PropagationResult {
   const { frequencyMHz, distanceKm, baseStationHeightM, mobileHeightM } = inputs;
 
@@ -58,7 +61,14 @@ export function calculateCost231HataLoss(inputs: PropagationInputs): Propagation
     if (message) warnings.push({ field, message });
   };
 
-  pushRangeWarning('frequencyMHz', frequencyMHz, 1500, 2000, 'frequency', 'MHz');
+  pushRangeWarning(
+    'frequencyMHz',
+    frequencyMHz,
+    COST231_HATA_FREQUENCY_RANGE_MHZ[0],
+    COST231_HATA_FREQUENCY_RANGE_MHZ[1],
+    'frequency',
+    'MHz'
+  );
   pushRangeWarning('baseStationHeightM', baseStationHeightM, 30, 200, 'baseStationHeight', 'm');
   pushRangeWarning('mobileHeightM', mobileHeightM, 1, 10, 'mobileHeight', 'm');
   pushRangeWarning('distanceKm', distanceKm, 1, 20, 'distance', 'km');
@@ -90,6 +100,7 @@ export function solveCost231HataDistanceKm(inputs: Cost231HataGeometryInputs, ta
 export const cost231HataModel: PropagationModelDefinition = {
   id: 'cost231-hata',
   implemented: true,
+  frequencyRangeMHz: COST231_HATA_FREQUENCY_RANGE_MHZ,
   calculate: calculateCost231HataLoss,
   solveDistanceKm: solveCost231HataDistanceKm,
 };

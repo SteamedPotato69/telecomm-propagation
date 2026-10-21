@@ -1,3 +1,5 @@
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { join } from 'node:path';
 import { createInstance } from 'i18next';
 import { describe, expect, it } from 'vitest';
 import { calculateIkegamiLoss } from '../models/propagation/ikegami';
@@ -55,6 +57,40 @@ describe('locale parity', () => {
       }
     });
   }
+});
+
+/** Source files (not tests) under a directory, recursively. */
+function sourceFiles(dir: string): string[] {
+  return readdirSync(dir).flatMap((name) => {
+    const path = join(dir, name);
+    if (statSync(path).isDirectory()) return sourceFiles(path);
+    return /\.ts$/.test(name) && !/\.test\.ts$/.test(name) ? [path] : [];
+  });
+}
+
+describe('field labels used by the pure modules', () => {
+  // A label passed to assert*/requireField/rangeWarning must be a `fields.*`
+  // key. A leftover human-readable literal (e.g. 'Área total a cubrir')
+  // compiles fine but renders as a raw key path in the UI -- tsc can't see it.
+  const patterns = [
+    /\bassert\w+\(\s*[^,()]+(?:\([^()]*\))?\s*,\s*'([^']+)'/g,
+    /\brequireField\(\s*[^,]+,\s*'([^']+)'/g,
+    /\bpushRangeWarning\(\s*'[^']+',\s*[^,]+,\s*[^,]+,\s*[^,]+,\s*'([^']+)'/g,
+  ];
+  const known = new Set(Object.keys(es.fields));
+
+  it('every literal label in src/models and src/utils exists under fields.*', () => {
+    const missing: string[] = [];
+    for (const file of [...sourceFiles('src/models'), ...sourceFiles('src/utils')]) {
+      const text = readFileSync(file, 'utf8');
+      for (const pattern of patterns) {
+        for (const match of text.matchAll(pattern)) {
+          if (!known.has(match[1])) missing.push(`${file}: '${match[1]}'`);
+        }
+      }
+    }
+    expect(missing).toEqual([]);
+  });
 });
 
 describe('translateMessage', () => {

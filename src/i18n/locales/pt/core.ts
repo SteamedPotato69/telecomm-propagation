@@ -57,6 +57,10 @@ export const core: DeepStrings<typeof esCore> = {
     mustBeNonNegative: '{{field}} deve ser um número maior ou igual a 0.',
     mustBeUnitInterval: '{{field}} deve ser um número estritamente entre 0 e 1.',
     mustBeInteger: '{{field}} deve ser um número inteiro.',
+    mustBeBetween: '{{field}} deve estar entre {{min}} e {{max}}.',
+    referenceLineTooShort: 'A linha de referência é curta demais: deve ter pelo menos {{min}} pixels.',
+    polygonDegenerate: 'A área precisa de pelo menos 3 pontos e não pode ter superfície zero.',
+    noChannelsPerCell: 'Com N={{n}} o espectro disponível não dá nenhum canal por célula.',
     missingParameter: 'Falta o parâmetro "{{field}}", exigido pelo modelo {{model}}.',
     diffractingBuildingBelowMobile:
       'A altura do edifício de difração (H) deve ser maior que a altura do móvel (hr): caso contrário, a ' +
@@ -80,6 +84,12 @@ export const core: DeepStrings<typeof esCore> = {
   },
 
   warnings: {
+    modelOutOfRange:
+      '{{model}} foi usado a {{frequency}} MHz, fora da sua faixa [{{min}}-{{max}}] MHz: é a melhor aproximação disponível (o exemplo do curso faz o mesmo).',
+    clusterLargerThanPlan:
+      'O agrupamento tem N={{n}} células e o plano só tem {{cells}}: o padrão de reuso não chega a se completar nem uma vez.',
+    cellBreathingNotConverged: 'O laço de cell breathing não convergiu: não é possível dar um número final de NodeBs.',
+    uplinkOnly: 'Somente o enlace de subida (uplink) foi avaliado; o downlink não está implementado.',
     outOfRange:
       '{{field}} = {{value}} {{unit}} está fora da faixa válida do modelo [{{min}}-{{max}}] {{unit}}; ' +
       'o resultado é uma extrapolação.',
@@ -102,6 +112,16 @@ export const core: DeepStrings<typeof esCore> = {
     shadowFadingMargin: 'Margem de sombreamento',
     interferenceMargin: 'Margem de interferência',
     cellRadius: 'Raio da célula (R)',
+    bandwidth: 'Largura de banda disponível',
+    channelWidth: 'Largura do canal',
+    clusterSize: 'Tamanho do agrupamento (N)',
+    tchPerCarrier: 'Canais de tráfego (TCH) por portadora',
+    controlChannels: 'Canais de controle',
+    plannedCells: 'Células do plano',
+    aspectRatio: 'Proporção',
+    referenceLength: 'Comprimento de referência',
+    cellArea: 'Área da célula (S_c)',
+    carrierFrequency: 'Frequência da portadora',
     totalCoverageArea: 'Área total a cobrir (S_T)',
     channels: 'Número de canais (K)',
     offeredTraffic: 'Tráfego oferecido (A)',

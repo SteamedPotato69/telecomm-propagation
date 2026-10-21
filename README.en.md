@@ -90,7 +90,7 @@ Inspired by a second course PDF, `Planificación de redes de comunicaciones móv
 | 4a | Link budget with MAPL → R inversion, for Hata / COST-231-Hata | 🚀 Implemented | `src/models/propagation/{hata,cost231Hata,linkBudget}.ts`. Confirmed against the original PDF that both examples (1G and 2G) use Okumura-Hata, not COST-231-Hata -- the distance inversion is exact (§13.3, slides 45-46); the MAPL formula from the link budget reproduces the 2G example exactly but the 1G one comes out 2dB higher with no explanation in the material, documented as an open discrepancy |
 | 4b | Link budget with MAPL → R inversion, for Ikegami / Walfisch-Bertoni / COST-231 Walfish-Ikegami | 🕒 [PENDIENTE] | They inherit the ambiguities already marked `[OCR-verificar]` in `ikegami.ts` / `walfischBertoni.ts`; it remains to confirm that the inversion has a closed form |
 | 5 | Full 1G/2G dimensioning flow (capacity vs. coverage, take the maximum) | 🚀 Implemented | `src/models/dimensioning/`. The capacity side matches both exercises exactly (6 and 5 cells); the coverage side differs from the course (2 vs 3, 7 vs 8) as a direct consequence of the 4a MAPL finding, not a new error -- the qualitative conclusion (1G capacity-limited, 2G coverage-limited) does match in both cases |
-| 6 | UMTS uplink load + iterative *cell breathing* loop | 🚀 Implemented | `src/models/wcdma/`. Gp/sensitivity/MAPL exact for the 3 services; ρ exact for PS64k/PS384k, not for voice (0.0148 computed vs. 0.0210 stated -- not reproducible from the given data); the formula connecting users/cell to output load in the course's iteration table is not documented -- implemented with the standard load equation (damped for numerical stability), which converges to a physically sensible point but not identical to the slide's R=1.07km/η=54% |
+| 6 | UMTS uplink load + iterative *cell breathing* loop | 🚀 Implemented | `src/models/wcdma/`. Gp/sensitivity/MAPL exact for the 3 services; ρ exact for PS64k/PS384k; voice uses the equation printed on slide 67 (α multiplies inside the denominator): 0.00669, while the course states 0.0210 (slide 72; slide 69 writes its example without α and gives 0.00995) -- no combination of the given data reproduces 0.0210, documented rather than forced (an earlier version divided by α, 0.0148, which is backwards physically); the formula connecting users/cell to output load in the course's iteration table is not documented -- implemented with the standard load equation (damped for numerical stability); with the slide's own COST-231 coefficients it converges to R≈1.04 km / η≈56 % (course: 1.07 km / 54 %) |
 | 7 | UMTS downlink load (η_DL) | 🕒 [PENDIENTE] | Variable `β` not defined in the extracted material; no verification exercise (§13.4-13.5) |
 | 8 | Erlang C (queueing model) | 🕒 [PENDIENTE] | Does not appear in the course material; applicability to radio channels (a loss system, not a queueing one) unconfirmed |
 | 9 | Engset / extended Erlang B (with retries) | 🕒 [PENDIENTE] | Only in the industry summary (`erlang.com`), not in official course material |
@@ -300,7 +300,9 @@ src/
     cost231WalfishIkegami.ts     # COST-231 Walfish-Ikegami (combines Ikegami + Walfisch-Bertoni)
     linkBudget.ts                # calculateMapl(): MAPL from a full link budget (§13.3)
     sampleSeries.ts               # evaluates a model over a range of distances, for the charts
-    index.ts                     # registry: PROPAGATION_MODELS / PROPAGATION_MODEL_LIST
+    registry.ts                  # registry: PROPAGATION_MODELS / PROPAGATION_MODEL_LIST
+    modelSelection.ts            # recommendInvertibleModel(f): picks the model whose frequency range fits
+    index.ts                     # barrel
   models/fading/
     types.ts                     # FadingInputs/Result, FadingZone
     fading.ts                    # calculateFading(): Bc, fd, Tc, classification and the 5 zones (§8.7)
@@ -324,6 +326,19 @@ src/
     presets.ts                   # DEFAULT_SERVICE_MIX: the course exercise's mix (70% voice / 20% PS64k / 10% PS384k)
     wcdma.ts                      # calculateServiceLoad, calculateWcdmaUplinkLoad (damped cell-breathing loop)
     index.ts                     # barrel
+  models/plan/                     # 1G/2G/3G planning engine (pure) -- feature/cell-puzzle branch
+    frequencyPlan.ts             # channels per cell: 1G 416 -> 59; 2G 40 carriers -> 10 TRX -> 70 TCH (slides 44-46)
+    plan1g2g.ts                  # scenario -> spectrum -> capacity -> coverage -> result, in the pencil-and-paper order
+    plan3g.ts                    # automatic 3G: 3 inputs, the rest course defaults (retries with a smaller step if the loop oscillates)
+    gameMission.ts               # GameMission: the only thing the puzzle reads from the plan (read-only)
+    presets.ts                   # COURSE_1G / COURSE_2G: the course's worked example
+  models/layout/                   # puzzle geometry (pure) -- feature/cell-puzzle branch
+    hexGrid.ts                   # hexagonal cells in axial coordinates (d = R·√3, Sc = 3√3/2·R²)
+    clusterLattice.ts            # the N-cell cluster as a piece: N colours, snapping to the co-channel lattice (distance D)
+    areaShape.ts                 # the area S_T as a movable shape of exact surface
+    scale.ts                     # reference line (1 km by default) -> pixels per km; does the area fit the image?
+    coverage.ts                  # coverage by sampling the area
+    autoTiling.ts                # fewest clusters that cover the area (reference for stars and hints)
   utils/
     validation.ts                # assertPositive, assertNonNegative, assertUnitInterval, assertInteger, rangeWarningMessage, parseDecimal, requireField
     localizedMessage.ts          # LocalizedError / LocalizedMessage: language-neutral errors and warnings (key + parameters)
