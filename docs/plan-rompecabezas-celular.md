@@ -152,3 +152,56 @@ Estado: P0 y P1 implementados en `feature/cell-puzzle` (sin subir). `tsc` limpio
 4. **Hallazgos de la auditoría** para la IA del contexto: `docs/hallazgos-verificados-para-ia-de-contexto.md`.
 
 **Siguiente**: PR B (almacenamiento + asistente), tras revisar este.
+
+# 9. Registro de implementación -- PR B (hecho)
+
+Estado: asistente 1G/2G/3G + plan guardado, apilado sobre el PR A (rama `feature/plan-wizard`). `tsc` limpio, `vitest` verde.
+
+**Qué hay**
+- `models/plan/guidedPlan.ts` (pasos en el orden del curso, `COURSE_3G`, `computePlan*` que nunca lanzan) y `ledger.ts` ("Tu plan hasta ahora" como filas neutrales al idioma).
+- `storage/planStore.ts`: guarda **entradas + paso + instantánea**; los resultados se recalculan al abrir. Tolera JSON corrupto, otra versión, tipos erróneos, un plan 1G en la ranura 2G, una instantánea dañada y un almacén que lanza (12 tests con un almacén en memoria).
+- `plan/PlanContext.tsx`: carga al abrir, guarda con 400 ms de retardo y **nunca escribe antes de terminar de leer** (si no, pisaría lo guardado con un estado vacío).
+- UI: `PlanStartScreen` (elegir generación; continuar / empezar de nuevo con confirmación de dos toques), `PlanWizardScreen` (6 pasos 1G/2G, 3 pasos 3G), `PlanShell`, `PlanLedger`, `PlanNumberField`, `AdvancedSection` (el link budget y el entorno quedan plegados), `SummaryStep`; entrada en el hub y botón atrás de Android por pasos.
+- Textos es/en/pt (`plan.*`, tipados).
+
+**Decisiones tomadas al construirlo**
+1. **Los campos guardan números, no texto** (`PlanNumberField`): un "2." a medias o un campo vacío no meten NaN en el plan; el campo se pone rojo y se sigue usando el último valor correcto. Si el valor guardado cambia desde fuera (empezar de nuevo), el texto lo sigue.
+2. **Los presets son constantes compartidas: siempre se copian.** Un test mío mutó `COURSE_1G` sin querer y contaminó los siguientes; por eso el contexto clona (JSON) y los tests usan copias.
+3. **El botón "Ir al rompecabezas" está desactivado** ("llega en la siguiente entrega"): el flujo se lee de punta a punta sin prometer lo que aún no existe.
+4. **La instantánea sirve para avisar**, no para mostrar números: si con los modelos actuales el plan da otro número de celdas que cuando se guardó, la pantalla inicial lo dice.
+5. Abrir el asistente **no guarda nada** hasta que el estudiante empieza o edita (`recordSnapshot` ignora planes que no existen).
+
+**Verificado en el navegador** (escritorio y 375 px, es/en/pt, sin claves crudas): 1G con los valores del curso (416 → 59 canales, 48,70 Erl, 6 celdas; MAPL 143 dB, R 2,90 km, 2 por cobertura; resumen con hexágono de 1,791 km), 2G (40 → 10 → 70, MAPL 133, 7 por cobertura), 3G (convergió en 6, 20 NodeB; con 20 000 usuarios el paso estándar oscilaba y se reintentó con 0,1: R=0,95 km, 40 NodeB), usuarios = 0 (mensaje traducido, "Siguiente" desactivado), campo inválido, guardado en `localStorage` y restauración tras recargar, reinicio con confirmación.
+
+**No verificado (lo prueba el estudiante en Expo Go)**: el botón atrás de hardware de Android dentro del asistente, AsyncStorage nativo (en web es `localStorage`), teclado numérico en móvil real.
+
+# 10. Registro de implementación -- PR C (hecho)
+
+Estado: imagen/cámara, línea de referencia, área y juego jugable, apilado sobre el PR B (rama `feature/cell-puzzle-game`). `tsc` limpio, `vitest` verde (275 tests).
+
+**Qué hay**
+- Lógica pura (con tests): `models/layout/puzzle.ts` (colores por grupo, estrellas, pista, autocompletar), `placement.ts` (reductor de piezas: la primera fija la retícula; deshacer; reiniciar; `new` para un puzzle distinto), `areaPlacement.ts` (centro del área en píxeles de imagen, ajuste a la imagen, `evaluateArea`).
+- `components/puzzle/`: `imageSource.ts` (cualquier formato que la plataforma decodifique, vía `Image.getSize`), `ImageStep` (archivo, galería en móvil, arrastrar y Ctrl+V en web), `CameraCapture` (`expo-camera`), `MapCanvas` (imagen + SVG en píxeles de imagen + capa de gestos), `layers`, `ReferenceStep`, `AreaStep`, `PlayStep`, `ResultPanel`.
+- `screens/CellPuzzleScreen.tsx` + ruta `cell-puzzle` (la misión viaja en la ruta; atrás recorre los pasos y termina en el resumen del plan, también con el botón de hardware de Android). El botón "Ir al rompecabezas" del resumen ya está activo.
+- Textos es/en/pt (`puzzle.*`, tipados).
+
+**Decisiones tomadas al construirlo**
+1. **Cámara trasera por defecto** (con botón para cambiar), aunque se pidió "la frontal": el sujeto es un mapa o un plano. En el navegador, un portátil con una sola cámara usa esa.
+2. **La imagen no se guarda** y vive solo en la pantalla del juego. Salir al resumen y volver pide la imagen otra vez: es el precio de no guardar nada.
+3. **Cualquier cambio de imagen, escala o área empieza un puzzle nuevo** (acción `new`, que también borra el registro de ayudas): las piezas están posicionadas en esas unidades, y si no, cambiar el área sin querer cambiaría las estrellas.
+4. **El centro del área se guarda en píxeles de imagen**: al volver a trazar la línea de referencia el área sigue donde estaba y solo cambia su tamaño en pantalla.
+5. **Las rotaciones de la retícula que se ofrecen al jugador son las que busca `findMinimalTiling` (0-50° de 10 en 10)**: la primera versión ofrecía 0/15/30/45 y el "mínimo del juego" podía exigir una rotación que el jugador no podía elegir.
+6. **Las posiciones se calculan como "dónde empezó el gesto + cuánto se movió"**, no con el desplazamiento de cada evento, porque el de un evento de movimiento es relativo al elemento donde cae. La página no se desplaza mientras hay un dedo sobre el mapa.
+7. **Tope de 800 celdas** (`MAX_PLAYABLE_CELLS`): por encima, el SVG se vuelve lento en un teléfono y el paso del área lo dice y no deja continuar.
+8. **Si las celdas salen más pequeñas que 14 px en pantalla** se avisa, pero no se bloquea.
+
+**Verificado en el navegador** (imagen PNG generada, pegada como si fuera Ctrl+V, y selector de archivos simulando la selección): 1G (50 km², N=7, 11 celdas del plan) → línea de 98 px = 1 km → 98,3 px/km; área 1:1 de 7,07 km; 3:1 = 12,25 km = 1205 px en una imagen de 1200 px → bloqueada con los números exactos y "máximo 97 px"; arrastrar el área hasta el borde la deja pegada; la primera pieza fija la retícula (51 %) y la segunda encaja a 356 px = √21·R en pantalla (86 %); Pista (97 %); Autocompletar (100 %, 7 agrupaciones frente al mínimo de 4 → 1 estrella por el tope de ayuda); resultado con celdas dentro del área (13) frente a las del plan (11) y las 36 que sobresalen; "Volver al resumen"; 3G (N=1, hexágonos lilas, mínimo 29 celdas); 375 px sin desbordes; archivo que no es imagen y PNG corrupto → mensajes traducidos que se limpian al cargar una imagen válida; la cámara muestra la pantalla de permiso.
+
+**No verificado (lo prueba el estudiante)**: gestos táctiles en un teléfono real; la vista en vivo de la cámara y el permiso (el panel del navegador no concede la cámara); galería nativa y selector de archivos del sistema; fotos HEIC; el botón atrás de hardware de Android dentro del juego; rendimiento con ~800 celdas en un teléfono de gama baja; los textos en portugués de estas pantallas (los tests de paridad de claves y de marcadores `{{…}}` pasan y el inglés lo vi renderizado de punta a punta, pero el portugués no).
+
+**Limitaciones que se mantienen**
+- El mínimo del juego es una búsqueda sobre 6 rotaciones × 25 posiciones (~200 ms), no una demostración de optimalidad; si el jugador lo supera, también es 3 estrellas.
+- El teselado real necesita más celdas que las del plan (ver §8, punto 3); el resultado lo muestra en vez de ocultarlo.
+- Si el plan 3G no converge (más de ~40 000 usuarios) no hay número final de NodeB y el resumen no deja entrar al juego.
+
+**Siguiente**: PR D (gamificación: camino de niveles, XP/racha/estrellas guardadas, confeti, háptica, accesibilidad, rendimiento), tras revisar este.

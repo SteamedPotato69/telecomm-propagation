@@ -11,6 +11,7 @@ interface CellularHubScreenProps {
   onSelectLinkBudget: () => void;
   onSelectDimensioning: () => void;
   onSelectWcdma: () => void;
+  onSelectGuidedPlan: () => void;
 }
 
 type CellularFeatureId = 'geometry' | 'traffic' | 'link-budget' | 'dimensioning' | 'wcdma';
@@ -42,6 +43,7 @@ export function CellularHubScreen({
   onSelectLinkBudget,
   onSelectDimensioning,
   onSelectWcdma,
+  onSelectGuidedPlan,
 }: CellularHubScreenProps) {
   const { colors } = useTheme();
   const { t } = useTranslation();
@@ -61,6 +63,15 @@ export function CellularHubScreen({
       <Text style={[styles.title, { color: colors.textPrimary }]}>{t('cellularHub.title')}</Text>
       <Text style={[styles.subtitle, { color: colors.textMuted }]}>{t('cellularHub.subtitle')}</Text>
 
+      {/* The guided plan is the main way in; the standalone calculators below stay as tools. */}
+      <ListCard
+        title={t('cellularHub.features.guided.title')}
+        description={t('cellularHub.features.guided.description')}
+        onPress={onSelectGuidedPlan}
+      />
+
+      <Text style={[styles.toolsHeading, { color: colors.textMuted }]}>{t('cellularHub.toolsHeading')}</Text>
+
       {CELLULAR_FEATURES.map((feature) => (
         <ListCard
           key={feature.id}
@@ -79,4 +90,5 @@ const styles = StyleSheet.create({
   content: { padding: 20, paddingTop: 20, paddingBottom: 40 },
   title: { fontSize: 20, fontWeight: '700' },
   subtitle: { fontSize: 13, marginTop: 4, marginBottom: 20 },
+  toolsHeading: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', marginTop: 12, marginBottom: 10 },
 });

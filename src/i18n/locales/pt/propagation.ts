@@ -96,7 +96,12 @@ export const propagation: DeepStrings<typeof esPropagation> = {
   cellularHub: {
     title: 'Planejamento celular',
     subtitle: 'Geometria, dimensionamento por tráfego e capacidade/cobertura -- docs/curso-referencia.md §13.',
+    toolsHeading: 'Ferramentas avulsas',
     features: {
+      guided: {
+        title: 'Planejamento guiado',
+        description: 'Passo a passo, como à mão (1G e 2G) ou quase automático (3G). Seu plano fica salvo neste dispositivo.',
+      },
       geometry: {
         title: 'Geometria celular e reuso de frequências',
         description: 'Raio da célula, passo da rede, distância de reuso e número de agrupamentos.',

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { BackHandler } from 'react-native';
 import { CalculatorScreen } from './CalculatorScreen';
+import { CellPuzzleScreen } from './CellPuzzleScreen';
 import { CellularHubScreen } from './CellularHubScreen';
 import { ComparisonScreen } from './ComparisonScreen';
 import { DimensioningScreen } from './DimensioningScreen';
@@ -9,9 +10,13 @@ import { FadingScreen } from './FadingScreen';
 import { GeometryScreen } from './GeometryScreen';
 import { HomeScreen } from './HomeScreen';
 import { LinkBudgetScreen } from './LinkBudgetScreen';
+import { Plan1g2gWizard, Plan3gWizard } from './PlanWizardScreen';
+import { PlanStartScreen } from './PlanStartScreen';
 import { SettingsScreen } from './SettingsScreen';
 import { TrafficScreen } from './TrafficScreen';
 import { WcdmaLoadScreen } from './WcdmaLoadScreen';
+import { STEPS_1G2G, STEPS_3G } from '../models/plan';
+import type { GameMission, Generation } from '../models/plan';
 import type { EnvironmentCategory, PropagationInputs } from '../models/propagation';
 
 type Route =
@@ -22,11 +27,20 @@ type Route =
   | { name: 'comparison'; environment: EnvironmentCategory; inputs: PropagationInputs }
   | { name: 'fading' }
   | { name: 'cellular-hub' }
+  | { name: 'plan-start' }
+  | { name: 'plan-step'; generation: Generation; step: number }
+  | { name: 'cell-puzzle'; mission: GameMission; step: number }
   | { name: 'geometry' }
   | { name: 'traffic' }
   | { name: 'link-budget' }
   | { name: 'dimensioning' }
   | { name: 'wcdma' };
+
+/** The wizard's last step (the summary the puzzle was opened from) for the mission's generation. */
+function summaryRoute(mission: GameMission): Route {
+  const steps = mission.generation === '3g' ? STEPS_3G : STEPS_1G2G;
+  return { name: 'plan-step', generation: mission.generation, step: steps.length - 1 };
+}
 
 /**
  * Where Android's hardware/gesture back button should go for each route --
@@ -53,7 +67,14 @@ function getBackRoute(route: Route): Route | null {
     case 'link-budget':
     case 'dimensioning':
     case 'wcdma':
+    case 'plan-start':
       return { name: 'cellular-hub' };
+    // Back inside the wizard walks the steps one by one; from the first step it leaves to the chooser.
+    case 'plan-step':
+      return route.step > 0 ? { name: 'plan-step', generation: route.generation, step: route.step - 1 } : { name: 'plan-start' };
+    // Inside the puzzle back walks its steps; from the first one it returns to the plan's summary.
+    case 'cell-puzzle':
+      return route.step > 0 ? { name: 'cell-puzzle', mission: route.mission, step: route.step - 1 } : summaryRoute(route.mission);
     default:
       return null;
   }
@@ -140,6 +161,36 @@ export function RootNavigator() {
           onSelectLinkBudget={() => setRoute({ name: 'link-budget' })}
           onSelectDimensioning={() => setRoute({ name: 'dimensioning' })}
           onSelectWcdma={() => setRoute({ name: 'wcdma' })}
+          onSelectGuidedPlan={() => setRoute({ name: 'plan-start' })}
+        />
+      );
+
+    case 'plan-start':
+      return (
+        <PlanStartScreen
+          onBack={() => setRoute({ name: 'cellular-hub' })}
+          onOpen={(generation, step) => setRoute({ name: 'plan-step', generation, step })}
+        />
+      );
+
+    case 'plan-step': {
+      const onStep = (step: number) => setRoute({ name: 'plan-step', generation: route.generation, step });
+      const onLeave = () => setRoute({ name: 'plan-start' });
+      const onPlay = (mission: GameMission) => setRoute({ name: 'cell-puzzle', mission, step: 0 });
+      return route.generation === '3g' ? (
+        <Plan3gWizard step={route.step} onStep={onStep} onLeave={onLeave} onPlay={onPlay} />
+      ) : (
+        <Plan1g2gWizard generation={route.generation} step={route.step} onStep={onStep} onLeave={onLeave} onPlay={onPlay} />
+      );
+    }
+
+    case 'cell-puzzle':
+      return (
+        <CellPuzzleScreen
+          mission={route.mission}
+          step={route.step}
+          onStep={(step) => setRoute({ name: 'cell-puzzle', mission: route.mission, step })}
+          onLeave={() => setRoute(summaryRoute(route.mission))}
         />
       );
 
