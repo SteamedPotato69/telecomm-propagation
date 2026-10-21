@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { areaShapePolygon } from './areaShape';
 import { findMinimalTiling } from './autoTiling';
 import { coverageFraction, sampleArea } from './coverage';
-import { clusterColors, remainingClusters, scorePuzzle, suggestNextCluster, translationKey } from './puzzle';
+import { clusterColors, nearestSameColorPair, remainingClusters, scorePuzzle, suggestNextCluster, translationKey } from './puzzle';
+import type { HexFrame } from './hexGrid';
 
 const rect = (areaKm2: number) =>
   areaShapePolygon({ kind: 'rectangle', areaKm2, aspectRatio: 1.4, rotationRad: 0.2, center: { x: 0, y: 0 } });
@@ -97,5 +98,28 @@ describe('hints and auto-fill', () => {
     expect(coverageFraction(samples, { clusterSize: 7, frame: playerFrame, translations: needed })).toBe(1);
     // (no comparison with the optimum: that is a search over a grid of frames, so another frame can tie or even beat it)
     expect(needed.length).toBeGreaterThan(0);
+  });
+});
+
+describe('nearestSameColorPair', () => {
+  const frame: HexFrame = { radius: 1.3, rotationRad: 0.4, origin: { x: 2, y: -1 } };
+
+  it('needs two clusters', () => {
+    expect(nearestSameColorPair(7, frame, [])).toBeNull();
+    expect(nearestSameColorPair(7, frame, [{ a: 0, b: 0 }])).toBeNull();
+  });
+
+  it('two neighbouring clusters put same-colour cells exactly D = sqrt(3N)*R apart, for every colour', () => {
+    for (const n of [3, 4, 7, 9, 12, 13]) {
+      for (let color = 0; color < n; color++) {
+        const pair = nearestSameColorPair(n, frame, [{ a: 0, b: 0 }, { a: 1, b: 0 }], color);
+        expect(pair?.distance).toBeCloseTo(Math.sqrt(3 * n) * frame.radius, 9);
+      }
+    }
+  });
+
+  it('takes the closest pair when several clusters are placed', () => {
+    const pair = nearestSameColorPair(7, frame, [{ a: 0, b: 0 }, { a: 3, b: 0 }, { a: 4, b: 0 }]);
+    expect(pair?.distance).toBeCloseTo(Math.sqrt(21) * frame.radius, 9);
   });
 });

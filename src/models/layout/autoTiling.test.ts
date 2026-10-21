@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { areaShapePolygon, polygonArea } from './areaShape';
-import { findMinimalTiling } from './autoTiling';
+import { findMinimalTiling, findMinimalTilingAsync } from './autoTiling';
 import { coverageFraction, sampleArea } from './coverage';
 import { hexArea, hexVertices } from './hexGrid';
 import type { Point } from './hexGrid';
@@ -65,5 +65,36 @@ describe('findMinimalTiling', () => {
     const here = findMinimalTiling(rect(50), 1, 7).clusters;
     const there = findMinimalTiling(rect(50, 1, 0, { x: 37.3, y: -12.9 }), 1, 7).clusters;
     expect(Math.abs(here - there)).toBeLessThanOrEqual(1);
+  });
+});
+
+describe('findMinimalTilingAsync', () => {
+  it('gives exactly the answer of the synchronous search, for several shapes and cluster sizes', async () => {
+    for (const [area, aspect, rotation, n] of [
+      [50, 1, 0, 7],
+      [36, 2, 0.4, 7],
+      [15, 1.5, 0, 3],
+      [8, 1.5, 0.2, 1],
+    ] as const) {
+      const polygon = rect(area, aspect, rotation, { x: 3, y: -2 });
+      const radius = n === 7 ? 1.3 : 1;
+      const sync = findMinimalTiling(polygon, radius, n);
+      const slices = await findMinimalTilingAsync(polygon, radius, n, {}, 5);
+      expect(slices).toEqual(sync);
+    }
+  });
+
+  it('the slice size does not change the answer', async () => {
+    const polygon = rect(40, 1.4, 0.3);
+    const one = await findMinimalTilingAsync(polygon, 1.2, 7, {}, 1);
+    const many = await findMinimalTilingAsync(polygon, 1.2, 7, {}, 1000);
+    expect(one).toEqual(many);
+  });
+
+  it('resolves to null when cancelled, and does not keep working', async () => {
+    let calls = 0;
+    const result = await findMinimalTilingAsync(rect(40), 1.2, 7, {}, 3, () => ++calls > 2);
+    expect(result).toBeNull();
+    expect(calls).toBe(3);
   });
 });

@@ -3,6 +3,7 @@ import { StyleSheet } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { LocaleProvider } from './src/i18n';
 import { PlanProvider } from './src/plan/PlanContext';
+import { ProgressProvider } from './src/progress/ProgressContext';
 import { RootNavigator } from './src/screens/RootNavigator';
 import { ThemeProvider, useTheme } from './src/theme';
 
@@ -22,7 +23,9 @@ export default function App() {
       <LocaleProvider>
         <ThemeProvider>
           <PlanProvider>
-            <AppContent />
+            <ProgressProvider>
+              <AppContent />
+            </ProgressProvider>
           </PlanProvider>
         </ThemeProvider>
       </LocaleProvider>

@@ -16,7 +16,8 @@ Calculator for propagation path-loss models in mobile channels (free space, Hata
 4. **Comparison**: runs every applicable model of the environment with the same parameters and compares them against free-space loss (the "ideal prediction"); the one with the smallest distance is marked as best fit. Below the cards, two charts (`src/components/LineChart.tsx`, on `react-native-svg`) of loss vs. distance -- logarithmic and linear scale, all curves overlaid, sampled over 0.3-20 km with the other parameters fixed.
 5. **Fading simulator** (`src/screens/FadingScreen.tsx`): from carrier frequency, delay spread (D, with Rural/Suburban/Urban preset chips), mobile speed, signal bandwidth and symbol duration (or symbol rate, convertible to Ts), it computes the coherence bandwidth (Bc), the Doppler shift (fd) and the coherence time (Tc); classifies the channel as flat/selective in frequency and slow/fast (time-selective), and places the operating point in one of the 5 zones of the BT/Bc vs. Ts/Tc plane (`src/components/FadingZoneChart.tsx`, a point plot on `react-native-svg`, not a line series -- different from `LineChart.tsx`).
 6. **Guided planning** (Cellular planning → Guided planning; `src/screens/PlanStartScreen.tsx`, `PlanWizardScreen.tsx`): a step-by-step wizard that reuses the models above. **1G and 2G follow the pencil-and-paper order** (slides 44-46): scenario → spectrum and cluster → capacity → coverage → result → summary; **3G is almost automatic** (only area, users and Erlang per user; the rest comes from the course example). Every screen shows "Your plan so far" with what was already computed, the propagation model is chosen from the frequency, and the plan **is saved on this device** (only the inputs; the results are recomputed when it is opened, so a later model fix never leaves stale numbers). The last screen summarizes what the puzzle will use; the puzzle **only reads** the plan and never changes it.
-7. **Cell puzzle** (from the plan summary, "Go to the puzzle"; `src/screens/CellPuzzleScreen.tsx`, `src/components/puzzle/`): four steps. (1) **Your map**: upload an image (file, phone gallery, drag or Ctrl+V paste on the web; any format the device can open works) or take a photo with the camera (webcam in the browser, the rear camera on a phone, with a flip button); the image is not stored. (2) **Reference line**: trace with your finger or the cursor a line that is 1 km long (0.5 / 2 / 5 km also available); the scale of the whole game comes from it. (3) **Place the area**: the plan's S_T (it cannot be changed) is dragged over the map; rectangle or ellipse, proportion and rotation; if it does not fit the image, the screen says exactly how many pixels are missing. (4) **Cover the area**: each tap places a cluster of N cells that snaps into the lattice (each colour is a group of frequencies; the first piece fixes the lattice); undo, restart, hint and auto-fill. Stars are measured against the minimum the game itself finds (a search over rotations and positions, not a proof): ★ cover the whole area, ★★ with at most 2 clusters more, ★★★ match the minimum; hints cap the score at 2 stars and auto-fill at 1. The result also shows how many cells are really needed versus the plan's: the border of the area always asks for extra cells.
+7. **Cell puzzle** (the mission of the level path, opened from the plan summary with "Go to the puzzle"; `src/screens/CellPuzzleScreen.tsx`, `src/components/puzzle/`): four steps. (1) **Your map**: upload an image (file, phone gallery, drag or Ctrl+V paste on the web; any format the device can open works) or take a photo with the camera (webcam in the browser, the rear camera on a phone, with a flip button); the image is not stored. (2) **Reference line**: trace with your finger or the cursor a line that is 1 km long (0.5 / 2 / 5 km also available); the scale of the whole game comes from it. (3) **Place the area**: the plan's S_T (it cannot be changed) is dragged over the map; rectangle or ellipse, proportion and rotation; if it does not fit the image, the screen says exactly how many pixels are missing. (4) **Cover the area**: each tap places a cluster of N cells that snaps into the lattice (each colour is a group of frequencies; the first piece fixes the lattice); undo, restart, hint and auto-fill. Stars are measured against the minimum the game itself finds (a search over rotations and positions, not a proof): ★ cover the whole area, ★★ with at most 2 clusters more, ★★★ match the minimum; hints cap the score at 2 stars and auto-fill at 1. The result also shows how many cells are really needed versus the plan's: the border of the area always asks for extra cells.
+8. **Level path and gamification** (`src/screens/PuzzlePathScreen.tsx`, `TutorialScreen.tsx`, `src/models/game/`): "Go to the puzzle" first opens a path with **four short levels** of made-up data (one hexagon → tiling a patch → building the cluster with N = 3 → reuse with N = 7, the course's own example, where the distance D = √(3N)·R between same-colour cells is drawn) and, at the end, **Your mission**: the puzzle of item 7 with your plan and your image, always open. The tutorials use the same game as the mission. Every completed level gives **XP** (20 the first time and 15 per new star; replaying without improving gives none), stars and a daily **streak**; finishing throws confetti and, on a phone, a vibration. Progress is saved on this device (`src/storage/progressStore.ts`), nothing blocks you and there are no lives, the effects can be switched off in Settings and switch themselves off when the system asks for reduced motion.
 
 ## Settings: theme and language
 
@@ -283,7 +284,7 @@ Besides the code, this checks that the three translations have exactly the same 
 npx vitest run
 ```
 
-Scope limited to `src/models/**`, to the plan persistence in `src/storage/` (with an injected in-memory store) and to the translation *data* in `src/i18n/` (plus `translateMessage`): that code imports nothing from `react-native`/Expo, so it runs under Node without needing RN/jsdom mocks (the i18n test creates its own `i18next` instance instead of importing `src/i18n/index.ts`, which does need `expo-localization`). It covers the cellular-planning features (geometry, Erlang B, link budget) -- the original propagation and fading models are still only verified by eye in the browser (see [Future work](#future-work)).
+Scope limited to `src/models/**`, to the plan and progress persistence in `src/storage/` (with an injected in-memory store) and to the translation *data* in `src/i18n/` (plus `translateMessage`): that code imports nothing from `react-native`/Expo, so it runs under Node without needing RN/jsdom mocks (the i18n test creates its own `i18next` instance instead of importing `src/i18n/index.ts`, which does need `expo-localization`). It covers the cellular-planning features (geometry, Erlang B, link budget) -- the original propagation and fading models are still only verified by eye in the browser (see [Future work](#future-work)).
 
 ## Project structure
 
@@ -344,6 +345,10 @@ src/
     areaPlacement.ts             # where the area sits over the image (centre in pixels), fitting it to the image, is it playable?
     placement.ts                 # reducer of the placed pieces: the first fixes the lattice; undo, hints, auto-fill
     puzzle.ts                    # colours per group, stars, hint and auto-fill
+  models/game/                     # level path (pure) -- branch feature/puzzle-gamification
+    levels.ts                    # the 4 tutorials as data and their scale; the mission is never locked
+    progress.ts                  # XP, stars, per-day streak, unlocking and recordResult
+    confetti.ts                  # where each confetti piece falls (deterministic)
   utils/
     validation.ts                # assertPositive, assertNonNegative, assertUnitInterval, assertInteger, rangeWarningMessage, parseDecimal, requireField
     localizedMessage.ts          # LocalizedError / LocalizedMessage: language-neutral errors and warnings (key + parameters)
@@ -374,6 +379,8 @@ src/
     PlanStartScreen.tsx           # guided planning: choose 1G/2G/3G, continue or start over
     PlanWizardScreen.tsx          # the wizard steps (1G/2G and 3G)
     CellPuzzleScreen.tsx          # the minigame: image -> line -> area -> play (only reads the plan's mission)
+    PuzzlePathScreen.tsx          # the level path: XP, stars, streak, 4 tutorials and Your mission
+    TutorialScreen.tsx            # one tutorial level: the same game with made-up data
     EnvironmentScreen.tsx         # environment selector
     CalculatorScreen.tsx          # form + result, filtered by environment
     ComparisonScreen.tsx          # "versus" view between all of the environment's models
@@ -394,8 +401,11 @@ src/
     locales/{es,en,pt}/          # per-language texts (core, propagation, calculator, fading, cellular); es is the source of truth
   plan/
     PlanContext.tsx              # PlanProvider + usePlan1g2g/usePlan3g: saved plan, debounced saving, never overwrites what is saved before it has finished loading
+  progress/
+    ProgressContext.tsx          # ProgressProvider + useProgress: saved XP/stars/streak, record() returns what was earned
   storage/
     planStore.ts                 # versioned plan persistence (inputs + step + snapshot); tolerates corrupt data
+    progressStore.ts             # versioned progress persistence; drops corrupt data field by field
   theme/
     palette.ts                    # light/dark color tokens; accent (neon lilac) is constant in both
     ThemeContext.tsx               # ThemeProvider + useTheme(); AsyncStorage persistence

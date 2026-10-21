@@ -104,7 +104,6 @@ export const puzzleTexts: DeepStrings<typeof esPuzzle> = {
       starClose: 'No máximo 2 agrupamentos acima do mínimo',
       starOptimal: 'Você igualou o mínimo',
       again: 'Jogar de novo',
-      toSummary: 'Voltar ao resumo',
     },
 
     a11y: {

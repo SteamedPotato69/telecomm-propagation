@@ -4,6 +4,7 @@ import { BackButton } from '../components/BackButton';
 import { SegmentedControl } from '../components/SegmentedControl';
 import { LANGUAGES, LANGUAGE_NATIVE_NAMES, useLocale } from '../i18n';
 import type { LanguagePreference } from '../i18n';
+import { useProgress } from '../progress/ProgressContext';
 import { useTheme } from '../theme';
 import type { ThemeMode } from '../theme';
 
@@ -19,6 +20,7 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
   const { t } = useTranslation();
   const { colors, mode, setMode } = useTheme();
   const { preference, setPreference } = useLocale();
+  const { progress, setEffects } = useProgress();
 
   const themeLabels: Record<ThemeMode, string> = {
     dark: t('settings.theme.dark'),
@@ -71,6 +73,18 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
         })}
       </View>
       <Text style={[styles.hint, { color: colors.textMuted }]}>{t('settings.language.hint')}</Text>
+
+      <Text style={[styles.sectionTitle, styles.sectionSpacing, { color: colors.accentText }]}>{t('game.effects.title')}</Text>
+      <SegmentedControl
+        accessibilityLabel={t('game.effects.title')}
+        selected={progress.effects ? 'on' : 'off'}
+        onChange={(value) => setEffects(value === 'on')}
+        options={[
+          { value: 'on', label: t('game.effects.on') },
+          { value: 'off', label: t('game.effects.off') },
+        ]}
+      />
+      <Text style={[styles.hint, styles.effectsHint, { color: colors.textMuted }]}>{t('game.effects.hint')}</Text>
     </ScrollView>
   );
 }
@@ -93,4 +107,5 @@ const styles = StyleSheet.create({
   rowText: { fontSize: 15, fontWeight: '600' },
   check: { fontSize: 18, fontWeight: '700' },
   hint: { fontSize: 12, lineHeight: 16, marginTop: 4 },
+  effectsHint: { marginTop: 10 },
 });

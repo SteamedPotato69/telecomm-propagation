@@ -205,3 +205,87 @@ Estado: imagen/cámara, línea de referencia, área y juego jugable, apilado sob
 - Si el plan 3G no converge (más de ~40 000 usuarios) no hay número final de NodeB y el resumen no deja entrar al juego.
 
 **Siguiente**: PR D (gamificación: camino de niveles, XP/racha/estrellas guardadas, confeti, háptica, accesibilidad, rendimiento), tras revisar este.
+
+# 11. Plan -- PR D (gamificación)
+
+Estado: **plan antes de actuar** (el permiso del profesor pide justificar y planear). Se apila sobre el PR C (rama `feature/puzzle-gamification`, base `feature/cell-puzzle-game`). Recordatorio de ramas: a la fecha, `main` solo contiene el PR A; el PR B está fusionado en `feature/cell-puzzle` y el PR C (#15) apunta a `main` con B y C.
+
+## Alcance (lo que se hace)
+
+| # | Qué | Por qué |
+|---|---|---|
+| D1 | **Camino de niveles** (pantalla nueva entre el resumen y el juego): 4 tutoriales con datos genéricos + **Tu misión** (el rompecabezas del PR C con tu plan y tu imagen) | Es la decisión E1 ya aprobada: el rompecabezas pedido es el último nivel y los anteriores enseñan las piezas. Tu misión siempre está desbloqueada: nadie queda bloqueado frente a lo que tiene que entregar |
+| D2 | **Tutoriales como datos** (`models/game/levels.ts`), sin imagen ni línea de referencia: reutilizan el mismo `PlayStep` con una misión genérica y un mapa sintético | Cero lógica de juego duplicada; los niveles se prueban con tests (¿caben? ¿hexágonos legibles? ¿tienen solución?) |
+| D3 | **XP, estrellas y racha diaria**, guardados en el dispositivo (`storage/progressStore.ts`, mismo patrón y tolerancia a fallos que `planStore`) | Motivación sin castigo: no hay vidas ni nada que bloquee |
+| D4 | **Premios al terminar**: XP ganado, racha, "siguiente nivel desbloqueado", mensaje de ánimo, estrellas con animación y **confeti** | Es lo que lo vuelve "estilo Duolingo" sin copiar su marca ni su mascota |
+| D5 | **Háptica** (`expo-haptics ~57.0.3`) al colocar una pieza y al completar; **interruptor de efectos en Ajustes**; se respeta "reducir movimiento" del sistema | Riesgo ya anotado en §6: la gamificación no debe distraer ni marear |
+| D6 | **Nivel "Reutilizar"**: al colocar dos agrupaciones se dibuja la distancia D entre celdas del mismo color y se rotula `D = √(3N)·R` | Hace visible la fórmula del curso (diap. 23) justo cuando se usa |
+| D7 | **Accesibilidad y rendimiento**: etiquetas y anuncios (`accessibilityLiveRegion`) en el camino y la cobertura; medir el cálculo del mínimo (`findMinimalTiling`) y moverlo fuera del primer pintado si pasa de ~100 ms | Pendientes del PR C |
+| D8 | README ×3 y registro §12 | Regla del proyecto |
+
+## Reglas de los datos del juego (propuestas, a revisar)
+
+- **XP**: primer nivel completado = 20 XP; cada estrella por encima de la mejor anterior = 15 XP. Repetir sin mejorar no da XP (si no, se "farmea"). 3 estrellas en total = 65 XP, vengan de una jugada o de tres.
+- **Racha**: se cuenta por día local (AAAA-MM-DD); jugar un día consecutivo suma 1, saltarse un día vuelve a 1, jugar dos veces el mismo día no cambia nada. Si pasó más de un día sin jugar, la racha se **muestra** como 0 (aunque lo guardado sea la última).
+- **Desbloqueo**: el nivel k+1 se abre al completar el k (≥ 1 estrella); Tu misión, siempre. Las estrellas de la misión se guardan **por generación** (1G, 2G, 3G): la misión depende del plan.
+- **Estrellas de los tutoriales** con la misma regla que la misión (★ cubrir, ★★ ≤ mínimo + 2, ★★★ igualar el mínimo; pistas ≤ 2, autocompletar ≤ 1).
+
+## Lo que se recorta, y por qué
+
+- **Nivel 6 "Interferencia (C/I)"**: depende de `feature/umts-dl-ci`, que sigue sin fusionar (y de la corrección de Walfisch-Bertoni). Se deja fuera hasta que exista esa base; no se inventa un nivel sin respaldo del curso.
+- **"Resorte de encaje" sobre el SVG** (E2): animar decenas de polígonos SVG con `Animated` es caro y poco fiable en web/Expo Go. Se sustituye por animaciones baratas (barra de cobertura, aparición de estrellas, confeti con `Animated.View`). Si falta, se reevalúa con datos.
+- **Sonido, mascota, ligas/ranking**: fuera de alcance (§7).
+- **Arrastre con teclado en web**: no se hace en este PR; queda anotado como limitación de accesibilidad.
+
+## Orden de commits (la lógica pura siempre antes que la UI que la usa)
+
+1. Dependencia `expo-haptics` y este plan.
+2. `models/game/`: niveles, progreso (XP/estrellas/racha), geometría del confeti, mensajes. Con tests.
+3. `storage/progressStore.ts` + `ProgressContext`. Con tests (almacén en memoria).
+4. Textos es/en/pt (`game.*`).
+5. UI: camino de niveles, nivel tutorial, rutas (el botón atrás de Android incluido), premios en el resultado.
+6. Confeti, háptica, interruptor en Ajustes, reducir movimiento.
+7. Accesibilidad y rendimiento.
+8. README ×3 y registro §12.
+
+## Verificación
+
+- **Puedo**: `tsc`, `vitest` (XP, racha incluyendo fin de mes/año y bisiesto, desbloqueos, persistencia corrupta, los 4 niveles: caben, hexágonos legibles y solución con tests), navegador de escritorio y 375 px, es/en/pt, claro/oscuro, reducir movimiento (emulado).
+- **No puedo (lo prueba el estudiante en Expo Go)**: la vibración real, los gestos táctiles y el rendimiento en un teléfono de gama baja.
+
+# 12. Registro de implementación -- PR D (hecho)
+
+Estado: camino de niveles + gamificación, apilado sobre el PR C (rama `feature/puzzle-gamification`, base `feature/cell-puzzle-game`). `tsc` limpio, `vitest` verde (334 tests). Cumple el plan de §11 salvo lo que allí se recortó.
+
+**Qué hay**
+- `models/game/` (puro, con tests): `levels.ts` (los 4 tutoriales como datos y su escala), `progress.ts` (XP, estrellas, racha por día, desbloqueo, `recordResult`), `confetti.ts` (geometría determinista). En `models/layout/`: `nearestSameColorPair` (la distancia D entre celdas del mismo color) y `findMinimalTilingAsync` (la misma búsqueda en trozos).
+- `storage/progressStore.ts` + `progress/ProgressContext.tsx`: mismo patrón que el plan guardado (almacén inyectado, versionado, nunca escribe antes de leer, guardado con retardo). Lo corrupto se descarta **campo a campo**: un `xp` dañado no borra las estrellas ni la racha.
+- UI: `PuzzlePathScreen` (camino: XP, estrellas, racha, 4 niveles, Tu misión), `TutorialScreen`, premios en el resultado (XP, racha, nivel desbloqueado, mensaje de ánimo), `ConfettiBurst`, háptica (`expo-haptics`), barra de cobertura animada, estrellas con resorte, interruptor de efectos en Ajustes, `useReducedMotion`. Rutas `puzzle-path` y `tutorial`; atrás (también el de hardware de Android): tutorial → camino → resumen, misión paso 0 → camino.
+- Textos es/en/pt (`game.*`, tipados).
+
+**Decisiones tomadas al construirlo**
+1. **Los tutoriales son el mismo juego** (`PlayStep`) con otra configuración: un lienzo sintético de 800 × 600 sin imagen, sin línea y sin colocar el área. `generation: '1g'` en su misión solo satisface el tipo (un tutorial no pertenece a ninguna generación).
+2. **El borde cuesta celdas**: con áreas de 3/12/6/14 celdas nominales el mínimo real salió 6/17/5/5; por eso "Un hexágono" y "Teselar un parche" se acortaron a 2 y 9 celdas nominales. Un test por nivel comprueba que cabe en el lienzo, que el hexágono se lee en un teléfono (≥ 24 px a 45 % de escala) y que tiene solución de 2 a 12 piezas.
+3. **XP**: 20 la primera vez + 15 por cada estrella nueva; repetir sin mejorar da 0 (no se puede "farmear") y tres estrellas suman 65 vengan de una jugada o de tres.
+4. **Racha por día local**; "ayer" se calcula en UTC (restar 24 h a una medianoche local falla en el cambio de horario); un último día futuro (reloj atrás, viaje al oeste) ni suma ni quita; una racha no continuada se **muestra** como 0 aunque siga guardada.
+5. **Tu misión nunca está bloqueada**; sus estrellas se guardan por generación (1G/2G/3G).
+6. **Confeti sin librería** (`Animated.View`): 18/36/54 piezas según las estrellas, sembrado (reproducible), se retira al caer la última y no recibe toques.
+7. **"Reducir movimiento" manda sobre el interruptor**: aunque los efectos estén activados, con esa opción del sistema no hay confeti ni resorte, y la barra salta sin animar.
+8. **La háptica va envuelta** en `try/catch`: la documentación de SDK 57 no dice qué hace donde no hay vibración (navegador sin la API, iPhone en ahorro de batería...).
+9. **La búsqueda del mínimo va en trozos** (`findMinimalTilingAsync`): mismo recorrido y mismo desempate que la síncrona (comparten código; tests de igualdad). Medido en el navegador al entrar al juego de la misión 1G (compilación de desarrollo): antes una tarea larga de 295 ms; ahora ninguna de más de 50 ms, el paso aparece a los 43 ms y el mínimo es el mismo (4). Pista y autocompletar esperan a que esté.
+10. Se quitó "Nueva mejor marca": en la primera vez también sería cierta y no dice nada.
+
+**Verificado en el navegador** (es y pt; escritorio y 375 px): camino con 1 nivel abierto y 3 bloqueados; nivel 1 por autocompletar → +35 XP, racha de 1 día, "Teselar un parche" desbloqueado, progreso guardado en `localStorage` (`{xp, streak, stars}`) y restaurado tras recargar; niveles 2-4 por "Siguiente nivel"; la distancia de reutilización rotulada `D = √(3·7)·R = 4,58 km` (= √21 · 1 km); misión 1G completada con +35 XP y sus estrellas guardadas en `mission-1g`; confeti de 18 piezas para 1 estrella (comprobado en el DOM: opacidad y transformación en curso, 0 piezas a los 3,5 s); con efectos desactivados 0 piezas y el resultado igual de visible; el interruptor se guarda en ambos sentidos; textos en portugués de punta a punta.
+
+**No verificado (lo prueba el estudiante)**
+- La **vibración real** y los gestos táctiles en un teléfono; el rendimiento en uno de gama baja.
+- **El confeti en pantalla**: el panel del navegador limita los fotogramas de animación al estar oculto (la barra de cobertura quedó a medio animar en una captura), así que solo lo comprobé por el DOM.
+- **"Reducir movimiento"**: el camino de código existe pero no pude emular la opción del sistema.
+- Los textos en inglés de las pantallas nuevas no los vi renderizados (los tests de paridad de claves y marcadores pasan; es y pt sí).
+
+**Limitaciones que se mantienen / pendientes**
+- Los criterios ✓ del resultado describen el **teselado**, y el tope por ayuda (pista ≤ 2★, autocompletar ≤ 1★) se avisa aparte: con autocompletar pueden verse los tres ✓ y una sola estrella.
+- El progreso es independiente del plan: si cambias las entradas del plan, las estrellas de la misión de esa generación se conservan.
+- No hay botón para borrar el progreso (`clearProgress` existe en el almacenamiento, sin conectar a la UI).
+- Arrastrar con teclado en la web no está hecho (tocar para colocar sí funciona).
+- El **nivel 6 "Interferencia (C/I)"** sigue fuera: depende de `feature/umts-dl-ci`, sin fusionar.

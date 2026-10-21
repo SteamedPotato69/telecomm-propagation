@@ -9,6 +9,13 @@ export interface SourceImage {
   height: number;
 }
 
+/** What the map is drawn over: a real image, or (the tutorials) nothing but a size. */
+export interface MapSurface {
+  width: number;
+  height: number;
+  uri?: string;
+}
+
 /** Why an image could not be used; the screen turns each into a translated sentence. */
 export type ImageLoadFailure = 'decode' | 'notImage';
 

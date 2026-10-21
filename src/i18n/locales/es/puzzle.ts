@@ -101,7 +101,6 @@ export const puzzleTexts = {
       starClose: 'Hasta 2 agrupaciones más que el mínimo',
       starOptimal: 'Igualaste el mínimo',
       again: 'Jugar de nuevo',
-      toSummary: 'Volver al resumen',
     },
 
     a11y: {

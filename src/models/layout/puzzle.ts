@@ -1,7 +1,7 @@
 import { clusterTools } from './clusterLattice';
 import type { ClusterTranslation } from './clusterLattice';
 import type { HexFrame, Point } from './hexGrid';
-import { pointToAxial } from './hexGrid';
+import { axialToPoint, pointToAxial } from './hexGrid';
 
 /**
  * Rules of the puzzle that are not geometry: colours, hints, auto-fill and
@@ -111,4 +111,35 @@ export function remainingClusters(
   placed: ClusterTranslation[]
 ): ClusterTranslation[] {
   return uncoveredBuckets(samples, frame, clusterSize, placed).map((bucket) => bucket.translation);
+}
+
+export interface SameColorPair {
+  a: Point;
+  b: Point;
+  /** Distance between the two centres, in the frame's units (km). */
+  distance: number;
+}
+
+/**
+ * The two closest cells of the same colour among the placed clusters: for a
+ * lattice that is the reuse distance D = sqrt(3N)*R (docs/curso-referencia.md
+ * §13.1, diap. 23) as soon as two neighbouring clusters are placed. Null with
+ * fewer than two clusters. The "reuse" tutorial draws it.
+ */
+export function nearestSameColorPair(
+  clusterSize: number,
+  frame: HexFrame,
+  translations: ClusterTranslation[],
+  color = 0
+): SameColorPair | null {
+  const tools = clusterTools(clusterSize);
+  const centres = translations.map((translation) => axialToPoint(tools.cellsAt(translation)[color], frame));
+  let best: SameColorPair | null = null;
+  for (let i = 0; i < centres.length; i++) {
+    for (let j = i + 1; j < centres.length; j++) {
+      const distance = Math.hypot(centres[i].x - centres[j].x, centres[i].y - centres[j].y);
+      if (best === null || distance < best.distance) best = { a: centres[i], b: centres[j], distance };
+    }
+  }
+  return best;
 }

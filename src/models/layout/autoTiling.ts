@@ -30,6 +30,67 @@ export interface TilingSolution {
   cellsTouchingArea: number;
 }
 
+type Ranked = TilingSolution & { rank: [number, number] };
+
+/** Everything the search needs, built once: the candidate frames and how to score one. */
+function prepareSearch(polygon: Point[], radiusKm: number, clusterSize: number, options: TilingOptions) {
+  const { rotationsDeg = [...LATTICE_ROTATIONS_DEG], offsetsPerAxis = 5, sampleCount = DEFAULT_SAMPLE_COUNT } = options;
+  const samples = sampleArea(polygon, sampleCount);
+  const tools = clusterTools(clusterSize);
+  const { minX, minY, maxX, maxY } = polygonBounds(polygon);
+  const middle: Point = { x: (minX + maxX) / 2, y: (minY + maxY) / 2 };
+
+  const frames: HexFrame[] = [];
+  for (const rotationDeg of rotationsDeg) {
+    const rotationRad = (rotationDeg * Math.PI) / 180;
+    const axes: HexFrame = { radius: radiusKm, rotationRad, origin: { x: 0, y: 0 } };
+    const along1 = axialToPoint(tools.lattice.v1, axes);
+    const along2 = axialToPoint(tools.lattice.v2, axes);
+    for (let u = 0; u < offsetsPerAxis; u++) {
+      for (let w = 0; w < offsetsPerAxis; w++) {
+        frames.push({
+          radius: radiusKm,
+          rotationRad,
+          origin: {
+            x: middle.x + (u / offsetsPerAxis) * along1.x + (w / offsetsPerAxis) * along2.x,
+            y: middle.y + (u / offsetsPerAxis) * along1.y + (w / offsetsPerAxis) * along2.y,
+          },
+        });
+      }
+    }
+  }
+
+  const evaluate = (frame: HexFrame): Ranked => {
+    const translations = new Map<string, ClusterTranslation>();
+    const touchedCells = new Set<string>();
+    for (const sample of samples) {
+      const cell = pointToAxial(sample, frame);
+      touchedCells.add(axialKey(cell));
+      const translation = tools.translationOf(cell);
+      translations.set(`${translation.a},${translation.b}`, translation);
+    }
+    return {
+      frame,
+      translations: [...translations.values()],
+      clusters: translations.size,
+      cells: translations.size * clusterSize,
+      cellsTouchingArea: touchedCells.size,
+      rank: [translations.size, touchedCells.size],
+    };
+  };
+
+  return { frames, evaluate };
+}
+
+/** Fewer clusters wins; on a tie, fewer cells touching the area. Strict, so the FIRST of equals is kept. */
+const isBetter = (candidate: Ranked, best: Ranked | null): boolean =>
+  best === null || candidate.rank[0] < best.rank[0] || (candidate.rank[0] === best.rank[0] && candidate.rank[1] < best.rank[1]);
+
+function withoutRank(best: Ranked | null): TilingSolution {
+  const { rank: _rank, ...solution } = best as NonNullable<typeof best>;
+  return solution;
+}
+
 /**
  * The fewest clusters that cover the whole area, found by searching the
  * lattice's rotation and position.
@@ -48,55 +109,46 @@ export function findMinimalTiling(
   clusterSize: number,
   options: TilingOptions = {}
 ): TilingSolution {
-  const { rotationsDeg = [...LATTICE_ROTATIONS_DEG], offsetsPerAxis = 5, sampleCount = DEFAULT_SAMPLE_COUNT } = options;
-  const samples = sampleArea(polygon, sampleCount);
-  const tools = clusterTools(clusterSize);
-  const { minX, minY, maxX, maxY } = polygonBounds(polygon);
-  const middle: Point = { x: (minX + maxX) / 2, y: (minY + maxY) / 2 };
-
-  let best: (TilingSolution & { rank: [number, number] }) | null = null;
-
-  for (const rotationDeg of rotationsDeg) {
-    const rotationRad = (rotationDeg * Math.PI) / 180;
-    const axes: HexFrame = { radius: radiusKm, rotationRad, origin: { x: 0, y: 0 } };
-    const along1 = axialToPoint(tools.lattice.v1, axes);
-    const along2 = axialToPoint(tools.lattice.v2, axes);
-
-    for (let u = 0; u < offsetsPerAxis; u++) {
-      for (let w = 0; w < offsetsPerAxis; w++) {
-        const frame: HexFrame = {
-          radius: radiusKm,
-          rotationRad,
-          origin: {
-            x: middle.x + (u / offsetsPerAxis) * along1.x + (w / offsetsPerAxis) * along2.x,
-            y: middle.y + (u / offsetsPerAxis) * along1.y + (w / offsetsPerAxis) * along2.y,
-          },
-        };
-
-        const translations = new Map<string, ClusterTranslation>();
-        const touchedCells = new Set<string>();
-        for (const sample of samples) {
-          const cell = pointToAxial(sample, frame);
-          touchedCells.add(axialKey(cell));
-          const translation = tools.translationOf(cell);
-          translations.set(`${translation.a},${translation.b}`, translation);
-        }
-
-        const rank: [number, number] = [translations.size, touchedCells.size];
-        if (best === null || rank[0] < best.rank[0] || (rank[0] === best.rank[0] && rank[1] < best.rank[1])) {
-          best = {
-            frame,
-            translations: [...translations.values()],
-            clusters: translations.size,
-            cells: translations.size * clusterSize,
-            cellsTouchingArea: touchedCells.size,
-            rank,
-          };
-        }
-      }
-    }
+  const { frames, evaluate } = prepareSearch(polygon, radiusKm, clusterSize, options);
+  let best: Ranked | null = null;
+  for (const frame of frames) {
+    const candidate = evaluate(frame);
+    if (isBetter(candidate, best)) best = candidate;
   }
+  return withoutRank(best);
+}
 
-  const { rank: _rank, ...solution } = best as NonNullable<typeof best>;
-  return solution;
+/**
+ * The same search, in slices: after every `framesPerSlice` candidate frames it hands the thread back
+ * (a timer), so a screen stays responsive while it runs -- the whole search is about 200 ms, which as one
+ * block freezes a phone. Frames are visited in the same order with the same tie-break, so the answer is
+ * identical to `findMinimalTiling` (a test checks it). Resolves to null if `isCancelled` turns true.
+ */
+export function findMinimalTilingAsync(
+  polygon: Point[],
+  radiusKm: number,
+  clusterSize: number,
+  options: TilingOptions = {},
+  framesPerSlice = 8,
+  isCancelled: () => boolean = () => false
+): Promise<TilingSolution | null> {
+  return new Promise((resolve) => {
+    const { frames, evaluate } = prepareSearch(polygon, radiusKm, clusterSize, options);
+    let best: Ranked | null = null;
+    let next = 0;
+    const slice = () => {
+      if (isCancelled()) {
+        resolve(null);
+        return;
+      }
+      const end = Math.min(next + framesPerSlice, frames.length);
+      for (; next < end; next++) {
+        const candidate = evaluate(frames[next]);
+        if (isBetter(candidate, best)) best = candidate;
+      }
+      if (next < frames.length) setTimeout(slice, 0);
+      else resolve(withoutRank(best));
+    };
+    setTimeout(slice, 0);
+  });
 }
