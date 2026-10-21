@@ -37,7 +37,6 @@ export const puzzleTexts: DeepStrings<typeof esPuzzle> = {
       opening: 'Opening the image…',
       error: 'That image could not be opened. Try another file: PNG or JPG usually always work.',
       notImage: 'That file does not look like an image.',
-      change: 'Change image',
       size: 'Image of {{w}} × {{h}}',
     },
 
@@ -105,7 +104,6 @@ export const puzzleTexts: DeepStrings<typeof esPuzzle> = {
       starClose: 'At most 2 clusters over the minimum',
       starOptimal: 'You matched the minimum',
       again: 'Play again',
-      keep: 'Keep adjusting',
       toSummary: 'Back to the summary',
     },
 

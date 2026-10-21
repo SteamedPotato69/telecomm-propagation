@@ -34,7 +34,6 @@ export const puzzleTexts = {
       opening: 'Abriendo la imagen…',
       error: 'No se pudo abrir esa imagen. Prueba con otro archivo: PNG o JPG suelen funcionar siempre.',
       notImage: 'Ese archivo no parece una imagen.',
-      change: 'Cambiar imagen',
       size: 'Imagen de {{w}} × {{h}}',
     },
 
@@ -102,7 +101,6 @@ export const puzzleTexts = {
       starClose: 'Hasta 2 agrupaciones más que el mínimo',
       starOptimal: 'Igualaste el mínimo',
       again: 'Jugar de nuevo',
-      keep: 'Seguir ajustando',
       toSummary: 'Volver al resumen',
     },
 

@@ -106,7 +106,6 @@ export const planTexts: DeepStrings<typeof esPlan> = {
         title: 'Summary for the puzzle',
         intro: 'This is what the minigame will use. It only reads it: it does not change your plan.',
         play: 'Go to the puzzle',
-        soon: 'The puzzle arrives in the next delivery.',
         unavailable: 'The 3G plan has no final NodeB count (the calculation did not converge), so the game cannot start.',
       },
       scenario3g: {

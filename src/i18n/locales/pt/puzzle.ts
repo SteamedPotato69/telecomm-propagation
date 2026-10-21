@@ -37,7 +37,6 @@ export const puzzleTexts: DeepStrings<typeof esPuzzle> = {
       opening: 'Abrindo a imagem…',
       error: 'Não foi possível abrir essa imagem. Tente outro arquivo: PNG ou JPG costumam funcionar sempre.',
       notImage: 'Esse arquivo não parece uma imagem.',
-      change: 'Trocar imagem',
       size: 'Imagem de {{w}} × {{h}}',
     },
 
@@ -105,7 +104,6 @@ export const puzzleTexts: DeepStrings<typeof esPuzzle> = {
       starClose: 'No máximo 2 agrupamentos acima do mínimo',
       starOptimal: 'Você igualou o mínimo',
       again: 'Jogar de novo',
-      keep: 'Continuar ajustando',
       toSummary: 'Voltar ao resumo',
     },
 

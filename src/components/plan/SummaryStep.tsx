@@ -11,7 +11,7 @@ import { Intro, Panel, WarningList } from './parts';
  * a one-line explanation of what it means. The puzzle only reads these; nothing
  * here can change the plan.
  */
-export function SummaryStep({ mission }: { mission: GameMission | null }) {
+export function SummaryStep({ mission, onPlay }: { mission: GameMission | null; onPlay: (mission: GameMission) => void }) {
   const { t } = useTranslation();
   const { colors } = useTheme();
 
@@ -54,23 +54,19 @@ export function SummaryStep({ mission }: { mission: GameMission | null }) {
       </Panel>
       <WarningList warnings={mission.warnings} />
 
-      {/* The puzzle itself arrives in a later delivery: the button is here so the flow reads end to end. */}
       <Pressable
-        disabled
+        onPress={() => onPlay(mission)}
         accessibilityRole="button"
-        accessibilityState={{ disabled: true }}
         style={[styles.play, { backgroundColor: colors.accentSolid }]}
       >
         <Text style={styles.playText}>{t('plan.steps.summary.play')}</Text>
       </Pressable>
-      <Text style={[styles.soon, { color: colors.textMuted }]}>{t('plan.steps.summary.soon')}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   unavailable: { borderRadius: 12, padding: 14 },
-  play: { minHeight: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginTop: 16, opacity: 0.4 },
+  play: { minHeight: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginTop: 16 },
   playText: { color: '#ffffff', fontSize: 15, fontWeight: '700' },
-  soon: { fontSize: 12, textAlign: 'center', marginTop: 8 },
 });

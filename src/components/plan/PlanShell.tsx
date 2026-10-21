@@ -17,6 +17,8 @@ interface PlanShellProps {
   nextDisabled?: boolean;
   /** "Tu plan hasta ahora", shown above the step. */
   ledger?: ReactNode;
+  /** false while a finger is dragging over a map, so the page does not scroll under it. */
+  scrollEnabled?: boolean;
   children: ReactNode;
 }
 
@@ -35,6 +37,7 @@ export function PlanShell({
   onNext,
   nextDisabled = false,
   ledger,
+  scrollEnabled = true,
   children,
 }: PlanShellProps) {
   const { colors } = useTheme();
@@ -43,7 +46,7 @@ export function PlanShell({
 
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" scrollEnabled={scrollEnabled}>
         <BackButton onPress={onLeave} />
 
         <Text style={[styles.step, { color: colors.accentText }]}>

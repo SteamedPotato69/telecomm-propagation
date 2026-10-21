@@ -104,7 +104,6 @@ export const planTexts = {
         title: 'Resumen para el rompecabezas',
         intro: 'Esto es lo que usará el minijuego. Solo lo lee: no cambia tu plan.',
         play: 'Ir al rompecabezas',
-        soon: 'El rompecabezas llega en la siguiente entrega.',
         unavailable: 'El plan 3G no tiene un número final de NodeB (el cálculo no convergió), así que el juego no puede empezar.',
       },
       scenario3g: {

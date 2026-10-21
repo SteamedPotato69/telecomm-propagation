@@ -106,7 +106,6 @@ export const planTexts: DeepStrings<typeof esPlan> = {
         title: 'Resumo para o quebra-cabeça',
         intro: 'Isto é o que o minijogo vai usar. Ele só lê: não muda o seu plano.',
         play: 'Ir ao quebra-cabeça',
-        soon: 'O quebra-cabeça chega na próxima entrega.',
         unavailable: 'O plano 3G não tem um número final de NodeBs (o cálculo não convergiu), então o jogo não pode começar.',
       },
       scenario3g: {

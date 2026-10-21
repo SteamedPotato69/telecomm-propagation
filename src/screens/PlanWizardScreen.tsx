@@ -13,6 +13,7 @@ import {
   missionFromPlan1g2g,
   missionFromPlan3g,
 } from '../models/plan';
+import type { GameMission } from '../models/plan';
 import { usePlan1g2g, usePlan3g, usePlanStore } from '../plan/PlanContext';
 
 interface WizardProps {
@@ -20,10 +21,12 @@ interface WizardProps {
   onStep: (step: number) => void;
   /** Back to the "choose a generation" screen. */
   onLeave: () => void;
+  /** Open the puzzle with the mission the plan produced. */
+  onPlay: (mission: GameMission) => void;
 }
 
 /** 1G and 2G: the course's pencil-and-paper order, one screen per step. */
-export function Plan1g2gWizard({ generation, step, onStep, onLeave }: WizardProps & { generation: '1g' | '2g' }) {
+export function Plan1g2gWizard({ generation, step, onStep, onLeave, onPlay }: WizardProps & { generation: '1g' | '2g' }) {
   const { t } = useTranslation();
   const { setStep } = usePlanStore();
   const plan = usePlan1g2g(generation);
@@ -54,7 +57,7 @@ export function Plan1g2gWizard({ generation, step, onStep, onLeave }: WizardProp
       {name === 'capacity' ? <CapacityStep plan={plan} generation={generation} /> : null}
       {name === 'coverage' ? <CoverageStep plan={plan} generation={generation} /> : null}
       {name === 'result' ? <ResultStep plan={plan} generation={generation} /> : null}
-      {name === 'summary' ? <SummaryStep mission={result ? missionFromPlan1g2g(result) : null} /> : null}
+      {name === 'summary' ? <SummaryStep mission={result ? missionFromPlan1g2g(result) : null} onPlay={onPlay} /> : null}
     </PlanShell>
   );
 }
@@ -62,7 +65,7 @@ export function Plan1g2gWizard({ generation, step, onStep, onLeave }: WizardProp
 const TITLE_3G = { scenario: 'scenario3g', result: 'result3g', summary: 'summary' } as const;
 
 /** 3G: three inputs, then everything computed for the student. */
-export function Plan3gWizard({ step, onStep, onLeave }: WizardProps) {
+export function Plan3gWizard({ step, onStep, onLeave, onPlay }: WizardProps) {
   const { t } = useTranslation();
   const { setStep } = usePlanStore();
   const plan = usePlan3g();
@@ -93,7 +96,7 @@ export function Plan3gWizard({ step, onStep, onLeave }: WizardProps) {
     >
       {name === 'scenario' ? <Scenario3gStep plan={plan} /> : null}
       {name === 'result' ? <Result3gStep plan={plan} /> : null}
-      {name === 'summary' ? <SummaryStep mission={result ? missionFromPlan3g(result) : null} /> : null}
+      {name === 'summary' ? <SummaryStep mission={result ? missionFromPlan3g(result) : null} onPlay={onPlay} /> : null}
     </PlanShell>
   );
 }
