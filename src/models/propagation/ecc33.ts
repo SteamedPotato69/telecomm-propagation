@@ -24,6 +24,9 @@ import type { PropagationInputs, PropagationModelDefinition, PropagationResult, 
  *
  * Range: f <= 4 GHz, d <= 10 km, 20 <= hb <= 200 m, 5 <= hr <= 10 m.
  */
+/** f <= 4000 MHz (docs/curso-referencia.md §5.5); shared by the warning below and ecc33Model. */
+export const ECC33_FREQUENCY_RANGE_MHZ = [0, 4000] as const;
+
 export function calculateEcc33Loss(inputs: PropagationInputs): PropagationResult {
   const { frequencyMHz, distanceKm, baseStationHeightM, mobileHeightM, citySize } = inputs;
 
@@ -45,7 +48,7 @@ export function calculateEcc33Loss(inputs: PropagationInputs): PropagationResult
     if (message) warnings.push({ field, message });
   };
 
-  pushRangeWarning('frequencyMHz', frequencyMHz, 0, 4000, 'frequency', 'MHz');
+  pushRangeWarning('frequencyMHz', frequencyMHz, ECC33_FREQUENCY_RANGE_MHZ[0], ECC33_FREQUENCY_RANGE_MHZ[1], 'frequency', 'MHz');
   pushRangeWarning('distanceKm', distanceKm, 0, 10, 'distance', 'km');
   pushRangeWarning('baseStationHeightM', baseStationHeightM, 20, 200, 'baseStationHeight', 'm');
   pushRangeWarning('mobileHeightM', mobileHeightM, 5, 10, 'mobileHeight', 'm');
@@ -70,5 +73,6 @@ export function calculateEcc33Loss(inputs: PropagationInputs): PropagationResult
 export const ecc33Model: PropagationModelDefinition = {
   id: 'ecc33',
   implemented: true,
+  frequencyRangeMHz: ECC33_FREQUENCY_RANGE_MHZ,
   calculate: calculateEcc33Loss,
 };

@@ -36,6 +36,9 @@ const MODEL_NAME = 'Walfisch-Bertoni';
  *
  * Range per course: f 300-3000 MHz, d 0.2-5 km.
  */
+/** f 300-3000 MHz (docs/curso-referencia.md §5.7); shared by the warning below and walfischBertoniModel. */
+export const WALFISCH_BERTONI_FREQUENCY_RANGE_MHZ = [300, 3000] as const;
+
 export function calculateWalfischBertoniLoss(inputs: PropagationInputs): PropagationResult {
   const { frequencyMHz, distanceKm, mobileHeightM } = inputs;
 
@@ -79,7 +82,14 @@ export function calculateWalfischBertoniLoss(inputs: PropagationInputs): Propaga
     if (message) warnings.push({ field, message });
   };
 
-  pushRangeWarning('frequencyMHz', frequencyMHz, 300, 3000, 'frequency', 'MHz');
+  pushRangeWarning(
+    'frequencyMHz',
+    frequencyMHz,
+    WALFISCH_BERTONI_FREQUENCY_RANGE_MHZ[0],
+    WALFISCH_BERTONI_FREQUENCY_RANGE_MHZ[1],
+    'frequency',
+    'MHz'
+  );
   pushRangeWarning('distanceKm', distanceKm, 0.2, 5, 'distance', 'km');
 
   const heightDiffM = averageBuildingHeightM - mobileHeightM;
@@ -102,6 +112,7 @@ export function calculateWalfischBertoniLoss(inputs: PropagationInputs): Propaga
 export const walfischBertoniModel: PropagationModelDefinition = {
   id: 'walfisch-bertoni',
   implemented: true,
+  frequencyRangeMHz: WALFISCH_BERTONI_FREQUENCY_RANGE_MHZ,
   extraFields: ['baseStationHeightAboveRoofM', 'averageBuildingHeightM', 'buildingSeparationM'],
   calculate: calculateWalfischBertoniLoss,
 };
