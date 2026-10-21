@@ -56,6 +56,8 @@ export const core: DeepStrings<typeof esCore> = {
     mustBeNonNegative: '{{field}} must be a number greater than or equal to 0.',
     mustBeUnitInterval: '{{field}} must be a number strictly between 0 and 1.',
     mustBeInteger: '{{field}} must be a whole number.',
+    mustBeBetween: '{{field}} must be between {{min}} and {{max}}.',
+    noChannelsPerCell: 'With N={{n}} the available spectrum does not give even one channel per cell.',
     missingParameter: 'Missing parameter "{{field}}", required by the {{model}} model.',
     diffractingBuildingBelowMobile:
       'The diffracting building height (H) must be greater than the mobile height (hr): otherwise ' +
@@ -79,6 +81,12 @@ export const core: DeepStrings<typeof esCore> = {
   },
 
   warnings: {
+    modelOutOfRange:
+      '{{model}} was used at {{frequency}} MHz, outside its range [{{min}}-{{max}}] MHz: it is the best available approximation (the course example does the same).',
+    clusterLargerThanPlan:
+      'The cluster has N={{n}} cells and the plan only has {{cells}}: the reuse pattern does not even complete once.',
+    cellBreathingNotConverged: 'The cell-breathing loop did not converge: a final NodeB count cannot be given.',
+    uplinkOnly: 'Only the uplink was evaluated; the downlink is not implemented.',
     outOfRange:
       '{{field}} = {{value}} {{unit}} is outside the model’s valid range [{{min}}-{{max}}] {{unit}}; ' +
       'the result is an extrapolation.',
@@ -101,6 +109,12 @@ export const core: DeepStrings<typeof esCore> = {
     shadowFadingMargin: 'Shadow-fading margin',
     interferenceMargin: 'Interference margin',
     cellRadius: 'Cell radius (R)',
+    bandwidth: 'Available bandwidth',
+    channelWidth: 'Channel width',
+    clusterSize: 'Cluster size (N)',
+    tchPerCarrier: 'Traffic channels (TCH) per carrier',
+    controlChannels: 'Control channels',
+    plannedCells: 'Cells in the plan',
     cellArea: 'Cell area (S_c)',
     carrierFrequency: 'Carrier frequency',
     totalCoverageArea: 'Total area to cover (S_T)',

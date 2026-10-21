@@ -28,6 +28,13 @@ export function assertNonNegative(value: number, label: FieldLabel): void {
   }
 }
 
+/** Hard validation for a value that must lie within [min, max] (both inclusive), e.g. an aspect ratio or a slot count. */
+export function assertInRange(value: number, min: number, max: number, label: FieldLabel): void {
+  if (!Number.isFinite(value) || value < min || value > max) {
+    throw new LocalizedError('errors.mustBeBetween', { field: toFieldRef(label), min, max });
+  }
+}
+
 /** Hard validation for a value that must be a whole number (e.g. a channel count). */
 export function assertInteger(value: number, label: FieldLabel): void {
   if (!Number.isInteger(value)) {
