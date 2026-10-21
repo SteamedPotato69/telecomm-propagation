@@ -17,7 +17,9 @@ import {
   placementReducer,
 } from '../models/layout';
 import type { AreaPlacement } from '../models/layout';
+import { missionKey } from '../models/game';
 import type { GameMission } from '../models/plan';
+import { useProgress } from '../progress/ProgressContext';
 
 const STEPS = ['image', 'reference', 'area', 'play'] as const;
 
@@ -25,7 +27,7 @@ interface CellPuzzleScreenProps {
   mission: GameMission;
   step: number;
   onStep: (step: number) => void;
-  /** Back to the plan's summary. */
+  /** Back to the path of levels. */
   onLeave: () => void;
 }
 
@@ -37,6 +39,7 @@ interface CellPuzzleScreenProps {
  */
 export function CellPuzzleScreen({ mission, step, onStep, onLeave }: CellPuzzleScreenProps) {
   const { t } = useTranslation();
+  const { record } = useProgress();
   const [image, setImage] = useState<SourceImage | null>(null);
   const [ends, setEnds] = useState<LineEnds | null>(null);
   const [realKm, setRealKm] = useState(DEFAULT_REFERENCE_KM);
@@ -138,7 +141,9 @@ export function CellPuzzleScreen({ mission, step, onStep, onLeave }: CellPuzzleS
           placement={placement}
           dispatch={dispatch}
           onInteraction={setDragging}
-          onToSummary={onLeave}
+          variant="mission"
+          onCovered={(stars) => record(missionKey(mission.generation), stars)}
+          onToPath={onLeave}
         />
       ) : null}
     </PlanShell>

@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { Circle, Line, Polygon, Text as SvgText } from 'react-native-svg';
 import { axialToPoint, clusterTools, hexVertices } from '../../models/layout';
-import type { ClusterTranslation, HexFrame, Point } from '../../models/layout';
+import type { ClusterTranslation, HexFrame, Point, SameColorPair } from '../../models/layout';
 
 const LILAC = '#c084fc';
 
@@ -125,3 +125,44 @@ export const ClustersLayer = memo(function ClustersLayer({
     </>
   );
 });
+
+/** The reuse distance D: a dashed line between the two closest same-colour cells, labelled with what it measures. */
+export function ReuseLayer({ pair, pxPerKm, label, unit }: { pair: SameColorPair; pxPerKm: number; label: string; unit: number }) {
+  const a = { x: pair.a.x * pxPerKm, y: pair.a.y * pxPerKm };
+  const b = { x: pair.b.x * pxPerKm, y: pair.b.y * pxPerKm };
+  const middle = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+  return (
+    <>
+      <Line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="#000000" strokeOpacity={0.55} strokeWidth={6 * unit} strokeLinecap="round" />
+      <Line
+        x1={a.x}
+        y1={a.y}
+        x2={b.x}
+        y2={b.y}
+        stroke="#ffffff"
+        strokeWidth={3 * unit}
+        strokeDasharray={`${8 * unit},${6 * unit}`}
+        strokeLinecap="round"
+      />
+      <Circle cx={a.x} cy={a.y} r={5 * unit} fill="#ffffff" stroke="#000000" strokeWidth={1.5 * unit} />
+      <Circle cx={b.x} cy={b.y} r={5 * unit} fill="#ffffff" stroke="#000000" strokeWidth={1.5 * unit} />
+      <SvgText
+        x={middle.x}
+        y={middle.y - 12 * unit}
+        fontSize={15 * unit}
+        fontWeight="bold"
+        fill="#000000"
+        stroke="#000000"
+        strokeWidth={3 * unit}
+        strokeOpacity={0.6}
+        strokeLinejoin="round"
+        textAnchor="middle"
+      >
+        {label}
+      </SvgText>
+      <SvgText x={middle.x} y={middle.y - 12 * unit} fontSize={15 * unit} fontWeight="bold" fill="#ffffff" textAnchor="middle">
+        {label}
+      </SvgText>
+    </>
+  );
+}

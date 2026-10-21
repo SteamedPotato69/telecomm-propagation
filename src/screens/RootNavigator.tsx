@@ -12,9 +12,12 @@ import { HomeScreen } from './HomeScreen';
 import { LinkBudgetScreen } from './LinkBudgetScreen';
 import { Plan1g2gWizard, Plan3gWizard } from './PlanWizardScreen';
 import { PlanStartScreen } from './PlanStartScreen';
+import { PuzzlePathScreen } from './PuzzlePathScreen';
 import { SettingsScreen } from './SettingsScreen';
+import { TutorialScreen } from './TutorialScreen';
 import { TrafficScreen } from './TrafficScreen';
 import { WcdmaLoadScreen } from './WcdmaLoadScreen';
+import type { TutorialId } from '../models/game';
 import { STEPS_1G2G, STEPS_3G } from '../models/plan';
 import type { GameMission, Generation } from '../models/plan';
 import type { EnvironmentCategory, PropagationInputs } from '../models/propagation';
@@ -29,6 +32,8 @@ type Route =
   | { name: 'cellular-hub' }
   | { name: 'plan-start' }
   | { name: 'plan-step'; generation: Generation; step: number }
+  | { name: 'puzzle-path'; mission: GameMission }
+  | { name: 'tutorial'; mission: GameMission; id: TutorialId }
   | { name: 'cell-puzzle'; mission: GameMission; step: number }
   | { name: 'geometry' }
   | { name: 'traffic' }
@@ -72,9 +77,16 @@ function getBackRoute(route: Route): Route | null {
     // Back inside the wizard walks the steps one by one; from the first step it leaves to the chooser.
     case 'plan-step':
       return route.step > 0 ? { name: 'plan-step', generation: route.generation, step: route.step - 1 } : { name: 'plan-start' };
-    // Inside the puzzle back walks its steps; from the first one it returns to the plan's summary.
+    // The path of levels sits between the plan's summary and the games: back from a game returns to it,
+    // and back from the path returns to the summary. Inside the mission, back walks its steps first.
+    case 'puzzle-path':
+      return summaryRoute(route.mission);
+    case 'tutorial':
+      return { name: 'puzzle-path', mission: route.mission };
     case 'cell-puzzle':
-      return route.step > 0 ? { name: 'cell-puzzle', mission: route.mission, step: route.step - 1 } : summaryRoute(route.mission);
+      return route.step > 0
+        ? { name: 'cell-puzzle', mission: route.mission, step: route.step - 1 }
+        : { name: 'puzzle-path', mission: route.mission };
     default:
       return null;
   }
@@ -176,7 +188,7 @@ export function RootNavigator() {
     case 'plan-step': {
       const onStep = (step: number) => setRoute({ name: 'plan-step', generation: route.generation, step });
       const onLeave = () => setRoute({ name: 'plan-start' });
-      const onPlay = (mission: GameMission) => setRoute({ name: 'cell-puzzle', mission, step: 0 });
+      const onPlay = (mission: GameMission) => setRoute({ name: 'puzzle-path', mission });
       return route.generation === '3g' ? (
         <Plan3gWizard step={route.step} onStep={onStep} onLeave={onLeave} onPlay={onPlay} />
       ) : (
@@ -184,13 +196,34 @@ export function RootNavigator() {
       );
     }
 
+    case 'puzzle-path':
+      return (
+        <PuzzlePathScreen
+          mission={route.mission}
+          onBack={() => setRoute(summaryRoute(route.mission))}
+          onPlayTutorial={(id) => setRoute({ name: 'tutorial', mission: route.mission, id })}
+          onPlayMission={() => setRoute({ name: 'cell-puzzle', mission: route.mission, step: 0 })}
+        />
+      );
+
+    // key: each level starts from a clean board even though it is the same component.
+    case 'tutorial':
+      return (
+        <TutorialScreen
+          key={route.id}
+          id={route.id}
+          onBack={() => setRoute({ name: 'puzzle-path', mission: route.mission })}
+          onNext={(id) => setRoute({ name: 'tutorial', mission: route.mission, id })}
+        />
+      );
+
     case 'cell-puzzle':
       return (
         <CellPuzzleScreen
           mission={route.mission}
           step={route.step}
           onStep={(step) => setRoute({ name: 'cell-puzzle', mission: route.mission, step })}
-          onLeave={() => setRoute(summaryRoute(route.mission))}
+          onLeave={() => setRoute({ name: 'puzzle-path', mission: route.mission })}
         />
       );
 

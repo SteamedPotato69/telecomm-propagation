@@ -5,13 +5,13 @@ import { Image } from 'expo-image';
 import Svg from 'react-native-svg';
 import type { Point } from '../../models/layout';
 import { useTheme } from '../../theme';
-import type { SourceImage } from './imageSource';
+import type { MapSurface } from './imageSource';
 
 /** Tall photos are shown no taller than this so the controls stay on screen. */
 const MAX_DISPLAY_HEIGHT = 480;
 
 export interface MapCanvasProps {
-  image: SourceImage;
+  image: MapSurface;
   accessibilityLabel: string;
   /** Drawing in IMAGE pixels; `unit` is image pixels per screen pixel, so a stroke of `2 * unit` looks 2 px wide. */
   children?: (context: { unit: number; scale: number }) => ReactNode;
@@ -83,7 +83,11 @@ export function MapCanvas({ image, accessibilityLabel, children, onPointerStart,
     <View onLayout={onLayout} style={styles.container}>
       {scale > 0 ? (
         <View style={[styles.map, { width: displayWidth, height: displayHeight, borderColor: colors.borderMuted }]}>
-          <Image source={{ uri: image.uri }} style={StyleSheet.absoluteFill} contentFit="fill" />
+          {image.uri ? (
+            <Image source={{ uri: image.uri }} style={StyleSheet.absoluteFill} contentFit="fill" />
+          ) : (
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.surfaceMuted }]} />
+          )}
           <Svg
             width={displayWidth}
             height={displayHeight}

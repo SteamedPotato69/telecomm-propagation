@@ -104,7 +104,6 @@ export const puzzleTexts: DeepStrings<typeof esPuzzle> = {
       starClose: 'At most 2 clusters over the minimum',
       starOptimal: 'You matched the minimum',
       again: 'Play again',
-      toSummary: 'Back to the summary',
     },
 
     a11y: {
