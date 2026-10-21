@@ -7,7 +7,7 @@ import { NumericField } from '../components/NumericField';
 import { WcdmaResultPanel } from '../components/WcdmaResultPanel';
 import { calculateWcdmaUplinkLoad, DEFAULT_SERVICE_MIX } from '../models/wcdma';
 import type { WcdmaLoadResult, WcdmaServiceId } from '../models/wcdma';
-import { PROPAGATION_MODEL_LIST } from '../models/propagation';
+import { PROPAGATION_MODEL_LIST, recommendInvertibleModel } from '../models/propagation';
 import type { CitySize, Environment, PropagationModelId } from '../models/propagation';
 import { translateError } from '../i18n';
 import { useTheme } from '../theme';
@@ -19,12 +19,19 @@ interface WcdmaLoadScreenProps {
 
 const INVERTIBLE_MODELS = PROPAGATION_MODEL_LIST.filter((m) => m.solveDistanceKm);
 
+// The course's 3G example is at 2100 MHz (diap. 72). Plain Hata (150-1500 MHz) is far out of
+// range there and the cell-breathing loop fails to converge with it; the model whose range
+// fits best (COST-231-Hata) converges. Chosen from the frequency, not hard-coded.
+const DEFAULT_FREQUENCY_MHZ = 2100;
+
 const ENVIRONMENT_OPTIONS: Environment[] = ['urban', 'suburban', 'open-rural'];
 
 export function WcdmaLoadScreen({ onBack }: WcdmaLoadScreenProps) {
   const { colors } = useTheme();
   const { t } = useTranslation();
-  const [modelId, setModelId] = useState<PropagationModelId>(INVERTIBLE_MODELS[0]?.id ?? 'hata');
+  const [modelId, setModelId] = useState<PropagationModelId>(
+    recommendInvertibleModel(DEFAULT_FREQUENCY_MHZ).modelId
+  );
   const [referenceServiceId, setReferenceServiceId] = useState<WcdmaServiceId>(DEFAULT_SERVICE_MIX[0].id);
   const [chipRateMcps, setChipRateMcps] = useState('3.84');
   const [interferenceFactor, setInterferenceFactor] = useState('0.55');
@@ -40,7 +47,7 @@ export function WcdmaLoadScreen({ onBack }: WcdmaLoadScreenProps) {
   const [feederLossDb, setFeederLossDb] = useState('2');
   const [shadowFadingMarginDb, setShadowFadingMarginDb] = useState('8');
 
-  const [frequencyMHz, setFrequencyMHz] = useState('2100');
+  const [frequencyMHz, setFrequencyMHz] = useState(String(DEFAULT_FREQUENCY_MHZ));
   const [baseStationHeightM, setBaseStationHeightM] = useState('30');
   const [mobileHeightM, setMobileHeightM] = useState('1.5');
   const [citySize, setCitySize] = useState<CitySize>('large');
