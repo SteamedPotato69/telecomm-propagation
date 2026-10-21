@@ -62,6 +62,11 @@ describe('placementReducer', () => {
     const reset = run([{ type: 'reset' }], helped);
     expect(reset).toEqual({ frame: null, translations: [], helpLevel: 'hints' });
   });
+
+  it('a new puzzle forgets everything, including the help used: it is a different game', () => {
+    const helped = run([{ type: 'autofill', translations: [t(0, 0), t(1, 0)], frame: frameA }]);
+    expect(run([{ type: 'new' }], helped)).toEqual(initialPlacement());
+  });
 });
 
 describe('help', () => {

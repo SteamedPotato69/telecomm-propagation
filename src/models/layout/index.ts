@@ -1,3 +1,4 @@
+export * from './areaPlacement';
 export * from './areaShape';
 export * from './autoTiling';
 export * from './clusterLattice';

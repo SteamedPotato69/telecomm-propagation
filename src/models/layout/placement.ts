@@ -24,6 +24,8 @@ export type PlacementAction =
   | { type: 'toggle'; translation: ClusterTranslation }
   | { type: 'undo' }
   | { type: 'reset' }
+  /** A different puzzle (new image, scale or area): nothing carries over, not even the record of help. */
+  | { type: 'new' }
   /** A hint places one cluster for the player (in the existing lattice, or in `frame` if the board is empty). */
   | { type: 'hint'; translation: ClusterTranslation; frame: HexFrame }
   /** Auto-fill places every missing cluster (in the existing lattice, or in `frame` if the board is empty). */
@@ -64,6 +66,9 @@ export function placementReducer(state: PlacementState, action: PlacementAction)
     case 'reset':
       // Help used stays on record: restarting the board does not turn a hinted game into an unaided one.
       return { frame: null, translations: [], helpLevel: state.helpLevel };
+
+    case 'new':
+      return initialPlacement();
 
     case 'hint': {
       const frame = state.frame ?? action.frame;
