@@ -101,6 +101,8 @@ export const core: DeepStrings<typeof esCore> = {
     shadowFadingMargin: 'Shadow-fading margin',
     interferenceMargin: 'Interference margin',
     cellRadius: 'Cell radius (R)',
+    cellArea: 'Cell area (S_c)',
+    carrierFrequency: 'Carrier frequency',
     totalCoverageArea: 'Total area to cover (S_T)',
     channels: 'Number of channels (K)',
     offeredTraffic: 'Offered traffic (A)',

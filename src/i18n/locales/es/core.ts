@@ -104,6 +104,8 @@ export const core = {
     shadowFadingMargin: 'Margen de sombra',
     interferenceMargin: 'Margen de interferencia',
     cellRadius: 'Radio de celda (R)',
+    cellArea: 'Área de celda (S_c)',
+    carrierFrequency: 'Frecuencia portadora',
     totalCoverageArea: 'Área total a cubrir (S_T)',
     channels: 'Número de canales (K)',
     offeredTraffic: 'Tráfico ofrecido (A)',
