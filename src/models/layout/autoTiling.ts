@@ -5,6 +5,12 @@ import { axialKey, axialToPoint, pointToAxial } from './hexGrid';
 import type { HexFrame, Point } from './hexGrid';
 import { DEFAULT_SAMPLE_COUNT, sampleArea } from './coverage';
 
+/**
+ * Lattice rotations the search tries, degrees. The player is offered exactly the
+ * same ones, so the minimum the game found is a number the player can actually reach.
+ */
+export const LATTICE_ROTATIONS_DEG: readonly number[] = [0, 10, 20, 30, 40, 50];
+
 export interface TilingOptions {
   /** Lattice rotations to try, degrees. Hexagons repeat every 60 degrees, so 0-50 covers everything. */
   rotationsDeg?: number[];
@@ -42,7 +48,7 @@ export function findMinimalTiling(
   clusterSize: number,
   options: TilingOptions = {}
 ): TilingSolution {
-  const { rotationsDeg = [0, 10, 20, 30, 40, 50], offsetsPerAxis = 5, sampleCount = DEFAULT_SAMPLE_COUNT } = options;
+  const { rotationsDeg = [...LATTICE_ROTATIONS_DEG], offsetsPerAxis = 5, sampleCount = DEFAULT_SAMPLE_COUNT } = options;
   const samples = sampleArea(polygon, sampleCount);
   const tools = clusterTools(clusterSize);
   const { minX, minY, maxX, maxY } = polygonBounds(polygon);

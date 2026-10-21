@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { areaDimensionsKm, areaPolygonKm, clampAreaCenterPx, initialAreaPlacement } from './areaPlacement';
+import { MAX_PLAYABLE_CELLS, areaDimensionsKm, areaPolygonKm, clampAreaCenterPx, evaluateArea, initialAreaPlacement } from './areaPlacement';
 import type { AreaPlacement } from './areaPlacement';
 import { polygonArea, polygonBounds } from './areaShape';
 import { checkAreaFits } from './scale';
@@ -68,5 +68,37 @@ describe('clampAreaCenterPx', () => {
     const clamped = clampAreaCenterPx(big, placement, pxPerKm, image);
     expect(clamped.y).toBeCloseTo(300, 9);
     expect(checkAreaFits(areaPolygonKm(big, { ...placement, centerPx: clamped }, pxPerKm), pxPerKm, image).fits).toBe(false);
+  });
+});
+
+describe('evaluateArea', () => {
+  const mission = { totalAreaKm2: 25, hexRadiusKm: 0.5, plannedCells: 20 };
+
+  it('is playable when the area fits and the plan is small', () => {
+    const placement = { ...initialAreaPlacement(image), centerPx: { x: 500, y: 300 } };
+    const result = evaluateArea(mission, placement, 40, image);
+    expect(result.fit.fits).toBe(true);
+    expect(result.playable).toBe(true);
+    expect(result.hexRadiusPx).toBeCloseTo(20, 9);
+    expect(result.hexTooSmall).toBe(false);
+  });
+
+  it('warns about tiny hexagons without blocking the game', () => {
+    const result = evaluateArea(mission, initialAreaPlacement(image), 20, image);
+    expect(result.hexRadiusPx).toBeCloseTo(10, 9);
+    expect(result.hexTooSmall).toBe(true);
+    expect(result.playable).toBe(true);
+  });
+
+  it('blocks when the area does not fit the image', () => {
+    const result = evaluateArea(mission, initialAreaPlacement(image), 200, image);
+    expect(result.fit.fits).toBe(false);
+    expect(result.playable).toBe(false);
+  });
+
+  it('blocks a plan with more cells than the puzzle can draw', () => {
+    const result = evaluateArea({ ...mission, plannedCells: MAX_PLAYABLE_CELLS + 1 }, initialAreaPlacement(image), 40, image);
+    expect(result.tooManyCells).toBe(true);
+    expect(result.playable).toBe(false);
   });
 });

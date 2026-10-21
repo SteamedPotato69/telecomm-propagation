@@ -1,7 +1,8 @@
 import { areaShapePolygon, polygonBounds } from './areaShape';
 import type { AreaShapeKind } from './areaShape';
 import type { Point } from './hexGrid';
-import type { ImageSize } from './scale';
+import { checkAreaFits, hexRadiusPx, hexesTooSmall } from './scale';
+import type { AreaFit, ImageSize } from './scale';
 
 /**
  * Where the player has put the area over the image. The centre is kept in image
@@ -78,5 +79,39 @@ export function clampAreaCenterPx(areaKm2: number, placement: AreaPlacement, pxP
   return {
     x: clampAxis(placement.centerPx.x, around.minX, around.maxX, image.width),
     y: clampAxis(placement.centerPx.y, around.minY, around.maxY, image.height),
+  };
+}
+
+export interface AreaEvaluation {
+  /** The shape in km, at its current position. */
+  polygonKm: Point[];
+  fit: AreaFit;
+  /** Hexagon radius on screen at this scale, image pixels. */
+  hexRadiusPx: number;
+  /** Hexagons too small to see or touch: a warning, the game still works. */
+  hexTooSmall: boolean;
+  /** More cells than the puzzle draws. */
+  tooManyCells: boolean;
+  /** The area fits the image and the plan is small enough to draw: the player may continue. */
+  playable: boolean;
+}
+
+/** Everything the area step and the next button need to know about the current placement. */
+export function evaluateArea(
+  mission: { totalAreaKm2: number; hexRadiusKm: number; plannedCells: number },
+  placement: AreaPlacement,
+  pxPerKm: number,
+  image: ImageSize
+): AreaEvaluation {
+  const polygonKm = areaPolygonKm(mission.totalAreaKm2, placement, pxPerKm);
+  const fit = checkAreaFits(polygonKm, pxPerKm, image);
+  const tooManyCells = mission.plannedCells > MAX_PLAYABLE_CELLS;
+  return {
+    polygonKm,
+    fit,
+    hexRadiusPx: hexRadiusPx(mission.hexRadiusKm, pxPerKm),
+    hexTooSmall: hexesTooSmall(mission.hexRadiusKm, pxPerKm),
+    tooManyCells,
+    playable: fit.fits && !tooManyCells,
   };
 }
