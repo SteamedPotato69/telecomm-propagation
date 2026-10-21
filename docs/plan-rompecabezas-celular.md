@@ -205,3 +205,50 @@ Estado: imagen/cámara, línea de referencia, área y juego jugable, apilado sob
 - Si el plan 3G no converge (más de ~40 000 usuarios) no hay número final de NodeB y el resumen no deja entrar al juego.
 
 **Siguiente**: PR D (gamificación: camino de niveles, XP/racha/estrellas guardadas, confeti, háptica, accesibilidad, rendimiento), tras revisar este.
+
+# 11. Plan -- PR D (gamificación)
+
+Estado: **plan antes de actuar** (el permiso del profesor pide justificar y planear). Se apila sobre el PR C (rama `feature/puzzle-gamification`, base `feature/cell-puzzle-game`). Recordatorio de ramas: a la fecha, `main` solo contiene el PR A; el PR B está fusionado en `feature/cell-puzzle` y el PR C (#15) apunta a `main` con B y C.
+
+## Alcance (lo que se hace)
+
+| # | Qué | Por qué |
+|---|---|---|
+| D1 | **Camino de niveles** (pantalla nueva entre el resumen y el juego): 4 tutoriales con datos genéricos + **Tu misión** (el rompecabezas del PR C con tu plan y tu imagen) | Es la decisión E1 ya aprobada: el rompecabezas pedido es el último nivel y los anteriores enseñan las piezas. Tu misión siempre está desbloqueada: nadie queda bloqueado frente a lo que tiene que entregar |
+| D2 | **Tutoriales como datos** (`models/game/levels.ts`), sin imagen ni línea de referencia: reutilizan el mismo `PlayStep` con una misión genérica y un mapa sintético | Cero lógica de juego duplicada; los niveles se prueban con tests (¿caben? ¿hexágonos legibles? ¿tienen solución?) |
+| D3 | **XP, estrellas y racha diaria**, guardados en el dispositivo (`storage/progressStore.ts`, mismo patrón y tolerancia a fallos que `planStore`) | Motivación sin castigo: no hay vidas ni nada que bloquee |
+| D4 | **Premios al terminar**: XP ganado, racha, "siguiente nivel desbloqueado", mensaje de ánimo, estrellas con animación y **confeti** | Es lo que lo vuelve "estilo Duolingo" sin copiar su marca ni su mascota |
+| D5 | **Háptica** (`expo-haptics ~57.0.3`) al colocar una pieza y al completar; **interruptor de efectos en Ajustes**; se respeta "reducir movimiento" del sistema | Riesgo ya anotado en §6: la gamificación no debe distraer ni marear |
+| D6 | **Nivel "Reutilizar"**: al colocar dos agrupaciones se dibuja la distancia D entre celdas del mismo color y se rotula `D = √(3N)·R` | Hace visible la fórmula del curso (diap. 23) justo cuando se usa |
+| D7 | **Accesibilidad y rendimiento**: etiquetas y anuncios (`accessibilityLiveRegion`) en el camino y la cobertura; medir el cálculo del mínimo (`findMinimalTiling`) y moverlo fuera del primer pintado si pasa de ~100 ms | Pendientes del PR C |
+| D8 | README ×3 y registro §12 | Regla del proyecto |
+
+## Reglas de los datos del juego (propuestas, a revisar)
+
+- **XP**: primer nivel completado = 20 XP; cada estrella por encima de la mejor anterior = 15 XP. Repetir sin mejorar no da XP (si no, se "farmea"). 3 estrellas en total = 65 XP, vengan de una jugada o de tres.
+- **Racha**: se cuenta por día local (AAAA-MM-DD); jugar un día consecutivo suma 1, saltarse un día vuelve a 1, jugar dos veces el mismo día no cambia nada. Si pasó más de un día sin jugar, la racha se **muestra** como 0 (aunque lo guardado sea la última).
+- **Desbloqueo**: el nivel k+1 se abre al completar el k (≥ 1 estrella); Tu misión, siempre. Las estrellas de la misión se guardan **por generación** (1G, 2G, 3G): la misión depende del plan.
+- **Estrellas de los tutoriales** con la misma regla que la misión (★ cubrir, ★★ ≤ mínimo + 2, ★★★ igualar el mínimo; pistas ≤ 2, autocompletar ≤ 1).
+
+## Lo que se recorta, y por qué
+
+- **Nivel 6 "Interferencia (C/I)"**: depende de `feature/umts-dl-ci`, que sigue sin fusionar (y de la corrección de Walfisch-Bertoni). Se deja fuera hasta que exista esa base; no se inventa un nivel sin respaldo del curso.
+- **"Resorte de encaje" sobre el SVG** (E2): animar decenas de polígonos SVG con `Animated` es caro y poco fiable en web/Expo Go. Se sustituye por animaciones baratas (barra de cobertura, aparición de estrellas, confeti con `Animated.View`). Si falta, se reevalúa con datos.
+- **Sonido, mascota, ligas/ranking**: fuera de alcance (§7).
+- **Arrastre con teclado en web**: no se hace en este PR; queda anotado como limitación de accesibilidad.
+
+## Orden de commits (la lógica pura siempre antes que la UI que la usa)
+
+1. Dependencia `expo-haptics` y este plan.
+2. `models/game/`: niveles, progreso (XP/estrellas/racha), geometría del confeti, mensajes. Con tests.
+3. `storage/progressStore.ts` + `ProgressContext`. Con tests (almacén en memoria).
+4. Textos es/en/pt (`game.*`).
+5. UI: camino de niveles, nivel tutorial, rutas (el botón atrás de Android incluido), premios en el resultado.
+6. Confeti, háptica, interruptor en Ajustes, reducir movimiento.
+7. Accesibilidad y rendimiento.
+8. README ×3 y registro §12.
+
+## Verificación
+
+- **Puedo**: `tsc`, `vitest` (XP, racha incluyendo fin de mes/año y bisiesto, desbloqueos, persistencia corrupta, los 4 niveles: caben, hexágonos legibles y solución con tests), navegador de escritorio y 375 px, es/en/pt, claro/oscuro, reducir movimiento (emulado).
+- **No puedo (lo prueba el estudiante en Expo Go)**: la vibración real, los gestos táctiles y el rendimiento en un teléfono de gama baja.
