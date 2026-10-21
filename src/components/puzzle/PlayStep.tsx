@@ -1,5 +1,5 @@
 import { Dispatch, useEffect, useMemo, useRef, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import {
   LATTICE_ROTATIONS_DEG,
@@ -27,12 +27,16 @@ import type {
 } from '../../models/layout';
 import type { RecordedResult, Stars } from '../../models/game';
 import type { GameMission } from '../../models/plan';
+import { useProgress } from '../../progress/ProgressContext';
 import { useTheme } from '../../theme';
 import { Intro, Panel } from '../plan/parts';
+import { ConfettiBurst } from './ConfettiBurst';
 import { SmallButton } from './controls';
+import { placeFeedback, successFeedback } from './feedback';
 import { AreaLayer, ClustersLayer, ReuseLayer } from './layers';
 import { MapCanvas } from './MapCanvas';
 import { ResultPanel } from './ResultPanel';
+import { useReducedMotion } from './useReducedMotion';
 import type { MapSurface } from './imageSource';
 
 interface PlayStepProps {
@@ -89,6 +93,9 @@ export function PlayStep({
   const [rotationIndex, setRotationIndex] = useState(0);
   const [ghost, setGhost] = useState<Ghost | null>(null);
   const [reward, setReward] = useState<RecordedResult | null>(null);
+  const [burst, setBurst] = useState<{ key: number; stars: number } | null>(null);
+  const { progress } = useProgress();
+  const effects = progress.effects;
 
   const n = mission.clusterSize;
   const { polygonKm } = evaluation;
@@ -136,6 +143,25 @@ export function PlayStep({
     );
   }, [score.covered, score.stars]);
 
+  // Feedback: a light tap when a piece is placed (not when one is taken back), and a success buzz
+  // plus confetti the moment the area becomes covered.
+  const placedBefore = useRef(translations.length);
+  useEffect(() => {
+    if (translations.length > placedBefore.current) placeFeedback(effects);
+    placedBefore.current = translations.length;
+  }, [translations.length, effects]);
+
+  const burstCount = useRef(0);
+  const wasCovered = useRef(false);
+  useEffect(() => {
+    if (score.covered && !wasCovered.current && score.stars > 0) {
+      successFeedback(effects);
+      burstCount.current += 1;
+      setBurst({ key: burstCount.current, stars: score.stars });
+    }
+    wasCovered.current = score.covered;
+  }, [score.covered, score.stars, effects]);
+
   const aim = (x: number, y: number): Ghost => {
     const pointKm = { x: x / pxPerKm, y: y / pxPerKm };
     if (frame === null) {
@@ -175,6 +201,9 @@ export function PlayStep({
 
   return (
     <View>
+      {burst ? (
+        <ConfettiBurst key={burst.key} stars={burst.stars} burstKey={burst.key} enabled={effects} onDone={() => setBurst(null)} />
+      ) : null}
       {hideIntro ? null : <Intro>{n > 1 ? t('puzzle.steps.play.introCluster', { n }) : t('puzzle.steps.play.introSingle')}</Intro>}
 
       <MapCanvas
@@ -219,14 +248,7 @@ export function PlayStep({
         )}
       </MapCanvas>
 
-      <View
-        accessibilityRole="progressbar"
-        accessibilityLabel={t('puzzle.play.coverage')}
-        accessibilityValue={{ min: 0, max: 100, now: percent }}
-        style={[styles.track, { backgroundColor: colors.borderMuted }]}
-      >
-        <View style={[styles.bar, { width: `${percent}%`, backgroundColor: score.covered ? '#22c55e' : colors.accent }]} />
-      </View>
+      <CoverageBar percent={percent} covered={score.covered} label={t('puzzle.play.coverage')} />
       <View style={styles.stats}>
         <Stat label={t('puzzle.play.coverage')} value={`${percent} %`} live />
         <Stat label={t('puzzle.play.clusters')} value={String(translations.length)} />
@@ -266,6 +288,39 @@ export function PlayStep({
           </Text>
         </Panel>
       )}
+    </View>
+  );
+}
+
+/** The coverage bar, growing smoothly (instantly when the system asks for reduced motion). */
+function CoverageBar({ percent, covered, label }: { percent: number; covered: boolean; label: string }) {
+  const { colors } = useTheme();
+  const reduced = useReducedMotion();
+  const width = useRef(new Animated.Value(percent)).current;
+  useEffect(() => {
+    Animated.timing(width, {
+      toValue: percent,
+      duration: reduced ? 0 : 250,
+      easing: Easing.out(Easing.quad),
+      useNativeDriver: false, // a width cannot run on the native driver
+    }).start();
+  }, [percent, reduced, width]);
+  return (
+    <View
+      accessibilityRole="progressbar"
+      accessibilityLabel={label}
+      accessibilityValue={{ min: 0, max: 100, now: percent }}
+      style={[styles.track, { backgroundColor: colors.borderMuted }]}
+    >
+      <Animated.View
+        style={[
+          styles.bar,
+          {
+            width: width.interpolate({ inputRange: [0, 100], outputRange: ['0%', '100%'] }),
+            backgroundColor: covered ? '#22c55e' : colors.accent,
+          },
+        ]}
+      />
     </View>
   );
 }

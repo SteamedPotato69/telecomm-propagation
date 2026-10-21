@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { Animated, Platform, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import type { CoverageSummary, HelpLevel, PuzzleScore } from '../../models/layout';
 import type { RecordedResult } from '../../models/game';
@@ -8,6 +9,7 @@ import { Panel } from '../plan/parts';
 import { ResultRows } from '../plan/ResultRows';
 import type { ResultRow } from '../plan/ResultRows';
 import { SmallButton } from './controls';
+import { useReducedMotion } from './useReducedMotion';
 
 interface ResultPanelProps {
   mission: GameMission;
@@ -42,6 +44,17 @@ export function ResultPanel({
 }: ResultPanelProps) {
   const { colors } = useTheme();
   const { t } = useTranslation();
+  const reduced = useReducedMotion();
+
+  // The stars pop in (a spring) when the panel appears; with reduced motion they are simply there.
+  const pop = useRef(new Animated.Value(0.4)).current;
+  useEffect(() => {
+    if (reduced) {
+      pop.setValue(1);
+      return;
+    }
+    Animated.spring(pop, { toValue: 1, friction: 4, tension: 120, useNativeDriver: Platform.OS !== 'web' }).start();
+  }, [reduced, pop]);
 
   const rows: ResultRow[] = [
     { label: t('puzzle.result.yourClusters'), value: String(summary.clusters), emphasis: true },
@@ -70,10 +83,12 @@ export function ResultPanel({
       <Text accessibilityRole="header" style={[styles.title, { color: colors.textPrimary }]}>
         {t('puzzle.result.title')}
       </Text>
-      <Text accessibilityLabel={t('puzzle.result.stars', { count: score.stars })} style={[styles.stars, { color: colors.accent }]}>
-        {'★'.repeat(score.stars)}
-        <Text style={{ color: colors.textMuted }}>{'☆'.repeat(3 - score.stars)}</Text>
-      </Text>
+      <Animated.View style={{ transform: [{ scale: pop }] }}>
+        <Text accessibilityLabel={t('puzzle.result.stars', { count: score.stars })} style={[styles.stars, { color: colors.accent }]}>
+          {'★'.repeat(score.stars)}
+          <Text style={{ color: colors.textMuted }}>{'☆'.repeat(3 - score.stars)}</Text>
+        </Text>
+      </Animated.View>
       {cheer ? <Text style={[styles.cheer, { color: colors.textPrimary }]}>{cheer}</Text> : null}
 
       {reward ? (
