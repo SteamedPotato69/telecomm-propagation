@@ -15,7 +15,8 @@ Calculator for propagation path-loss models in mobile channels (free space, Hata
 3. **Calculator**: the model selector only shows the models applicable to the chosen environment; geometry fields (street width, building height, etc.) only appear when the selected model needs them.
 4. **Comparison**: runs every applicable model of the environment with the same parameters and compares them against free-space loss (the "ideal prediction"); the one with the smallest distance is marked as best fit. Below the cards, two charts (`src/components/LineChart.tsx`, on `react-native-svg`) of loss vs. distance -- logarithmic and linear scale, all curves overlaid, sampled over 0.3-20 km with the other parameters fixed.
 5. **Fading simulator** (`src/screens/FadingScreen.tsx`): from carrier frequency, delay spread (D, with Rural/Suburban/Urban preset chips), mobile speed, signal bandwidth and symbol duration (or symbol rate, convertible to Ts), it computes the coherence bandwidth (Bc), the Doppler shift (fd) and the coherence time (Tc); classifies the channel as flat/selective in frequency and slow/fast (time-selective), and places the operating point in one of the 5 zones of the BT/Bc vs. Ts/Tc plane (`src/components/FadingZoneChart.tsx`, a point plot on `react-native-svg`, not a line series -- different from `LineChart.tsx`).
-6. **Guided planning** (Cellular planning → Guided planning; `src/screens/PlanStartScreen.tsx`, `PlanWizardScreen.tsx`): a step-by-step wizard that reuses the models above. **1G and 2G follow the pencil-and-paper order** (slides 44-46): scenario → spectrum and cluster → capacity → coverage → result → summary; **3G is almost automatic** (only area, users and Erlang per user; the rest comes from the course example). Every screen shows "Your plan so far" with what was already computed, the propagation model is chosen from the frequency, and the plan **is saved on this device** (only the inputs; the results are recomputed when it is opened, so a later model fix never leaves stale numbers). The last screen summarizes what the puzzle will use -- the puzzle arrives in the next delivery and **only reads** the plan, never changes it.
+6. **Guided planning** (Cellular planning → Guided planning; `src/screens/PlanStartScreen.tsx`, `PlanWizardScreen.tsx`): a step-by-step wizard that reuses the models above. **1G and 2G follow the pencil-and-paper order** (slides 44-46): scenario → spectrum and cluster → capacity → coverage → result → summary; **3G is almost automatic** (only area, users and Erlang per user; the rest comes from the course example). Every screen shows "Your plan so far" with what was already computed, the propagation model is chosen from the frequency, and the plan **is saved on this device** (only the inputs; the results are recomputed when it is opened, so a later model fix never leaves stale numbers). The last screen summarizes what the puzzle will use; the puzzle **only reads** the plan and never changes it.
+7. **Cell puzzle** (from the plan summary, "Go to the puzzle"; `src/screens/CellPuzzleScreen.tsx`, `src/components/puzzle/`): four steps. (1) **Your map**: upload an image (file, phone gallery, drag or Ctrl+V paste on the web; any format the device can open works) or take a photo with the camera (webcam in the browser, the rear camera on a phone, with a flip button); the image is not stored. (2) **Reference line**: trace with your finger or the cursor a line that is 1 km long (0.5 / 2 / 5 km also available); the scale of the whole game comes from it. (3) **Place the area**: the plan's S_T (it cannot be changed) is dragged over the map; rectangle or ellipse, proportion and rotation; if it does not fit the image, the screen says exactly how many pixels are missing. (4) **Cover the area**: each tap places a cluster of N cells that snaps into the lattice (each colour is a group of frequencies; the first piece fixes the lattice); undo, restart, hint and auto-fill. Stars are measured against the minimum the game itself finds (a search over rotations and positions, not a proof): ★ cover the whole area, ★★ with at most 2 clusters more, ★★★ match the minimum; hints cap the score at 2 stars and auto-fill at 1. The result also shows how many cells are really needed versus the plan's: the border of the area always asks for extra cells.
 
 ## Settings: theme and language
 
@@ -340,6 +341,9 @@ src/
     scale.ts                     # reference line (1 km by default) -> pixels per km; does the area fit the image?
     coverage.ts                  # coverage by sampling the area
     autoTiling.ts                # fewest clusters that cover the area (reference for stars and hints)
+    areaPlacement.ts             # where the area sits over the image (centre in pixels), fitting it to the image, is it playable?
+    placement.ts                 # reducer of the placed pieces: the first fixes the lattice; undo, hints, auto-fill
+    puzzle.ts                    # colours per group, stars, hint and auto-fill
   utils/
     validation.ts                # assertPositive, assertNonNegative, assertUnitInterval, assertInteger, rangeWarningMessage, parseDecimal, requireField
     localizedMessage.ts          # LocalizedError / LocalizedMessage: language-neutral errors and warnings (key + parameters)
@@ -355,6 +359,7 @@ src/
     SegmentedControl.tsx         # switch for a few short options (theme mode)
     BackButton.tsx               # back button (arrow only, 48dp touch target)
     plan/                        # wizard pieces: PlanShell (progress + Previous/Next), PlanLedger, PlanNumberField, 1G/2G and 3G steps, SummaryStep
+    puzzle/                      # puzzle: image loading and camera, MapCanvas (image + SVG + gestures), line/area/play steps, result
     ListCard.tsx                 # simple list card (hub screens: Environment, Cellular planning)
     GeometryResultPanel.tsx      # cell geometry result
     TrafficResultPanel.tsx       # generic single-number result (Erlang B / density)
@@ -368,6 +373,7 @@ src/
     SettingsScreen.tsx            # settings: theme and language
     PlanStartScreen.tsx           # guided planning: choose 1G/2G/3G, continue or start over
     PlanWizardScreen.tsx          # the wizard steps (1G/2G and 3G)
+    CellPuzzleScreen.tsx          # the minigame: image -> line -> area -> play (only reads the plan's mission)
     EnvironmentScreen.tsx         # environment selector
     CalculatorScreen.tsx          # form + result, filtered by environment
     ComparisonScreen.tsx          # "versus" view between all of the environment's models

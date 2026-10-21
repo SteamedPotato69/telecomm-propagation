@@ -13,7 +13,8 @@ Calculadora de modelos de pérdida de propagación en canales móviles (espacio 
 3. **Calculadora**: el selector de modelos solo muestra los aplicables al entorno elegido; los campos de geometría (ancho de calle, altura de edificios, etc.) solo aparecen cuando el modelo seleccionado los necesita.
 4. **Comparación**: corre todos los modelos aplicables del entorno con los mismos parámetros y los compara contra la pérdida en espacio libre ("predicción ideal"); el de menor distancia se marca como mejor ajuste. Debajo de las tarjetas, dos gráficas (`src/components/LineChart.tsx`, sobre `react-native-svg`) de pérdida vs. distancia -- escala logarítmica y lineal, todas las curvas superpuestas, muestreadas en 0.3-20 km con los demás parámetros fijos.
 5. **Simulador de desvanecimiento** (`src/screens/FadingScreen.tsx`): a partir de frecuencia portadora, dispersión de retardo (D, con chips de preset Rural/Suburbano/Urbano), velocidad del móvil, ancho de banda de la señal y duración de símbolo (o tasa de símbolo, invertible a Ts), calcula el ancho de banda de coherencia (Bc), el corrimiento Doppler (fd) y el tiempo de coherencia (Tc); clasifica el canal como plano/selectivo en frecuencia y lento/rápido (selectivo en tiempo), y ubica el punto de operación en una de las 5 zonas del plano BT/Bc vs. Ts/Tc (`src/components/FadingZoneChart.tsx`, gráfica de punto sobre `react-native-svg`, no una serie de líneas -- distinta de `LineChart.tsx`).
-6. **Planificación guiada** (Planificación celular → Planificación guiada; `src/screens/PlanStartScreen.tsx`, `PlanWizardScreen.tsx`): un asistente paso a paso que reutiliza los modelos de arriba. **1G y 2G siguen el orden del cálculo a lápiz y papel** (diap. 44-46): escenario → espectro y agrupación → capacidad → cobertura → resultado → resumen; **3G es casi automático** (solo área, usuarios y Erlang por usuario; el resto sale del ejemplo del curso). Cada pantalla muestra "Tu plan hasta ahora" con lo ya calculado, el modelo de propagación se elige solo según la frecuencia, y el plan **se guarda en este dispositivo** (solo las entradas; los resultados se recalculan al abrirlo, así una corrección de un modelo nunca deja números viejos). La última pantalla resume lo que usará el rompecabezas -- que llega en la siguiente entrega y **solo lee** el plan, nunca lo modifica.
+6. **Planificación guiada** (Planificación celular → Planificación guiada; `src/screens/PlanStartScreen.tsx`, `PlanWizardScreen.tsx`): un asistente paso a paso que reutiliza los modelos de arriba. **1G y 2G siguen el orden del cálculo a lápiz y papel** (diap. 44-46): escenario → espectro y agrupación → capacidad → cobertura → resultado → resumen; **3G es casi automático** (solo área, usuarios y Erlang por usuario; el resto sale del ejemplo del curso). Cada pantalla muestra "Tu plan hasta ahora" con lo ya calculado, el modelo de propagación se elige solo según la frecuencia, y el plan **se guarda en este dispositivo** (solo las entradas; los resultados se recalculan al abrirlo, así una corrección de un modelo nunca deja números viejos). La última pantalla resume lo que usará el rompecabezas, que **solo lee** el plan y nunca lo modifica.
+7. **Rompecabezas celular** (desde el resumen del plan, "Ir al rompecabezas"; `src/screens/CellPuzzleScreen.tsx`, `src/components/puzzle/`): cuatro pasos. (1) **Tu mapa**: sube una imagen (archivo, galería en el móvil, arrastrar o pegar con Ctrl+V en la web; sirve cualquier formato que el dispositivo sepa abrir) o toma una foto con la cámara (cámara web en el navegador, la trasera en el móvil, con botón para cambiar); la imagen no se guarda. (2) **Línea de referencia**: traza con el dedo o el cursor una línea que mida 1 km (0,5 / 2 / 5 km también); de ahí sale la escala de todo el juego. (3) **Ubica el área**: el área S_T del plan (no se puede cambiar) se arrastra sobre el mapa; rectángulo o elipse, proporción y giro; si no cabe en la imagen se dice exactamente cuántos píxeles faltan. (4) **Cubre el área**: cada toque coloca una agrupación de N celdas que encaja sola en la retícula (cada color es un grupo de frecuencias; la primera pieza fija la retícula); deshacer, reiniciar, pista y autocompletar. Las estrellas se miden contra el mínimo que encuentra el propio juego (una búsqueda sobre rotaciones y posiciones, no una demostración): ★ cubrir toda el área, ★★ con a lo sumo 2 agrupaciones más, ★★★ igualar el mínimo; las pistas limitan a 2 estrellas y autocompletar a 1. El resultado muestra también cuántas celdas hacen falta de verdad frente a las del plan: el borde del área siempre pide celdas extra.
 
 ## Ajustes: tema e idioma
 
@@ -338,6 +339,9 @@ src/
     scale.ts                     # línea de referencia (1 km por defecto) -> píxeles por km; ¿cabe el área en la imagen?
     coverage.ts                  # cobertura por muestreo del área
     autoTiling.ts                # mínimo de agrupaciones que cubren el área (referencia para estrellas y pistas)
+    areaPlacement.ts             # dónde está el área sobre la imagen (centro en píxeles), ajuste a la imagen, ¿se puede jugar?
+    placement.ts                 # reductor de las piezas colocadas: la primera fija la retícula; deshacer, pistas, autocompletar
+    puzzle.ts                    # colores por grupo, estrellas, pista y autocompletar
   utils/
     validation.ts                # assertPositive, assertNonNegative, assertUnitInterval, assertInteger, rangeWarningMessage, parseDecimal, requireField
     localizedMessage.ts          # LocalizedError / LocalizedMessage: errores y advertencias neutrales al idioma (clave + parámetros)
@@ -353,6 +357,7 @@ src/
     SegmentedControl.tsx         # switch de pocas opciones cortas (modo de tema)
     BackButton.tsx               # botón de volver (solo flecha, objetivo táctil de 48dp)
     plan/                        # piezas del asistente: PlanShell (progreso + Anterior/Siguiente), PlanLedger, PlanNumberField, pasos 1G/2G y 3G, SummaryStep
+    puzzle/                      # rompecabezas: carga de imagen y cámara, MapCanvas (imagen + SVG + gestos), pasos línea/área/juego, resultado
     ListCard.tsx                 # card de lista simple (pantallas hub: Entorno, Planificación celular)
     GeometryResultPanel.tsx      # resultado de geometría celular
     TrafficResultPanel.tsx       # resultado genérico de un solo número (Erlang B / densidad)
@@ -366,6 +371,7 @@ src/
     SettingsScreen.tsx            # ajustes: tema e idioma
     PlanStartScreen.tsx           # planificación guiada: elegir 1G/2G/3G, continuar o empezar de nuevo
     PlanWizardScreen.tsx          # los pasos del asistente (1G/2G y 3G)
+    CellPuzzleScreen.tsx          # el minijuego: imagen -> línea -> área -> juego (solo lee la misión del plan)
     EnvironmentScreen.tsx         # selector de entorno
     CalculatorScreen.tsx          # formulario + resultado, filtrado por entorno
     ComparisonScreen.tsx          # vista "versus" entre todos los modelos del entorno
