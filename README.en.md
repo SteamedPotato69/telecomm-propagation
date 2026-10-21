@@ -15,6 +15,7 @@ Calculator for propagation path-loss models in mobile channels (free space, Hata
 3. **Calculator**: the model selector only shows the models applicable to the chosen environment; geometry fields (street width, building height, etc.) only appear when the selected model needs them.
 4. **Comparison**: runs every applicable model of the environment with the same parameters and compares them against free-space loss (the "ideal prediction"); the one with the smallest distance is marked as best fit. Below the cards, two charts (`src/components/LineChart.tsx`, on `react-native-svg`) of loss vs. distance -- logarithmic and linear scale, all curves overlaid, sampled over 0.3-20 km with the other parameters fixed.
 5. **Fading simulator** (`src/screens/FadingScreen.tsx`): from carrier frequency, delay spread (D, with Rural/Suburban/Urban preset chips), mobile speed, signal bandwidth and symbol duration (or symbol rate, convertible to Ts), it computes the coherence bandwidth (Bc), the Doppler shift (fd) and the coherence time (Tc); classifies the channel as flat/selective in frequency and slow/fast (time-selective), and places the operating point in one of the 5 zones of the BT/Bc vs. Ts/Tc plane (`src/components/FadingZoneChart.tsx`, a point plot on `react-native-svg`, not a line series -- different from `LineChart.tsx`).
+6. **Guided planning** (Cellular planning → Guided planning; `src/screens/PlanStartScreen.tsx`, `PlanWizardScreen.tsx`): a step-by-step wizard that reuses the models above. **1G and 2G follow the pencil-and-paper order** (slides 44-46): scenario → spectrum and cluster → capacity → coverage → result → summary; **3G is almost automatic** (only area, users and Erlang per user; the rest comes from the course example). Every screen shows "Your plan so far" with what was already computed, the propagation model is chosen from the frequency, and the plan **is saved on this device** (only the inputs; the results are recomputed when it is opened, so a later model fix never leaves stale numbers). The last screen summarizes what the puzzle will use -- the puzzle arrives in the next delivery and **only reads** the plan, never changes it.
 
 ## Settings: theme and language
 
@@ -281,7 +282,7 @@ Besides the code, this checks that the three translations have exactly the same 
 npx vitest run
 ```
 
-Scope limited to `src/models/**` and to the translation *data* in `src/i18n/` (plus `translateMessage`): that code imports nothing from `react-native`/Expo, so it runs under Node without needing RN/jsdom mocks (the i18n test creates its own `i18next` instance instead of importing `src/i18n/index.ts`, which does need `expo-localization`). It covers the cellular-planning features (geometry, Erlang B, link budget) -- the original propagation and fading models are still only verified by eye in the browser (see [Future work](#future-work)).
+Scope limited to `src/models/**`, to the plan persistence in `src/storage/` (with an injected in-memory store) and to the translation *data* in `src/i18n/` (plus `translateMessage`): that code imports nothing from `react-native`/Expo, so it runs under Node without needing RN/jsdom mocks (the i18n test creates its own `i18next` instance instead of importing `src/i18n/index.ts`, which does need `expo-localization`). It covers the cellular-planning features (geometry, Erlang B, link budget) -- the original propagation and fading models are still only verified by eye in the browser (see [Future work](#future-work)).
 
 ## Project structure
 
@@ -353,6 +354,7 @@ src/
     GlowCard.tsx                 # card with neon glow (top-level cards on Home)
     SegmentedControl.tsx         # switch for a few short options (theme mode)
     BackButton.tsx               # back button (arrow only, 48dp touch target)
+    plan/                        # wizard pieces: PlanShell (progress + Previous/Next), PlanLedger, PlanNumberField, 1G/2G and 3G steps, SummaryStep
     ListCard.tsx                 # simple list card (hub screens: Environment, Cellular planning)
     GeometryResultPanel.tsx      # cell geometry result
     TrafficResultPanel.tsx       # generic single-number result (Erlang B / density)
@@ -364,6 +366,8 @@ src/
     RootNavigator.tsx            # navigation state (Route union, one case per screen)
     HomeScreen.tsx                # top-level cards, data-driven + Settings button
     SettingsScreen.tsx            # settings: theme and language
+    PlanStartScreen.tsx           # guided planning: choose 1G/2G/3G, continue or start over
+    PlanWizardScreen.tsx          # the wizard steps (1G/2G and 3G)
     EnvironmentScreen.tsx         # environment selector
     CalculatorScreen.tsx          # form + result, filtered by environment
     ComparisonScreen.tsx          # "versus" view between all of the environment's models
@@ -382,6 +386,10 @@ src/
     translateMessage.ts          # translateMessage / translateError: LocalizedMessage -> text
     i18next.d.ts                 # types t('key') against Spanish
     locales/{es,en,pt}/          # per-language texts (core, propagation, calculator, fading, cellular); es is the source of truth
+  plan/
+    PlanContext.tsx              # PlanProvider + usePlan1g2g/usePlan3g: saved plan, debounced saving, never overwrites what is saved before it has finished loading
+  storage/
+    planStore.ts                 # versioned plan persistence (inputs + step + snapshot); tolerates corrupt data
   theme/
     palette.ts                    # light/dark color tokens; accent (neon lilac) is constant in both
     ThemeContext.tsx               # ThemeProvider + useTheme(); AsyncStorage persistence

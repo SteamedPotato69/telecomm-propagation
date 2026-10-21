@@ -15,6 +15,7 @@ Calculadora de modelos de perda de propagação em canais móveis (espaço livre
 3. **Calculadora**: o seletor de modelos mostra apenas os aplicáveis ao ambiente escolhido; os campos de geometria (largura da rua, altura dos edifícios etc.) só aparecem quando o modelo selecionado precisa deles.
 4. **Comparação**: executa todos os modelos aplicáveis do ambiente com os mesmos parâmetros e os compara com a perda no espaço livre ("predição ideal"); o de menor distância é marcado como melhor ajuste. Abaixo dos cards, dois gráficos (`src/components/LineChart.tsx`, sobre `react-native-svg`) de perda vs. distância -- escala logarítmica e linear, todas as curvas sobrepostas, amostradas em 0.3-20 km com os demais parâmetros fixos.
 5. **Simulador de desvanecimento** (`src/screens/FadingScreen.tsx`): a partir da frequência da portadora, dispersão de atraso (D, com chips de preset Rural/Suburbano/Urbano), velocidade do móvel, largura de banda do sinal e duração do símbolo (ou taxa de símbolo, convertível em Ts), calcula a largura de banda de coerência (Bc), o deslocamento Doppler (fd) e o tempo de coerência (Tc); classifica o canal como plano/seletivo em frequência e lento/rápido (seletivo no tempo), e posiciona o ponto de operação em uma das 5 zonas do plano BT/Bc vs. Ts/Tc (`src/components/FadingZoneChart.tsx`, gráfico de ponto sobre `react-native-svg`, não uma série de linhas -- diferente do `LineChart.tsx`).
+6. **Planejamento guiado** (Planejamento celular → Planejamento guiado; `src/screens/PlanStartScreen.tsx`, `PlanWizardScreen.tsx`): um assistente passo a passo que reutiliza os modelos acima. **1G e 2G seguem a ordem do cálculo à mão** (slides 44-46): cenário → espectro e agrupamento → capacidade → cobertura → resultado → resumo; **3G é quase automático** (apenas área, usuários e Erlang por usuário; o resto vem do exemplo do curso). Cada tela mostra "Seu plano até agora" com o que já foi calculado, o modelo de propagação é escolhido pela frequência, e o plano **fica salvo neste dispositivo** (apenas as entradas; os resultados são recalculados ao abrir, então uma correção de modelo nunca deixa números antigos). A última tela resume o que o quebra-cabeça vai usar -- ele chega na próxima entrega e **só lê** o plano, nunca o altera.
 
 ## Configurações: tema e idioma
 
@@ -281,7 +282,7 @@ Além do código, isso verifica que as três traduções tenham exatamente as me
 npx vitest run
 ```
 
-Escopo limitado a `src/models/**` e aos *dados* de tradução em `src/i18n/` (mais o `translateMessage`): esse código não importa nada de `react-native`/Expo, então roda sob Node sem precisar de mocks de RN/jsdom (o teste de i18n cria sua própria instância do `i18next` em vez de importar `src/i18n/index.ts`, que precisa do `expo-localization`). Cobre as funcionalidades de planejamento celular (geometria, Erlang B, link budget) -- os modelos originais de propagação e desvanecimento ainda são verificados apenas a olho no navegador (veja [Trabalho futuro](#trabalho-futuro)).
+Escopo limitado a `src/models/**`, à persistência do plano em `src/storage/` (com um armazenamento em memória injetado) e aos *dados* de tradução em `src/i18n/` (mais o `translateMessage`): esse código não importa nada de `react-native`/Expo, então roda sob Node sem precisar de mocks de RN/jsdom (o teste de i18n cria sua própria instância do `i18next` em vez de importar `src/i18n/index.ts`, que precisa do `expo-localization`). Cobre as funcionalidades de planejamento celular (geometria, Erlang B, link budget) -- os modelos originais de propagação e desvanecimento ainda são verificados apenas a olho no navegador (veja [Trabalho futuro](#trabalho-futuro)).
 
 ## Estrutura do projeto
 
@@ -353,6 +354,7 @@ src/
     GlowCard.tsx                 # card com brilho neon (cards de nível superior no Início)
     SegmentedControl.tsx         # switch de poucas opções curtas (modo de tema)
     BackButton.tsx               # botão de voltar (somente seta, alvo de toque de 48dp)
+    plan/                        # peças do assistente: PlanShell (progresso + Anterior/Próximo), PlanLedger, PlanNumberField, passos 1G/2G e 3G, SummaryStep
     ListCard.tsx                 # card de lista simples (telas hub: Ambiente, Planejamento celular)
     GeometryResultPanel.tsx      # resultado de geometria celular
     TrafficResultPanel.tsx       # resultado genérico de um único número (Erlang B / densidade)
@@ -364,6 +366,8 @@ src/
     RootNavigator.tsx            # estado de navegação (union Route, um case por tela)
     HomeScreen.tsx                # cards de nível superior, orientado a dados + botão de Configurações
     SettingsScreen.tsx            # configurações: tema e idioma
+    PlanStartScreen.tsx           # planejamento guiado: escolher 1G/2G/3G, continuar ou recomeçar
+    PlanWizardScreen.tsx          # os passos do assistente (1G/2G e 3G)
     EnvironmentScreen.tsx         # seletor de ambiente
     CalculatorScreen.tsx          # formulário + resultado, filtrado por ambiente
     ComparisonScreen.tsx          # visão "versus" entre todos os modelos do ambiente
@@ -382,6 +386,10 @@ src/
     translateMessage.ts          # translateMessage / translateError: LocalizedMessage -> texto
     i18next.d.ts                 # tipa t('chave') contra o espanhol
     locales/{es,en,pt}/          # textos por idioma (core, propagation, calculator, fading, cellular); es é a fonte de verdade
+  plan/
+    PlanContext.tsx              # PlanProvider + usePlan1g2g/usePlan3g: plano salvo, salvamento com atraso, nunca sobrescreve o salvo antes de terminar de carregar
+  storage/
+    planStore.ts                 # persistência versionada do plano (entradas + passo + instantâneo); tolera dados corrompidos
   theme/
     palette.ts                    # tokens de cor claro/escuro; accent (lilás neon) é constante nos dois
     ThemeContext.tsx               # ThemeProvider + useTheme(); persistência com AsyncStorage
