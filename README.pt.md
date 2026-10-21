@@ -300,7 +300,9 @@ src/
     cost231WalfishIkegami.ts     # COST-231 Walfish-Ikegami (combina Ikegami + Walfisch-Bertoni)
     linkBudget.ts                # calculateMapl(): MAPL a partir de um orçamento de enlace completo (§13.3)
     sampleSeries.ts               # avalia um modelo sobre uma faixa de distâncias, para os gráficos
-    index.ts                     # registro: PROPAGATION_MODELS / PROPAGATION_MODEL_LIST
+    registry.ts                  # registro: PROPAGATION_MODELS / PROPAGATION_MODEL_LIST
+    modelSelection.ts            # recommendInvertibleModel(f): escolhe o modelo cuja faixa de frequência se encaixa
+    index.ts                     # barrel
   models/fading/
     types.ts                     # FadingInputs/Result, FadingZone
     fading.ts                    # calculateFading(): Bc, fd, Tc, classificação e as 5 zonas (§8.7)
@@ -324,6 +326,19 @@ src/
     presets.ts                   # DEFAULT_SERVICE_MIX: mix do exercício do curso (70% voz / 20% PS64k / 10% PS384k)
     wcdma.ts                      # calculateServiceLoad, calculateWcdmaUplinkLoad (laço de cell breathing amortecido)
     index.ts                     # barrel
+  models/plan/                     # motor do plano 1G/2G/3G (puro) -- branch feature/cell-puzzle
+    frequencyPlan.ts             # canais por célula: 1G 416 -> 59; 2G 40 portadoras -> 10 TRX -> 70 TCH (slides 44-46)
+    plan1g2g.ts                  # cenário -> espectro -> capacidade -> cobertura -> resultado, na ordem "a lápis"
+    plan3g.ts                    # 3G automático: 3 entradas, o resto padrões do curso (repete com passo menor se o laço oscilar)
+    gameMission.ts               # GameMission: a única coisa que o quebra-cabeça lê do plano (somente leitura)
+    presets.ts                   # COURSE_1G / COURSE_2G: o exemplo resolvido do curso
+  models/layout/                   # geometria do quebra-cabeça (puro) -- branch feature/cell-puzzle
+    hexGrid.ts                   # células hexagonais em coordenadas axiais (d = R·√3, Sc = 3√3/2·R²)
+    clusterLattice.ts            # o agrupamento de N células como peça: N cores, ímã na rede co-canal (distância D)
+    areaShape.ts                 # a área S_T como forma móvel de superfície exata
+    scale.ts                     # linha de referência (1 km por padrão) -> pixels por km; a área cabe na imagem?
+    coverage.ts                  # cobertura por amostragem da área
+    autoTiling.ts                # mínimo de agrupamentos que cobrem a área (referência para estrelas e dicas)
   utils/
     validation.ts                # assertPositive, assertNonNegative, assertUnitInterval, assertInteger, rangeWarningMessage, parseDecimal, requireField
     localizedMessage.ts          # LocalizedError / LocalizedMessage: erros e avisos neutros quanto ao idioma (chave + parâmetros)

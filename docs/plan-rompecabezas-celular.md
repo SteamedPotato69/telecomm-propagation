@@ -129,3 +129,26 @@ Commits atómicos; la lógica pura siempre antes que la UI que la usa. Es un tra
 # 7. Fuera de alcance (MVP)
 
 PDF como imagen · dibujar el área a mano · pinch-zoom y rotación libre de la retícula · sectorización (diap. 25) · predicción de cobertura real con Hata sobre la imagen (el hexágono es ideal) · ranking/multijugador · sonido · carga downlink y C/I (en `plan-umts-dl-ci.md`).
+
+# 8. Registro de implementación -- PR A (hecho)
+
+Estado: P0 y P1 implementados en `feature/cell-puzzle` (sin subir). `tsc` limpio, `vitest` 213/213.
+
+**P0 -- correcciones**
+- `e180f47` Q (diap. 24): `3·D²/2` → `√3·D²/2` y `E[·]` = parte entera.
+- `47d5ece` tres etiquetas de i18n que seguían en español + test que lo vigila.
+- `a6fddc1` ρ de voz (diap. 67): α multiplica. El bucle con los coeficientes de la diapositiva pasa de R=1,00 km/η=62 % a 1,04 km/56 % (curso 1,07/54).
+- `3df7065` + `5634792` rangos de frecuencia como dato, `recommendInvertibleModel`, y la pantalla WCDMA converge por defecto (verificado en el navegador: 6 iteraciones).
+
+**P1 -- motor puro**
+- `eb93ece` plan de frecuencias + `plan1g2g` (1G: 416→59, 6 celdas por capacidad; 2G: 40→10→70, 5 por capacidad y 7 por cobertura).
+- `21e0a17` `plan3g` + `GameMission`.
+- `2f02689`, `b56d1c3` `models/layout`: retícula, agrupación como pieza (N colores, distancia mínima mismo color = D para todo N válido ≤ 91), forma de área, escala, cobertura, teselado óptimo.
+
+**Desviaciones respecto al plan y por qué**
+1. **`plan3g` reintenta con paso menor.** A más densidad (20 000 usuarios / 50 km²) el bucle oscilaba con el paso por defecto y el plan se quedaba sin resultado. Con 0,3 → 0,1 → 0,03 se llega al **mismo punto fijo** (comprobado en 15 000 usuarios). Más de ~40 000 usuarios sigue sin converger: se devuelve `cellsFinal = null` y el mínimo por capacidad, nunca un número inventado.
+2. **El bucle ignora el objetivo η.** Converge a cargas del 80-98 % aunque el objetivo sea 50 %, y en todos los casos probados el número final lo da la capacidad. Es una limitación del modelo ya documentada en `wcdma.ts`; se anota, no se arregla aquí.
+3. **El teselado real necesita más celdas que el plan.** Cuadrado de 50 km² con hexágonos del área de celda del plan: 1G plan 6 → 3 agrupaciones (21 celdas, 9 tocan el área); 2G plan 7 → 4 agrupaciones; 3G plan 20 → 29 celdas. Las celdas de borde no entran en `S_T / área de celda`. El juego mostrará ambos números (plan, celdas con centro dentro, celdas necesarias para cubrir) y las estrellas se miden contra el óptimo real, no contra el plan.
+4. **Hallazgos de la auditoría** para la IA del contexto: `docs/hallazgos-verificados-para-ia-de-contexto.md`.
+
+**Siguiente**: PR B (almacenamiento + asistente), tras revisar este.
