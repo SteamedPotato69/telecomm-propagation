@@ -5,7 +5,7 @@ import {
   LATTICE_ROTATIONS_DEG,
   clusterColors,
   clusterTools,
-  findMinimalTiling,
+  findMinimalTilingAsync,
   frameAnchoredAt,
   nearestSameColorPair,
   remainingClusters,
@@ -105,13 +105,19 @@ export function PlayStep({
   // Same sample points for the player's coverage, the hints and the optimum, so "100 %" means the same everywhere.
   const samples = useMemo(() => sampleArea(polygonKm), [polygonKm]);
 
-  // The search for the minimum takes about 200 ms. It runs after the first paint, so the map is on screen
-  // (and playable) straight away instead of the step freezing while it is entered.
+  // The search for the minimum takes about 200 ms in one block, which freezes a phone. It runs in small
+  // slices instead (same answer, see findMinimalTilingAsync), so the map is on screen and playable straight
+  // away and the page keeps responding while it finishes.
   const [optimum, setOptimum] = useState<TilingSolution | null>(null);
   useEffect(() => {
+    let cancelled = false;
     setOptimum(null);
-    const timer = setTimeout(() => setOptimum(findMinimalTiling(polygonKm, mission.hexRadiusKm, n)), 0);
-    return () => clearTimeout(timer);
+    findMinimalTilingAsync(polygonKm, mission.hexRadiusKm, n, {}, 8, () => cancelled).then((solution) => {
+      if (!cancelled && solution) setOptimum(solution);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [polygonKm, mission.hexRadiusKm, n]);
 
   const { frame, translations, helpLevel } = placement;
